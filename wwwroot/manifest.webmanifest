@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "RetroTodo",
+  "short_name": "Todo",
+  "description": "A tiny self-hosted retro todo app.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#c0c0c0",
+  "theme_color": "#000080",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

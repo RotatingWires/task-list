@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+.vs/
+
+# Runtime/private data
+data/
+*.db
+*.db-shm
+*.db-wal
+auth.json
+siri-api.json
+
+# Editor/OS noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

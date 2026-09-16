@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c0c0c0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RetroTodo">
+  <title>RetroTodo</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="window">
+    <header class="titlebar">
+      <span>RetroTodo</span>
+      <span class="title-buttons" aria-hidden="true">_ □ ×</span>
+    </header>
+
+    <nav class="menubar" aria-label="Application menu">
+      <button type="button" id="newTaskMenu">File</button>
+      <button type="button" id="importMenu">Import</button>
+      <button type="button" id="aboutMenu">Help</button>
+    </nav>
+
+    <section class="toolbar">
+      <form id="newTaskForm">
+        <label class="sr-only" for="newTaskTitle">New task</label>
+        <input id="newTaskTitle" name="title" maxlength="500" autocomplete="off" placeholder="New task..." required>
+        <button type="submit">Add Task</button>
+      </form>
+      <button type="button" id="importButton">Import Markdown...</button>
+      <input type="file" id="markdownFile" accept=".md,.markdown,text/markdown,text/plain" hidden>
+    </section>
+
+    <section class="panel task-panel" aria-label="Tasks">
+      <table class="task-table">
+        <thead>
+          <tr>
+            <th class="id-col">ID</th>
+            <th>Task</th>
+            <th class="status-col">Status</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="taskList"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state">No tasks.</div>
+    </section>
+
+    <footer class="statusbar">
+      <span id="statusText">Ready</span>
+      <span id="taskCount">0 tasks</span>
+    </footer>
+  </main>
+
+  <dialog id="editDialog" class="retro-dialog">
+    <form method="dialog" id="editForm">
+      <div class="dialog-title">Edit Task</div>
+      <div class="dialog-body">
+        <div class="dialog-id">Task <strong id="editTaskId"></strong></div>
+        <label for="editTitle">Title</label>
+        <input id="editTitle" maxlength="500" required>
+        <label class="checkbox-row"><input type="checkbox" id="editCompleted"> Completed</label>
+      </div>
+      <div class="dialog-buttons">
+        <button value="cancel" type="button" id="cancelEdit">Cancel</button>
+        <button value="default" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
