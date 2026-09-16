@@ -1,4 +1,4 @@
-# Task List v0.8
+# Task List v0.8.1
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -53,6 +53,14 @@ One displayed subtask level is currently supported; deeper nested checklist item
 
 In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.
 
+
+## v0.8.1 changes
+
+- Imported Markdown items now use `Unknown` for **Last updated**, because the source file does not contain that metadata.
+- Existing items imported by v0.8 are upgraded to show `Unknown` for Last updated as well.
+- **Manage Lists...** displays the highest Universal ID as `UID total entries` without parentheses.
+- Help now explains what `Unknown` dates mean.
+- PWA cache bumped to v8.1.
 
 ## v0.8 changes
 

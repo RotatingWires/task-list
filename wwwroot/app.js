@@ -83,7 +83,7 @@ async function api(url, options = {}) {
 async function loadStats() {
   const stats = await api('/api/stats');
   highestUniversalId = Number(stats.highestUniversalId) || 0;
-  manageListsUidTotal.textContent = `(${highestUniversalId}) total entries`;
+  manageListsUidTotal.textContent = `${highestUniversalId} total entries`;
 }
 
 function currentList() {
@@ -595,7 +595,7 @@ async function openManageLists() {
   try {
     await loadStats();
   } catch {
-    manageListsUidTotal.textContent = '(?) total entries';
+    manageListsUidTotal.textContent = '? total entries';
   }
   renderManageLists();
   manageListsDialog.showModal();
@@ -661,7 +661,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Task List v0.8\nSelf-hosted, minimal, and deliberately boring.'));
+aboutMenu.addEventListener('click', () => alert('Task List v0.8.1\nTasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

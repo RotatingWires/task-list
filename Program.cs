@@ -535,7 +535,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
                      created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
                 VALUES
                     ($universalId, $listId, $taskNumber, $title, '', $status, $completed,
-                     $createdAt, NULL, $completedAt, NULL, NULL, 1);
+                     $createdAt, $updatedAt, $completedAt, NULL, NULL, 1);
                 SELECT last_insert_rowid();
                 """;
             parentCommand.Parameters.AddWithValue("$universalId", universalId);
@@ -545,6 +545,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
             parentCommand.Parameters.AddWithValue("$status", status);
             parentCommand.Parameters.AddWithValue("$completed", done ? 1 : 0);
             parentCommand.Parameters.AddWithValue("$createdAt", createdAt);
+            parentCommand.Parameters.AddWithValue("$updatedAt", "Unknown");
             parentCommand.Parameters.AddWithValue("$completedAt", completedAt);
 
             currentParentId = (long)(await parentCommand.ExecuteScalarAsync() ?? 0L);
@@ -565,7 +566,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
                      created_at, updated_at, completed_at, cancelled_at, reopened_at)
                 VALUES
                     ($universalId, $parentId, $subtaskNumber, $title, '', $status, $completed,
-                     $createdAt, NULL, $completedAt, NULL, NULL);
+                     $createdAt, $updatedAt, $completedAt, NULL, NULL);
                 """;
             subtaskCommand.Parameters.AddWithValue("$universalId", universalId);
             subtaskCommand.Parameters.AddWithValue("$parentId", currentParentId.Value);
@@ -574,6 +575,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
             subtaskCommand.Parameters.AddWithValue("$status", status);
             subtaskCommand.Parameters.AddWithValue("$completed", done ? 1 : 0);
             subtaskCommand.Parameters.AddWithValue("$createdAt", createdAt);
+            subtaskCommand.Parameters.AddWithValue("$updatedAt", "Unknown");
             subtaskCommand.Parameters.AddWithValue("$completedAt", completedAt);
             await subtaskCommand.ExecuteNonQueryAsync();
             subtasksImported++;
@@ -701,6 +703,26 @@ static void InitializeDatabase(string connectionString)
     var clearSubtaskUpdates = connection.CreateCommand();
     clearSubtaskUpdates.CommandText = "UPDATE subtasks SET updated_at = NULL WHERE updated_at = created_at;";
     clearSubtaskUpdates.ExecuteNonQuery();
+
+    // Imported Markdown items have no source data for a last-updated timestamp.
+    // This also upgrades items imported by v0.8 before this rule existed.
+    var markImportedTaskUpdatesUnknown = connection.CreateCommand();
+    markImportedTaskUpdatesUnknown.CommandText = """
+        UPDATE tasks
+        SET updated_at = 'Unknown'
+        WHERE updated_at IS NULL
+          AND (created_at = 'Unknown' OR (length(created_at) = 10 AND substr(created_at, 5, 1) = '-' AND substr(created_at, 8, 1) = '-'));
+        """;
+    markImportedTaskUpdatesUnknown.ExecuteNonQuery();
+
+    var markImportedSubtaskUpdatesUnknown = connection.CreateCommand();
+    markImportedSubtaskUpdatesUnknown.CommandText = """
+        UPDATE subtasks
+        SET updated_at = 'Unknown'
+        WHERE updated_at IS NULL
+          AND (created_at = 'Unknown' OR (length(created_at) = 10 AND substr(created_at, 5, 1) = '-' AND substr(created_at, 8, 1) = '-'));
+        """;
+    markImportedSubtaskUpdatesUnknown.ExecuteNonQuery();
 
     var listCountCommand = connection.CreateCommand();
     listCountCommand.CommandText = "SELECT COUNT(*) FROM lists;";
