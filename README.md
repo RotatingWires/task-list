@@ -1,4 +1,4 @@
-# Task List v0.6
+# Task List v0.7
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -52,3 +52,10 @@ One displayed subtask level is currently supported; deeper nested checklist item
 ## Keyboard behavior
 
 In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.
+
+
+## v0.7 changes
+
+- The title bar now shows `Task List v0.7`.
+- Added a placeholder retro note favicon at `wwwroot/icons/favicon.svg`.
+- Parent tasks are sorted by their visible per-list ID in ascending order, so newer tasks appear last.

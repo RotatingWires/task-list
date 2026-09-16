@@ -163,14 +163,7 @@ app.MapGet("/api/lists/{listId:long}/tasks", async (long listId) =>
                created_at, updated_at, completed_at, cancelled_at, reopened_at
         FROM tasks
         WHERE list_id = $listId
-        ORDER BY
-            CASE status
-                WHEN 'Open' THEN 0
-                WHEN 'Cancelled' THEN 1
-                WHEN 'Done' THEN 2
-                ELSE 3
-            END,
-            task_number DESC;
+        ORDER BY task_number ASC;
         """;
     taskCommand.Parameters.AddWithValue("$listId", listId);
 
