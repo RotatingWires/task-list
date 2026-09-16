@@ -1,52 +1,40 @@
-# RetroTodo v0.1
+# RetroTodo v0.2
 
-Tiny self-hosted todo app with a retro Windows-style UI.
+A deliberately small self-hosted todo/ticket app for a Windows NAS.
 
 ## Stack
 
-- ASP.NET Core Minimal API (.NET 10)
-- Microsoft.Data.Sqlite
-- SQLite
+- ASP.NET Core 10 Minimal API
+- Microsoft.Data.Sqlite (raw SQLite; no Entity Framework)
 - Plain HTML
 - Plain CSS
-- Plain JavaScript
-- PWA manifest + service worker
+- Vanilla JavaScript
+- PWA manifest/service worker
 
-No React, Node.js, npm, Entity Framework, Electron, Bootstrap, or frontend framework.
+No Node.js, npm, React, Electron, or frontend framework.
 
-## Run on Windows
+## Run
 
-1. Install the .NET 10 SDK if you want to run from source.
-2. Open PowerShell in this folder.
-3. Run:
+```powershell
+dotnet restore
+dotnet run --urls "http://0.0.0.0:8711"
+```
 
-   dotnet restore
-   dotnet run --urls "http://0.0.0.0:8711"
+Then open `http://localhost:8711` on the server, or `http://NAS-IP:8711` from another device on the LAN/VPN.
 
-4. Browse to:
+The SQLite database is created automatically at `data/todo.db`.
 
-   http://SERVER-IP:8711
+## v0.2 features
 
-The database is created automatically at:
+- Permanent numeric task IDs
+- Open / Done / Cancelled states
+- View menu: Open, Done, All
+- Complete, Cancel, Reopen, Edit, Delete actions
+- Title + description
+- Clickable task IDs with an information dialog
+- Created, last-updated, completed, cancelled, and reopened timestamps
+- Automatic in-place migration from the v0.1 database schema
+- Basic Markdown checkbox import
+- Installable PWA shell
 
-   data/todo.db
-
-## Current features
-
-- Permanent numeric task IDs (`#1`, `#2`, ...)
-- Add tasks
-- Complete/reopen tasks
-- Edit tasks
-- Delete tasks
-- Basic Markdown checkbox import (`- [ ]` / `- [x]`)
-- Responsive phone/desktop UI
-- PWA manifest
-- Small offline cache for the application shell only
-
-## Important PWA note
-
-Service workers require a secure context in normal deployment. For iPhone/Home Screen use, configure HTTPS for the server when we deploy it. The API intentionally is not cached, so the app always reads/writes the authoritative SQLite database on the NAS.
-
-## Next design decisions
-
-The Markdown importer is deliberately simple right now. Before importing the real long-running file, define how headings, nested tasks, notes, completed formatting, dates, tags, and IDs should map into RetroTodo.
+The Markdown importer is intentionally basic until the long-running Markdown file format is finalized.

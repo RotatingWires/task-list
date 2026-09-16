@@ -22,6 +22,16 @@
     <nav class="menubar" aria-label="Application menu">
       <button type="button" id="newTaskMenu">File</button>
       <button type="button" id="importMenu">Import</button>
+
+      <div class="menu-wrap">
+        <button type="button" id="viewMenu" aria-haspopup="menu" aria-expanded="false">View</button>
+        <div id="viewDropdown" class="menu-dropdown" role="menu" hidden>
+          <button type="button" role="menuitemradio" data-view="open" aria-checked="true"><span class="menu-check">✓</span>Open</button>
+          <button type="button" role="menuitemradio" data-view="done" aria-checked="false"><span class="menu-check"></span>Done</button>
+          <button type="button" role="menuitemradio" data-view="all" aria-checked="false"><span class="menu-check"></span>All</button>
+        </div>
+      </div>
+
       <button type="button" id="aboutMenu">Help</button>
     </nav>
 
@@ -47,7 +57,7 @@
         </thead>
         <tbody id="taskList"></tbody>
       </table>
-      <div id="emptyState" class="empty-state">No tasks.</div>
+      <div id="emptyState" class="empty-state">No open tasks.</div>
     </section>
 
     <footer class="statusbar">
@@ -63,13 +73,34 @@
         <div class="dialog-id">Task <strong id="editTaskId"></strong></div>
         <label for="editTitle">Title</label>
         <input id="editTitle" maxlength="500" required>
-        <label class="checkbox-row"><input type="checkbox" id="editCompleted"> Completed</label>
+        <label for="editDescription">Description</label>
+        <textarea id="editDescription" maxlength="4000" rows="7" placeholder="Optional"></textarea>
       </div>
       <div class="dialog-buttons">
         <button value="cancel" type="button" id="cancelEdit">Cancel</button>
         <button value="default" type="submit">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="infoDialog" class="retro-dialog info-dialog">
+    <div class="dialog-title">Task Information</div>
+    <div class="dialog-body info-body">
+      <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>
+      <dl class="info-grid">
+        <dt>Title</dt><dd id="infoTitle"></dd>
+        <dt>Description</dt><dd id="infoDescription" class="description-value"></dd>
+        <dt>Status</dt><dd id="infoStatus"></dd>
+        <dt>Created</dt><dd id="infoCreated"></dd>
+        <dt>Last updated</dt><dd id="infoUpdated"></dd>
+        <dt>Completed</dt><dd id="infoCompleted"></dd>
+        <dt>Cancelled</dt><dd id="infoCancelled"></dd>
+        <dt>Reopened</dt><dd id="infoReopened"></dd>
+      </dl>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" id="closeInfo">OK</button>
+    </div>
   </dialog>
 
   <script src="/app.js" defer></script>
