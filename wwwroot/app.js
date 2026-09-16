@@ -113,7 +113,7 @@ async function loadTasks() {
 
 function updateListTitle() {
   const list = currentList();
-  titleListName.textContent = list ? ` — ${list.name}` : '';
+  titleListName.textContent = list ? list.name : '';
   document.title = list ? `Task List — ${list.name}` : 'Task List';
 }
 
@@ -334,9 +334,7 @@ editForm.addEventListener('submit', async event => {
 function descriptionEnterToSave(textarea, form) {
   textarea.addEventListener('keydown', event => {
     if (event.key !== 'Enter') return;
-    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isAppleMobile) return;
-    if (event.ctrlKey || event.metaKey) return;
+    if (event.shiftKey) return;
     event.preventDefault();
     form.requestSubmit();
   });
@@ -344,6 +342,7 @@ function descriptionEnterToSave(textarea, form) {
 
 descriptionEnterToSave(editDescription, editForm);
 descriptionEnterToSave(subtaskDescription, subtaskForm);
+descriptionEnterToSave(listDescription, listForm);
 
 cancelEdit.addEventListener('click', () => {
   editDialog.close();
@@ -644,7 +643,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Task List v0.5\nSelf-hosted, minimal, and deliberately boring.'));
+aboutMenu.addEventListener('click', () => alert('Task List v0.6\nSelf-hosted, minimal, and deliberately boring.'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

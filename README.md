@@ -1,4 +1,4 @@
-# Task List v0.5
+# Task List v0.6
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -47,3 +47,8 @@ Import always targets the currently selected list. Basic nested checklists are s
 ```
 
 One displayed subtask level is currently supported; deeper nested checklist items are treated as subtasks of the current parent.
+
+
+## Keyboard behavior
+
+In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.

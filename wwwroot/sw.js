@@ -1,4 +1,4 @@
-const CACHE = 'task-list-shell-v5';
+const CACHE = 'task-list-shell-v6';
 const SHELL = ['/', '/style.css', '/app.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-180.png'];
 
 self.addEventListener('install', event => {

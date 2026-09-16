@@ -63,12 +63,24 @@ button { cursor: pointer; }
   background: var(--blue);
   color: #fff;
   font-weight: 700;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
   align-items: center;
-  justify-content: space-between;
 }
 
-.title-buttons { letter-spacing: 4px; }
+.title-app-name { justify-self: start; }
+.title-list-name {
+  justify-self: center;
+  max-width: min(50vw, 520px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+.title-buttons {
+  justify-self: end;
+  letter-spacing: 4px;
+}
 
 .menubar {
   padding: 2px 4px;
@@ -297,7 +309,7 @@ button:active {
   position: relative;
 }
 .subtask-row .task-title::before {
-  content: "↳";
+  content: "└─";
   position: absolute;
   left: 7px;
   color: #666;
@@ -378,18 +390,18 @@ button:disabled {
   padding-left: 20px;
 }
 .subtask-row .task-title {
-  padding-left: 42px;
+  padding-left: 54px;
 }
 .subtask-row .task-title::before {
-  content: "↳";
+  content: "└─";
   left: 12px;
   top: 50%;
   transform: translateY(-52%);
   color: #444;
-  font-size: 22px;
+  font-size: 21px;
   line-height: 1;
   font-weight: 900;
-  font-family: Arial, sans-serif;
+  font-family: Consolas, "Courier New", monospace;
 }
 
 @media (max-width: 650px) {
@@ -402,7 +414,7 @@ button:disabled {
     padding-left: 8px;
   }
   .subtask-row .task-title {
-    padding-left: 34px;
+    padding-left: 46px;
   }
   .subtask-row .task-title::before {
     left: 5px;
