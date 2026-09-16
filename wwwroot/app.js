@@ -4,7 +4,6 @@ const statusText = document.querySelector('#statusText');
 const taskCount = document.querySelector('#taskCount');
 const newTaskForm = document.querySelector('#newTaskForm');
 const newTaskTitle = document.querySelector('#newTaskTitle');
-const importButton = document.querySelector('#importButton');
 const importMenu = document.querySelector('#importMenu');
 const markdownFile = document.querySelector('#markdownFile');
 const editDialog = document.querySelector('#editDialog');
@@ -204,6 +203,20 @@ editForm.addEventListener('submit', async event => {
   await updateTask(id, { title, description });
 });
 
+editDescription.addEventListener('keydown', event => {
+  if (event.key !== 'Enter') return;
+
+  // iPhone/iPad users keep the normal Return key for new lines.
+  const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isAppleMobile) return;
+
+  // Ctrl+Enter (or Command+Enter) inserts a normal new line on desktop.
+  if (event.ctrlKey || event.metaKey) return;
+
+  event.preventDefault();
+  editForm.requestSubmit();
+});
+
 cancelEdit.addEventListener('click', () => {
   editDialog.close();
   editingId = null;
@@ -247,7 +260,6 @@ function chooseMarkdown() {
   markdownFile.click();
 }
 
-importButton.addEventListener('click', chooseMarkdown);
 importMenu.addEventListener('click', chooseMarkdown);
 
 markdownFile.addEventListener('change', async () => {
@@ -280,7 +292,7 @@ function updateViewMenu() {
   for (const choice of viewChoices) {
     const selected = choice.dataset.view === currentView;
     choice.setAttribute('aria-checked', selected ? 'true' : 'false');
-    choice.querySelector('.menu-check').textContent = selected ? '✓' : '';
+    choice.querySelector('.menu-check').textContent = selected ? '•' : '';
   }
 }
 
@@ -309,7 +321,7 @@ document.addEventListener('keydown', event => {
 });
 
 newTaskMenu.addEventListener('click', () => newTaskTitle.focus());
-aboutMenu.addEventListener('click', () => alert('RetroTodo v0.2\nSelf-hosted, minimal, and deliberately boring.'));
+aboutMenu.addEventListener('click', () => alert('RetroTodo v0.3\nSelf-hosted, minimal, and deliberately boring.'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

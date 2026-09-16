@@ -26,7 +26,7 @@
       <div class="menu-wrap">
         <button type="button" id="viewMenu" aria-haspopup="menu" aria-expanded="false">View</button>
         <div id="viewDropdown" class="menu-dropdown" role="menu" hidden>
-          <button type="button" role="menuitemradio" data-view="open" aria-checked="true"><span class="menu-check">✓</span>Open</button>
+          <button type="button" role="menuitemradio" data-view="open" aria-checked="true"><span class="menu-check">•</span>Open</button>
           <button type="button" role="menuitemradio" data-view="done" aria-checked="false"><span class="menu-check"></span>Done</button>
           <button type="button" role="menuitemradio" data-view="all" aria-checked="false"><span class="menu-check"></span>All</button>
         </div>
@@ -41,7 +41,6 @@
         <input id="newTaskTitle" name="title" maxlength="500" autocomplete="off" placeholder="New task..." required>
         <button type="submit">Add Task</button>
       </form>
-      <button type="button" id="importButton">Import Markdown...</button>
       <input type="file" id="markdownFile" accept=".md,.markdown,text/markdown,text/plain" hidden>
     </section>
 

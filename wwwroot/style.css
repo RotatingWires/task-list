@@ -12,6 +12,30 @@
 
 * { box-sizing: border-box; }
 
+/* App chrome behaves like a desktop UI instead of selectable web-page text. */
+button,
+.titlebar,
+.menubar,
+.task-table th,
+.task-id-link,
+.task-table td[data-label="Status"],
+.statusbar,
+.dialog-title,
+.dialog-id,
+.info-grid dt,
+#infoStatus,
+.empty-state {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Actual task content and task information stay copyable. */
+.task-title,
+.info-grid dd:not(#infoStatus) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 html, body { min-height: 100%; margin: 0; }
 body { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
 
