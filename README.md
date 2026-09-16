@@ -1,6 +1,13 @@
-# RetroTodo v0.4
+# Task List v0.5
 
-A deliberately small self-hosted todo/ticket app built with ASP.NET Core, SQLite, plain HTML, CSS, and JavaScript.
+A small self-hosted task-list application for a Windows NAS and web/PWA clients.
+
+## Stack
+
+- ASP.NET Core / C# minimal API
+- SQLite via Microsoft.Data.Sqlite
+- Plain HTML, CSS, and JavaScript
+- No React, Node.js, npm, Electron, Bootstrap, or Entity Framework
 
 ## Run
 
@@ -9,32 +16,34 @@ dotnet restore
 dotnet run --urls "http://0.0.0.0:8711"
 ```
 
-Then open `http://localhost:8711` on the server or `http://SERVER-IP:8711` from another device on the LAN/VPN.
+Then open `http://localhost:8711` on the NAS or `http://NAS-IP:8711` from another device on the LAN/VPN.
 
-The SQLite database is created at `data/todo.db`.
+## Data
 
-## v0.4 changes
+The database is stored at:
 
-- Long task titles wrap instead of forcing horizontal scrolling.
-- New tasks leave **Last updated** blank until the task is actually changed.
-- Adds one-level subtasks with permanent IDs such as `#12.1`, `#12.2`, etc. Deleted subtask numbers are not reused.
-- Subtasks have their own Open/Done/Cancelled status, timestamps, Edit/Delete, and status actions.
-- A parent task controls which View contains the entire group. For example, all of `#12`'s subtasks remain visible with `#12` in Done even if individual subtask statuses differ.
-- Parent deletion also deletes its subtasks.
-- Markdown import recognizes indented checklist items as subtasks.
-
-Example import:
-
-```markdown
-- [ ] Main task
-  - [ ] First subtask
-  - [x] Finished subtask
-- [x] Another main task
-  - [ ] This subtask follows the Done parent into the Done view
+```text
+data\task-list.db
 ```
 
-The importer currently supports one displayed subtask level. Any checklist item indented beneath the current parent is imported as that parent's subtask.
+When upgrading from v0.4 or earlier, an existing `data\todo.db` is automatically renamed to `data\task-list.db` on first launch.
 
-## Existing database
+Existing tasks are migrated into a default list named `Tasks`. Their visible task numbers are preserved. New lists each maintain their own task-number sequence starting at `#1`.
 
-Keep your existing `data/todo.db` when upgrading. v0.4 creates the new `subtasks` table automatically and preserves existing task IDs.
+Every task and subtask also receives a global Universal ID. Universal IDs increment across every list and are never reused; they are visible only in Task Information.
+
+## Lists
+
+Use **File** to switch lists, create a list, or open **Manage Lists...**. Each list has a name and optional description. Deleting a list deletes the tasks and subtasks inside it. The final remaining list cannot be deleted.
+
+## Markdown import
+
+Import always targets the currently selected list. Basic nested checklists are supported:
+
+```markdown
+- [ ] Parent task
+  - [x] Completed subtask
+  - [ ] Open subtask
+```
+
+One displayed subtask level is currently supported; deeper nested checklist items are treated as subtasks of the current parent.

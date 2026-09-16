@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#c0c0c0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="RetroTodo">
-  <title>RetroTodo</title>
+  <meta name="apple-mobile-web-app-title" content="Task List">
+  <title>Task List</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <link rel="stylesheet" href="/style.css">
@@ -15,12 +15,16 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span>RetroTodo</span>
+      <span>Task List<span id="titleListName"></span></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
 
     <nav class="menubar" aria-label="Application menu">
-      <button type="button" id="newTaskMenu">File</button>
+      <div class="menu-wrap">
+        <button type="button" id="fileMenu" aria-haspopup="menu" aria-expanded="false">File</button>
+        <div id="fileDropdown" class="menu-dropdown file-dropdown" role="menu" hidden></div>
+      </div>
+
       <button type="button" id="importMenu">Import</button>
 
       <div class="menu-wrap">
@@ -104,6 +108,7 @@
     <div class="dialog-body info-body">
       <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>
       <dl class="info-grid">
+        <dt>Universal ID</dt><dd id="infoUniversalId"></dd>
         <dt>Title</dt><dd id="infoTitle"></dd>
         <dt>Description</dt><dd id="infoDescription" class="description-value"></dd>
         <dt>Status</dt><dd id="infoStatus"></dd>
@@ -116,6 +121,30 @@
     </div>
     <div class="dialog-buttons">
       <button type="button" id="closeInfo">OK</button>
+    </div>
+  </dialog>
+
+  <dialog id="listDialog" class="retro-dialog">
+    <form method="dialog" id="listForm">
+      <div class="dialog-title" id="listDialogTitle">Create a List</div>
+      <div class="dialog-body">
+        <label for="listName">Name</label>
+        <input id="listName" maxlength="100" required>
+        <label for="listDescription">Description</label>
+        <textarea id="listDescription" maxlength="1000" rows="5" placeholder="Optional"></textarea>
+      </div>
+      <div class="dialog-buttons">
+        <button value="cancel" type="button" id="cancelListEdit">Cancel</button>
+        <button value="default" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="manageListsDialog" class="retro-dialog manage-lists-dialog">
+    <div class="dialog-title">Manage Lists</div>
+    <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
+    <div class="dialog-buttons">
+      <button type="button" id="closeManageLists">Close</button>
     </div>
   </dialog>
 

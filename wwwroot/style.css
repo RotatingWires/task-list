@@ -304,3 +304,113 @@ button:active {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* v0.5: multi-list File menu and list management. */
+.file-dropdown {
+  min-width: 220px;
+  max-width: min(340px, calc(100vw - 20px));
+}
+.menu-dropdown .menu-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-separator {
+  height: 0;
+  margin: 3px 2px;
+  border-top: 1px solid #808080;
+  border-bottom: 1px solid #fff;
+}
+
+button:disabled {
+  color: #808080;
+  cursor: default;
+  text-shadow: 1px 1px #fff;
+}
+
+.manage-lists-dialog {
+  width: min(720px, calc(100vw - 24px));
+}
+.manage-lists-body {
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  gap: 0;
+  padding: 8px;
+}
+.manage-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 8px;
+  background: #fff;
+  border-bottom: 1px dotted #aaa;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.manage-list-row:last-child { border-bottom: 0; }
+.manage-list-details { min-width: 0; }
+.manage-list-details strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.manage-list-description {
+  margin-top: 3px;
+  color: #444;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.manage-list-count {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+}
+.manage-list-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Make the subtask relationship much more obvious. */
+.subtask-row td:first-child {
+  padding-left: 20px;
+}
+.subtask-row .task-title {
+  padding-left: 42px;
+}
+.subtask-row .task-title::before {
+  content: "↳";
+  left: 12px;
+  top: 50%;
+  transform: translateY(-52%);
+  color: #444;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 900;
+  font-family: Arial, sans-serif;
+}
+
+@media (max-width: 650px) {
+  .subtask-row {
+    margin-left: 18px;
+    width: calc(100% - 18px) !important;
+    border-left: 3px solid #a0a0a0;
+  }
+  .subtask-row td:first-child {
+    padding-left: 8px;
+  }
+  .subtask-row .task-title {
+    padding-left: 34px;
+  }
+  .subtask-row .task-title::before {
+    left: 5px;
+  }
+  .manage-list-row {
+    grid-template-columns: 1fr;
+  }
+  .manage-list-actions {
+    justify-content: flex-start;
+  }
+}

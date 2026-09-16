@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "RetroTodo",
-  "short_name": "Todo",
-  "description": "A tiny self-hosted retro todo app.",
+  "name": "Task List",
+  "short_name": "Task List",
+  "description": "A tiny self-hosted task list app.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
