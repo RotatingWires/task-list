@@ -82,6 +82,23 @@
     </form>
   </dialog>
 
+  <dialog id="subtaskDialog" class="retro-dialog">
+    <form method="dialog" id="subtaskForm">
+      <div class="dialog-title">Add Subtask</div>
+      <div class="dialog-body">
+        <div class="dialog-id">Parent Task <strong id="subtaskParentId"></strong></div>
+        <label for="subtaskTitle">Title</label>
+        <input id="subtaskTitle" maxlength="500" required>
+        <label for="subtaskDescription">Description</label>
+        <textarea id="subtaskDescription" maxlength="4000" rows="7" placeholder="Optional"></textarea>
+      </div>
+      <div class="dialog-buttons">
+        <button value="cancel" type="button" id="cancelSubtask">Cancel</button>
+        <button value="default" type="submit">Add</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="infoDialog" class="retro-dialog info-dialog">
     <div class="dialog-title">Task Information</div>
     <div class="dialog-body info-body">

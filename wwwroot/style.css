@@ -195,8 +195,8 @@ button:active {
 .id-col { width: 80px; }
 .status-col { width: 100px; }
 .actions-col { width: 270px; }
-.task-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-.task-actions button { padding: 3px 7px; }
+.task-actions { white-space: normal; }
+.task-actions button { padding: 3px 7px; margin: 2px 3px 2px 0; }
 
 .task-id-link {
   padding: 0;
@@ -277,4 +277,30 @@ button:active {
   .actions-col { width: auto; }
   .statusbar { position: sticky; bottom: 0; background: var(--face); padding-top: 3px; font-size: 12px; }
   .info-grid { grid-template-columns: 95px minmax(0, 1fr); font-size: 13px; }
+}
+
+/* v0.4: keep long task names inside their row instead of widening the table. */
+.task-table {
+  table-layout: fixed;
+}
+.task-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+.subtask-row td {
+  background: #fafafa;
+}
+.subtask-row .task-title {
+  padding-left: 24px;
+  position: relative;
+}
+.subtask-row .task-title::before {
+  content: "↳";
+  position: absolute;
+  left: 7px;
+  color: #666;
+  user-select: none;
+  -webkit-user-select: none;
 }

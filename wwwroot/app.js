@@ -12,6 +12,12 @@ const editTaskId = document.querySelector('#editTaskId');
 const editTitle = document.querySelector('#editTitle');
 const editDescription = document.querySelector('#editDescription');
 const cancelEdit = document.querySelector('#cancelEdit');
+const subtaskDialog = document.querySelector('#subtaskDialog');
+const subtaskForm = document.querySelector('#subtaskForm');
+const subtaskParentId = document.querySelector('#subtaskParentId');
+const subtaskTitle = document.querySelector('#subtaskTitle');
+const subtaskDescription = document.querySelector('#subtaskDescription');
+const cancelSubtask = document.querySelector('#cancelSubtask');
 const newTaskMenu = document.querySelector('#newTaskMenu');
 const aboutMenu = document.querySelector('#aboutMenu');
 const viewMenu = document.querySelector('#viewMenu');
@@ -30,7 +36,8 @@ const infoCancelled = document.querySelector('#infoCancelled');
 const infoReopened = document.querySelector('#infoReopened');
 
 let tasks = [];
-let editingId = null;
+let editingItem = null;
+let subtaskParent = null;
 let currentView = 'open';
 
 function setStatus(message) {
@@ -63,6 +70,7 @@ async function loadTasks() {
 }
 
 function tasksForCurrentView() {
+  // Only the parent status decides which view the entire task group appears in.
   if (currentView === 'open') return tasks.filter(task => task.status === 'Open');
   if (currentView === 'done') return tasks.filter(task => task.status === 'Done');
   return tasks;
@@ -77,62 +85,73 @@ function renderTasks() {
     : `No ${currentView} tasks.`;
 
   for (const task of visibleTasks) {
-    const row = document.createElement('tr');
-    row.classList.add(`status-${task.status.toLowerCase()}`);
-
-    const idCell = document.createElement('td');
-    idCell.dataset.label = 'ID';
-
-    const idButton = document.createElement('button');
-    idButton.type = 'button';
-    idButton.className = 'task-id-link';
-    idButton.textContent = `#${task.id}`;
-    idButton.title = `View information for task #${task.id}`;
-    idButton.addEventListener('click', () => openInfo(task));
-    idCell.append(idButton);
-
-    const titleCell = document.createElement('td');
-    titleCell.dataset.label = 'Task';
-    titleCell.className = 'task-title';
-    titleCell.textContent = task.title;
-
-    const statusCell = document.createElement('td');
-    statusCell.dataset.label = 'Status';
-    statusCell.textContent = task.status;
-
-    const actionsCell = document.createElement('td');
-    actionsCell.dataset.label = 'Actions';
-    actionsCell.className = 'task-actions';
-
-    if (task.status === 'Open') {
-      actionsCell.append(
-        actionButton('Complete', () => updateTask(task.id, { status: 'Done' })),
-        actionButton('Cancel', () => updateTask(task.id, { status: 'Cancelled' }))
-      );
-    } else if (task.status === 'Done') {
-      actionsCell.append(
-        actionButton('Reopen', () => updateTask(task.id, { status: 'Open' })),
-        actionButton('Cancel', () => updateTask(task.id, { status: 'Cancelled' }))
-      );
-    } else if (task.status === 'Cancelled') {
-      actionsCell.append(
-        actionButton('Reopen', () => updateTask(task.id, { status: 'Open' }))
-      );
-    }
-
-    actionsCell.append(
-      actionButton('Edit', () => openEdit(task)),
-      actionButton('Delete', () => deleteTask(task))
-    );
-
-    row.append(idCell, titleCell, statusCell, actionsCell);
-    taskList.append(row);
+    taskList.append(createTaskRow(task, false));
+    for (const subtask of task.subtasks ?? [])
+      taskList.append(createTaskRow(subtask, true));
   }
 
   const open = tasks.filter(task => task.status === 'Open').length;
   const done = tasks.filter(task => task.status === 'Done').length;
   const cancelled = tasks.filter(task => task.status === 'Cancelled').length;
-  taskCount.textContent = `${open} open / ${done} done / ${cancelled} cancelled / ${tasks.length} total`;
+  const subtaskTotal = tasks.reduce((sum, task) => sum + (task.subtasks?.length ?? 0), 0);
+  taskCount.textContent = `${open} open / ${done} done / ${cancelled} cancelled / ${tasks.length} tasks / ${subtaskTotal} subtasks`;
+}
+
+function createTaskRow(item, isSubtask) {
+  const row = document.createElement('tr');
+  row.classList.add(`status-${item.status.toLowerCase()}`);
+  if (isSubtask) row.classList.add('subtask-row');
+
+  const idCell = document.createElement('td');
+  idCell.dataset.label = 'ID';
+
+  const idButton = document.createElement('button');
+  idButton.type = 'button';
+  idButton.className = 'task-id-link';
+  idButton.textContent = `#${item.displayId}`;
+  idButton.title = `View information for ${isSubtask ? 'subtask' : 'task'} #${item.displayId}`;
+  idButton.addEventListener('click', () => openInfo(item));
+  idCell.append(idButton);
+
+  const titleCell = document.createElement('td');
+  titleCell.dataset.label = 'Task';
+  titleCell.className = 'task-title';
+  titleCell.textContent = item.title;
+
+  const statusCell = document.createElement('td');
+  statusCell.dataset.label = 'Status';
+  statusCell.textContent = item.status;
+
+  const actionsCell = document.createElement('td');
+  actionsCell.dataset.label = 'Actions';
+  actionsCell.className = 'task-actions';
+
+  if (item.status === 'Open') {
+    actionsCell.append(
+      actionButton('Complete', () => updateItem(item, { status: 'Done' })),
+      actionButton('Cancel', () => updateItem(item, { status: 'Cancelled' }))
+    );
+  } else if (item.status === 'Done') {
+    actionsCell.append(
+      actionButton('Reopen', () => updateItem(item, { status: 'Open' })),
+      actionButton('Cancel', () => updateItem(item, { status: 'Cancelled' }))
+    );
+  } else if (item.status === 'Cancelled') {
+    actionsCell.append(
+      actionButton('Reopen', () => updateItem(item, { status: 'Open' }))
+    );
+  }
+
+  if (!isSubtask)
+    actionsCell.append(actionButton('Add Subtask', () => openSubtaskDialog(item)));
+
+  actionsCell.append(
+    actionButton('Edit', () => openEdit(item)),
+    actionButton('Delete', () => deleteItem(item))
+  );
+
+  row.append(idCell, titleCell, statusCell, actionsCell);
+  return row;
 }
 
 function actionButton(label, handler) {
@@ -165,10 +184,14 @@ newTaskForm.addEventListener('submit', async event => {
   }
 });
 
-async function updateTask(id, changes) {
-  setStatus(`Updating #${id}...`);
+function itemEndpoint(item) {
+  return item.isSubtask ? `/api/subtasks/${item.id}` : `/api/tasks/${item.id}`;
+}
+
+async function updateItem(item, changes) {
+  setStatus(`Updating #${item.displayId}...`);
   try {
-    await api(`/api/tasks/${id}`, {
+    await api(itemEndpoint(item), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(changes)
@@ -179,11 +202,11 @@ async function updateTask(id, changes) {
   }
 }
 
-function openEdit(task) {
-  editingId = task.id;
-  editTaskId.textContent = `#${task.id}`;
-  editTitle.value = task.title;
-  editDescription.value = task.description ?? '';
+function openEdit(item) {
+  editingItem = item;
+  editTaskId.textContent = `#${item.displayId}`;
+  editTitle.value = item.title;
+  editDescription.value = item.description ?? '';
   editDialog.showModal();
   editTitle.focus();
   editTitle.select();
@@ -191,47 +214,91 @@ function openEdit(task) {
 
 editForm.addEventListener('submit', async event => {
   event.preventDefault();
-  if (editingId === null) return;
+  if (editingItem === null) return;
 
   const title = editTitle.value.trim();
   if (!title) return;
 
-  const id = editingId;
+  const item = editingItem;
   const description = editDescription.value.trim();
   editDialog.close();
-  editingId = null;
-  await updateTask(id, { title, description });
+  editingItem = null;
+  await updateItem(item, { title, description });
 });
 
-editDescription.addEventListener('keydown', event => {
-  if (event.key !== 'Enter') return;
+function descriptionEnterToSave(textarea, form) {
+  textarea.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
 
-  // iPhone/iPad users keep the normal Return key for new lines.
-  const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isAppleMobile) return;
+    // iPhone/iPad users keep the normal Return key for new lines.
+    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isAppleMobile) return;
 
-  // Ctrl+Enter (or Command+Enter) inserts a normal new line on desktop.
-  if (event.ctrlKey || event.metaKey) return;
+    // Ctrl+Enter (or Command+Enter) inserts a normal new line on desktop.
+    if (event.ctrlKey || event.metaKey) return;
 
-  event.preventDefault();
-  editForm.requestSubmit();
-});
+    event.preventDefault();
+    form.requestSubmit();
+  });
+}
+
+descriptionEnterToSave(editDescription, editForm);
+descriptionEnterToSave(subtaskDescription, subtaskForm);
 
 cancelEdit.addEventListener('click', () => {
   editDialog.close();
-  editingId = null;
+  editingItem = null;
 });
 
-function openInfo(task) {
-  infoTaskId.textContent = `#${task.id}`;
-  infoTitle.textContent = task.title;
-  infoDescription.textContent = task.description || '—';
-  infoStatus.textContent = task.status;
-  infoCreated.textContent = formatDate(task.createdAt);
-  infoUpdated.textContent = formatDate(task.updatedAt);
-  infoCompleted.textContent = formatDate(task.completedAt);
-  infoCancelled.textContent = formatDate(task.cancelledAt);
-  infoReopened.textContent = formatDate(task.reopenedAt);
+function openSubtaskDialog(parent) {
+  subtaskParent = parent;
+  subtaskParentId.textContent = `#${parent.displayId}`;
+  subtaskTitle.value = '';
+  subtaskDescription.value = '';
+  subtaskDialog.showModal();
+  subtaskTitle.focus();
+}
+
+subtaskForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!subtaskParent) return;
+
+  const title = subtaskTitle.value.trim();
+  if (!title) return;
+
+  const parent = subtaskParent;
+  const description = subtaskDescription.value.trim();
+  subtaskDialog.close();
+  subtaskParent = null;
+
+  setStatus(`Adding subtask to #${parent.displayId}...`);
+  try {
+    await api(`/api/tasks/${parent.id}/subtasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description })
+    });
+    await loadTasks();
+  } catch (error) {
+    setStatus(`Error: ${error.message}`);
+  }
+});
+
+cancelSubtask.addEventListener('click', () => {
+  subtaskDialog.close();
+  subtaskParent = null;
+});
+
+function openInfo(item) {
+  infoTaskId.textContent = `#${item.displayId}`;
+  infoTitle.textContent = item.title;
+  infoDescription.textContent = item.description || '—';
+  infoStatus.textContent = item.status;
+  infoCreated.textContent = formatDate(item.createdAt);
+  infoUpdated.textContent = formatDate(item.updatedAt);
+  infoCompleted.textContent = formatDate(item.completedAt);
+  infoCancelled.textContent = formatDate(item.cancelledAt);
+  infoReopened.textContent = formatDate(item.reopenedAt);
   infoDialog.showModal();
 }
 
@@ -244,11 +311,17 @@ function formatDate(value) {
 
 closeInfo.addEventListener('click', () => infoDialog.close());
 
-async function deleteTask(task) {
-  if (!confirm(`Delete task #${task.id}?\n\n${task.title}`)) return;
-  setStatus(`Deleting #${task.id}...`);
+async function deleteItem(item) {
+  const subtaskCount = item.isSubtask ? 0 : (item.subtasks?.length ?? 0);
+  const extra = subtaskCount > 0
+    ? `\n\nThis will also delete ${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}.`
+    : '';
+
+  if (!confirm(`Delete ${item.isSubtask ? 'subtask' : 'task'} #${item.displayId}?\n\n${item.title}${extra}`)) return;
+
+  setStatus(`Deleting #${item.displayId}...`);
   try {
-    await api(`/api/tasks/${task.id}`, { method: 'DELETE' });
+    await api(itemEndpoint(item), { method: 'DELETE' });
     await loadTasks();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -275,7 +348,7 @@ markdownFile.addEventListener('change', async () => {
       body: markdown
     });
     await loadTasks();
-    setStatus(`Imported ${result.imported} task${result.imported === 1 ? '' : 's'}.`);
+    setStatus(`Imported ${result.tasksImported} task${result.tasksImported === 1 ? '' : 's'} and ${result.subtasksImported} subtask${result.subtasksImported === 1 ? '' : 's'}.`);
   } catch (error) {
     setStatus(`Import error: ${error.message}`);
   }
@@ -321,7 +394,7 @@ document.addEventListener('keydown', event => {
 });
 
 newTaskMenu.addEventListener('click', () => newTaskTitle.focus());
-aboutMenu.addEventListener('click', () => alert('RetroTodo v0.3\nSelf-hosted, minimal, and deliberately boring.'));
+aboutMenu.addEventListener('click', () => alert('RetroTodo v0.4\nSelf-hosted, minimal, and deliberately boring.'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

@@ -1,17 +1,6 @@
-# RetroTodo v0.3
+# RetroTodo v0.4
 
-A deliberately small self-hosted todo/ticket app for a Windows NAS.
-
-## Stack
-
-- ASP.NET Core 10 Minimal API
-- Microsoft.Data.Sqlite (raw SQLite; no Entity Framework)
-- Plain HTML
-- Plain CSS
-- Vanilla JavaScript
-- PWA manifest/service worker
-
-No Node.js, npm, React, Electron, or frontend framework.
+A deliberately small self-hosted todo/ticket app built with ASP.NET Core, SQLite, plain HTML, CSS, and JavaScript.
 
 ## Run
 
@@ -20,29 +9,32 @@ dotnet restore
 dotnet run --urls "http://0.0.0.0:8711"
 ```
 
-Then open `http://localhost:8711` on the server, or `http://NAS-IP:8711` from another device on the LAN/VPN.
+Then open `http://localhost:8711` on the server or `http://SERVER-IP:8711` from another device on the LAN/VPN.
 
-The SQLite database is created automatically at `data/todo.db`.
+The SQLite database is created at `data/todo.db`.
 
-## v0.3 features
+## v0.4 changes
 
-- Permanent numeric task IDs
-- Open / Done / Cancelled states
-- View menu: Open, Done, All
-- Complete, Cancel, Reopen, Edit, Delete actions
-- Title + description
-- Clickable task IDs with an information dialog
-- Created, last-updated, completed, cancelled, and reopened timestamps
-- Automatic in-place migration from the v0.1 database schema
-- Basic Markdown checkbox import
-- Installable PWA shell
+- Long task titles wrap instead of forcing horizontal scrolling.
+- New tasks leave **Last updated** blank until the task is actually changed.
+- Adds one-level subtasks with permanent IDs such as `#12.1`, `#12.2`, etc. Deleted subtask numbers are not reused.
+- Subtasks have their own Open/Done/Cancelled status, timestamps, Edit/Delete, and status actions.
+- A parent task controls which View contains the entire group. For example, all of `#12`'s subtasks remain visible with `#12` in Done even if individual subtask statuses differ.
+- Parent deletion also deletes its subtasks.
+- Markdown import recognizes indented checklist items as subtasks.
 
-The Markdown importer is intentionally basic until the long-running Markdown file format is finalized.
+Example import:
 
+```markdown
+- [ ] Main task
+  - [ ] First subtask
+  - [x] Finished subtask
+- [x] Another main task
+  - [ ] This subtask follows the Done parent into the Done view
+```
 
-## v0.3 changes
+The importer currently supports one displayed subtask level. Any checklist item indented beneath the current parent is imported as that parent's subtask.
 
-- Removed the toolbar Import Markdown button; import remains available from the top Import menu.
-- UI chrome, buttons, headings, task IDs, and statuses are non-selectable; task titles and task information values remain selectable.
-- In the desktop description editor, Enter saves while Ctrl+Enter/Command+Enter inserts a new line. On iPhone/iPad, Return inserts a new line normally.
-- View menu selection indicator changed from a checkmark to a bullet point.
+## Existing database
+
+Keep your existing `data/todo.db` when upgrading. v0.4 creates the new `subtasks` table automatically and preserves existing task IDs.
