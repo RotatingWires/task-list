@@ -49,6 +49,18 @@ app.MapGet("/api/lists", async () =>
     return Results.Ok(lists);
 });
 
+app.MapGet("/api/stats", async () =>
+{
+    await using var connection = new SqliteConnection(connectionString);
+    await connection.OpenAsync();
+
+    var command = connection.CreateCommand();
+    command.CommandText = "SELECT COALESCE(MAX(id), 0) FROM universal_ids;";
+    var highestUniversalId = Convert.ToInt64(await command.ExecuteScalarAsync());
+
+    return Results.Ok(new { highestUniversalId });
+});
+
 app.MapPost("/api/lists", async (CreateListRequest request) =>
 {
     var name = request.Name?.Trim();
@@ -460,6 +472,8 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
     var checklistRegex = new Regex(
         @"^(?<indent>[ \t]*)[-*+]\s+\[(?<state>[ xX])\]\s+(?<title>.+?)\s*$",
         RegexOptions.Compiled);
+    var createdDateRegex = new Regex(@"\s*➕\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
+    var completedDateRegex = new Regex(@"\s*✅\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
 
     var tasksImported = 0;
     var subtasksImported = 0;
@@ -490,14 +504,25 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
         if (!match.Success)
             continue;
 
-        var title = match.Groups["title"].Value.Trim();
+        var rawTitle = match.Groups["title"].Value.Trim();
+        if (string.IsNullOrWhiteSpace(rawTitle))
+            continue;
+
+        var createdMatch = createdDateRegex.Match(rawTitle);
+        var completedMatch = completedDateRegex.Match(rawTitle);
+        var createdAt = createdMatch.Success ? createdMatch.Groups["date"].Value : "Unknown";
+
+        var title = createdDateRegex.Replace(rawTitle, string.Empty);
+        title = completedDateRegex.Replace(title, string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(title))
             continue;
 
         var indent = IndentWidth(match.Groups["indent"].Value);
         var done = !string.Equals(match.Groups["state"].Value, " ", StringComparison.Ordinal);
         var status = done ? "Done" : "Open";
-        var now = DateTimeOffset.UtcNow.ToString("O");
+        object completedAt = done
+            ? (completedMatch.Success ? completedMatch.Groups["date"].Value : "Unknown")
+            : DBNull.Value;
         var universalId = await AllocateUniversalId(connection, (SqliteTransaction)transaction);
 
         if (currentParentId is null || indent <= currentParentIndent)
@@ -519,8 +544,8 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
             parentCommand.Parameters.AddWithValue("$title", title);
             parentCommand.Parameters.AddWithValue("$status", status);
             parentCommand.Parameters.AddWithValue("$completed", done ? 1 : 0);
-            parentCommand.Parameters.AddWithValue("$createdAt", now);
-            parentCommand.Parameters.AddWithValue("$completedAt", done ? now : DBNull.Value);
+            parentCommand.Parameters.AddWithValue("$createdAt", createdAt);
+            parentCommand.Parameters.AddWithValue("$completedAt", completedAt);
 
             currentParentId = (long)(await parentCommand.ExecuteScalarAsync() ?? 0L);
             currentParentIndent = indent;
@@ -548,8 +573,8 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
             subtaskCommand.Parameters.AddWithValue("$title", title);
             subtaskCommand.Parameters.AddWithValue("$status", status);
             subtaskCommand.Parameters.AddWithValue("$completed", done ? 1 : 0);
-            subtaskCommand.Parameters.AddWithValue("$createdAt", now);
-            subtaskCommand.Parameters.AddWithValue("$completedAt", done ? now : DBNull.Value);
+            subtaskCommand.Parameters.AddWithValue("$createdAt", createdAt);
+            subtaskCommand.Parameters.AddWithValue("$completedAt", completedAt);
             await subtaskCommand.ExecuteNonQueryAsync();
             subtasksImported++;
         }

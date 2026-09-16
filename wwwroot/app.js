@@ -50,6 +50,7 @@ const listDescription = document.querySelector('#listDescription');
 const cancelListEdit = document.querySelector('#cancelListEdit');
 const manageListsDialog = document.querySelector('#manageListsDialog');
 const manageListsBody = document.querySelector('#manageListsBody');
+const manageListsUidTotal = document.querySelector('#manageListsUidTotal');
 const closeManageLists = document.querySelector('#closeManageLists');
 
 let lists = [];
@@ -59,6 +60,7 @@ let subtaskParent = null;
 let editingList = null;
 let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
+let highestUniversalId = 0;
 
 function setStatus(message) {
   statusText.textContent = message;
@@ -76,6 +78,12 @@ async function api(url, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+async function loadStats() {
+  const stats = await api('/api/stats');
+  highestUniversalId = Number(stats.highestUniversalId) || 0;
+  manageListsUidTotal.textContent = `(${highestUniversalId}) total entries`;
 }
 
 function currentList() {
@@ -404,6 +412,10 @@ function openInfo(item) {
 
 function formatDate(value) {
   if (!value) return '—';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString();
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
@@ -449,6 +461,7 @@ markdownFile.addEventListener('change', async () => {
       body: markdown
     });
     await Promise.all([loadTasks(), refreshListCounts()]);
+    await loadStats().catch(() => {});
     setStatus(`Imported ${result.tasksImported} task${result.tasksImported === 1 ? '' : 's'} and ${result.subtasksImported} subtask${result.subtasksImported === 1 ? '' : 's'}.`);
   } catch (error) {
     setStatus(`Import error: ${error.message}`);
@@ -577,8 +590,13 @@ cancelListEdit.addEventListener('click', () => {
   editingList = null;
 });
 
-function openManageLists() {
+async function openManageLists() {
   closeFileMenu();
+  try {
+    await loadStats();
+  } catch {
+    manageListsUidTotal.textContent = '(?) total entries';
+  }
   renderManageLists();
   manageListsDialog.showModal();
 }
@@ -643,7 +661,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Task List v0.7\nSelf-hosted, minimal, and deliberately boring.'));
+aboutMenu.addEventListener('click', () => alert('Task List v0.8\nSelf-hosted, minimal, and deliberately boring.'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

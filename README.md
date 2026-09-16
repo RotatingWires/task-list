@@ -1,4 +1,4 @@
-# Task List v0.7
+# Task List v0.8
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -54,8 +54,15 @@ One displayed subtask level is currently supported; deeper nested checklist item
 In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.
 
 
-## v0.7 changes
+## v0.8 changes
 
-- The title bar now shows `Task List v0.7`.
-- Added a placeholder retro note favicon at `wwwroot/icons/favicon.svg`.
-- Parent tasks are sorted by their visible per-list ID in ascending order, so newer tasks appear last.
+- Obsidian import now reads `➕ YYYY-MM-DD` as the creation date and `✅ YYYY-MM-DD` as the completion date.
+- Missing creation dates import as `Unknown`; completed items with no completion date import as `Unknown`.
+- Date-only imports display as dates without timezone shifting.
+- **Manage Lists...** now shows the highest allocated Universal ID as `(UID) total entries` at the far right of its title bar.
+- PWA cache bumped to v8.
+
+
+## v0.8 Markdown import
+
+Obsidian checklist dates are supported: `➕ YYYY-MM-DD` is imported as Created and `✅ YYYY-MM-DD` as Completed. Missing creation dates are stored as `Unknown`; completed checklist items with no completion date get `Unknown` for Completed. Nested checklist items import as subtasks.

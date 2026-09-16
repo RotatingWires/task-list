@@ -426,3 +426,16 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* v0.8: Manage Lists UID total in the title bar. */
+.manage-lists-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.manage-lists-uid-total {
+  margin-left: auto;
+  font-weight: 400;
+  white-space: nowrap;
+}
