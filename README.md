@@ -1,4 +1,4 @@
-# Task List v0.8.6.1
+# Task List v0.9
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -42,7 +42,7 @@ The current database schema is created directly on first run. This build contain
 
 ## Markdown import
 
-Import targets the currently selected list. Nested checklist items become subtasks:
+Import targets the currently selected list. Parent task groups are imported from the bottom of the Markdown file upward so older source entries receive lower Task IDs and Universal IDs. Subtasks within a parent are also numbered bottom-up. Nested checklist items become subtasks:
 
 ```markdown
 - [ ] Parent task ➕ 2026-09-12
@@ -80,10 +80,10 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - PWA cache is v8.5.
 
 
-## v0.8.6.1
+## v0.9
 
-- Login and first-run password setup remain centered, bordered retro windows on mobile instead of expanding into the full-screen mobile app shell.
-- Main Task List mobile layout is unchanged.
-- Preserved Manage Lists wording: `N lifetime entries counting deletions`.
-- Windows file/product/assembly version is `0.8.6.1`.
-- PWA cache is v8.6.
+- Markdown imports now assign IDs from the bottom of the source file upward, so older entries receive lower Task IDs and Universal IDs.
+- Subtasks within each imported parent are also numbered bottom-up.
+- Normal task and subtask creation behavior is unchanged.
+- Windows file/product/assembly version is `0.9`.
+- PWA cache is v0.9.

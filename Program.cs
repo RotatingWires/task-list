@@ -388,19 +388,10 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     var createdDate = new Regex(@"\s*➕\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
     var completedDate = new Regex(@"\s*✅\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
 
-    await using var connection = await OpenConnection(connectionString);
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var nextTaskValue = await ScalarTxAsync(connection, transaction,
-        "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
-    if (nextTaskValue is null)
-        return Results.NotFound(new { error = "List not found." });
-
-    var nextTaskNumber = Convert.ToInt32(nextTaskValue);
-    var tasksImported = 0;
-    var subtasksImported = 0;
-    long? parentId = null;
-    var parentIndent = 0;
-    var nextSubtaskNumber = 0;
+    // Parse in source order first so indentation can establish parent/subtask relationships.
+    // Import is then performed bottom-up so older items receive lower task and Universal IDs.
+    var groups = new List<ImportGroup>();
+    ImportGroup? currentGroup = null;
 
     foreach (var line in markdown.Replace("\r\n", "\n").Split('\n'))
     {
@@ -415,34 +406,59 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
 
         var indent = IndentWidth(match.Groups["indent"].Value);
         var done = match.Groups["state"].Value != " ";
-        var createdAt = createdMatch.Success ? createdMatch.Groups["date"].Value : "Unknown";
-        object? completedAt = done
-            ? completedMatch.Success ? completedMatch.Groups["date"].Value : "Unknown"
-            : null;
-        var uid = await AllocateUniversalId(connection, transaction);
+        var item = new ImportItem(
+            title,
+            done ? "Done" : "Open",
+            createdMatch.Success ? createdMatch.Groups["date"].Value : "Unknown",
+            done ? completedMatch.Success ? completedMatch.Groups["date"].Value : "Unknown" : null,
+            indent);
 
-        if (parentId is null || indent <= parentIndent)
+        if (currentGroup is null || indent <= currentGroup.Parent.Indent)
         {
-            parentId = await ScalarLongTxAsync(connection, transaction, """
-                INSERT INTO tasks
-                    (universal_id, list_id, task_number, title, description, status,
-                     created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
-                VALUES
-                    ($uid, $listId, $number, $title, '', $status,
-                     $createdAt, 'Unknown', $completedAt, NULL, NULL, 1);
-                SELECT last_insert_rowid();
-                """,
-                ("$uid", uid), ("$listId", listId), ("$number", nextTaskNumber),
-                ("$title", title), ("$status", done ? "Done" : "Open"),
-                ("$createdAt", createdAt), ("$completedAt", completedAt));
-            parentIndent = indent;
-            nextSubtaskNumber = 0;
-            nextTaskNumber++;
-            tasksImported++;
+            currentGroup = new ImportGroup(item, []);
+            groups.Add(currentGroup);
         }
         else
         {
-            nextSubtaskNumber++;
+            currentGroup.Subtasks.Add(item);
+        }
+    }
+
+    await using var connection = await OpenConnection(connectionString);
+    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+    var nextTaskValue = await ScalarTxAsync(connection, transaction,
+        "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
+    if (nextTaskValue is null)
+        return Results.NotFound(new { error = "List not found." });
+
+    var nextTaskNumber = Convert.ToInt32(nextTaskValue);
+    var tasksImported = 0;
+    var subtasksImported = 0;
+
+    for (var groupIndex = groups.Count - 1; groupIndex >= 0; groupIndex--)
+    {
+        var group = groups[groupIndex];
+        var parentUid = await AllocateUniversalId(connection, transaction);
+        var parentId = await ScalarLongTxAsync(connection, transaction, """
+            INSERT INTO tasks
+                (universal_id, list_id, task_number, title, description, status,
+                 created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
+            VALUES
+                ($uid, $listId, $number, $title, '', $status,
+                 $createdAt, 'Unknown', $completedAt, NULL, NULL, 1);
+            SELECT last_insert_rowid();
+            """,
+            ("$uid", parentUid), ("$listId", listId), ("$number", nextTaskNumber),
+            ("$title", group.Parent.Title), ("$status", group.Parent.Status),
+            ("$createdAt", group.Parent.CreatedAt), ("$completedAt", group.Parent.CompletedAt));
+
+        tasksImported++;
+        var nextSubtaskNumber = 1;
+
+        for (var subIndex = group.Subtasks.Count - 1; subIndex >= 0; subIndex--)
+        {
+            var subtask = group.Subtasks[subIndex];
+            var subtaskUid = await AllocateUniversalId(connection, transaction);
             await ExecuteTxAsync(connection, transaction, """
                 INSERT INTO subtasks
                     (universal_id, parent_task_id, subtask_number, title, description, status,
@@ -451,21 +467,23 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
                     ($uid, $parentId, $number, $title, '', $status,
                      $createdAt, 'Unknown', $completedAt, NULL, NULL);
                 """,
-                ("$uid", uid), ("$parentId", parentId.Value), ("$number", nextSubtaskNumber),
-                ("$title", title), ("$status", done ? "Done" : "Open"),
-                ("$createdAt", createdAt), ("$completedAt", completedAt));
+                ("$uid", subtaskUid), ("$parentId", parentId), ("$number", nextSubtaskNumber),
+                ("$title", subtask.Title), ("$status", subtask.Status),
+                ("$createdAt", subtask.CreatedAt), ("$completedAt", subtask.CompletedAt));
+            nextSubtaskNumber++;
             subtasksImported++;
         }
+
+        await ExecuteTxAsync(connection, transaction,
+            "UPDATE tasks SET next_subtask_number = $nextSubtaskNumber WHERE id = $id;",
+            ("$nextSubtaskNumber", nextSubtaskNumber), ("$id", parentId));
+
+        nextTaskNumber++;
     }
 
-    await ExecuteTxAsync(connection, transaction, """
-        UPDATE tasks
-        SET next_subtask_number = MAX(next_subtask_number, COALESCE((
-            SELECT MAX(subtask_number) + 1 FROM subtasks WHERE parent_task_id = tasks.id
-        ), 1))
-        WHERE list_id = $listId;
-        UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;
-        """, ("$listId", listId), ("$nextNumber", nextTaskNumber));
+    await ExecuteTxAsync(connection, transaction,
+        "UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;",
+        ("$listId", listId), ("$nextNumber", nextTaskNumber));
 
     await transaction.CommitAsync();
     return Results.Ok(new { imported = tasksImported + subtasksImported, tasksImported, subtasksImported });
@@ -796,6 +814,8 @@ static async Task SignInOwner(HttpContext context)
         });
 }
 
+record ImportItem(string Title, string Status, string CreatedAt, object? CompletedAt, int Indent);
+record ImportGroup(ImportItem Parent, List<ImportItem> Subtasks);
 record TaskListInfo(long Id, string Name, string Description, string CreatedAt, long TaskCount);
 record CreateListRequest(string? Name, string? Description);
 record UpdateListRequest(string? Name, string? Description);
