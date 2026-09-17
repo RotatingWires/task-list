@@ -492,6 +492,22 @@ input[type="password"] {
 }
 
 
+
+/* Keep a username field in the login form for iOS/password-manager heuristics
+   without adding a visible username step to this single-user app. */
+.password-autofill-username {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
 /* v0.8.6: keep login/setup as a bordered window on mobile. */
 @media (max-width: 650px) {
   body.login-page {

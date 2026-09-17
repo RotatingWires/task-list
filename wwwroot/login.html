@@ -17,20 +17,22 @@
 <body class="login-page">
   <main class="window login-window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v0.8.6</span>
+      <span class="title-app-name">Task List v0.8.6.1</span>
       <span class="title-list-name" id="loginWindowTitle">Log In</span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
 
-    <form id="authForm" class="login-form">
+    <form id="authForm" class="login-form" autocomplete="on">
       <div class="login-intro" id="loginIntro">Enter your password to open Task List.</div>
 
+      <input class="password-autofill-username" id="username" name="username" type="text" value="tasklist" autocomplete="username" tabindex="-1" aria-hidden="true">
+
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required autofocus>
+      <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" minlength="8" required autofocus>
 
       <div id="confirmGroup" class="login-confirm" hidden>
         <label for="confirmPassword">Confirm password</label>
-        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8">
+        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8">
       </div>
 
       <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
