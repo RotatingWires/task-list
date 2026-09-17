@@ -73,7 +73,11 @@ function setStatus(message) {
 }
 
 async function api(url, options = {}) {
-  const response = await fetch(url, options);
+  const response = await fetch(url, { credentials: 'same-origin', ...options });
+  if (response.status === 401) {
+    window.location.replace('/login.html');
+    throw new Error('Your session has expired.');
+  }
   if (!response.ok) {
     let message = `${response.status} ${response.statusText}`;
     try {
@@ -172,6 +176,21 @@ function renderFileMenu() {
     menuCommand('Create a List...', openCreateList),
     menuCommand('Manage Lists...', openManageLists)
   );
+
+  const accountSeparator = document.createElement('div');
+  accountSeparator.className = 'menu-separator';
+  accountSeparator.setAttribute('role', 'separator');
+  fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut));
+}
+
+
+async function logOut() {
+  closeFileMenu();
+  try {
+    await api('/api/auth/logout', { method: 'POST' });
+  } finally {
+    window.location.replace('/login.html');
+  }
 }
 
 function menuCommand(label, handler) {
@@ -642,7 +661,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v0.8.3.1'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v0.8.4'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

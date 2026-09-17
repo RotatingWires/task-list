@@ -1,4 +1,4 @@
-# Task List v0.8.3.1
+# Task List v0.8.4
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -7,6 +7,7 @@ A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 - ASP.NET Core / C# minimal API
 - SQLite via Microsoft.Data.Sqlite
 - Plain HTML, CSS, and JavaScript
+- Built-in ASP.NET Core cookie authentication
 - No React, Node.js, npm, Electron, Bootstrap, Entity Framework, or ORM
 
 ## Run
@@ -19,6 +20,17 @@ dotnet run --urls "http://0.0.0.0:8711"
 Open `http://localhost:8711` on the NAS or `http://NAS-IP:8711` from another device on the LAN/VPN.
 
 The database is stored at `data\task-list.db`.
+Authentication settings are stored at `data\auth.json`.
+
+## Login and API authentication
+
+On first launch, opening Task List displays a setup screen that asks you to create a password of at least 8 characters. The plaintext password is never stored. `auth.json` contains a random salt and a PBKDF2-SHA256 password hash.
+
+After login, ASP.NET Core issues an HttpOnly, SameSite=Strict authentication cookie. Normal same-origin browser requests automatically send that cookie with every Task List API request. All task/list/import/stat API routes require authentication.
+
+The cookie is persistent for up to 30 days and uses sliding expiration. Its Secure flag follows the request: it works over HTTP for the current LAN-only setup and will automatically be marked Secure when the app is accessed over HTTPS.
+
+Use **File > Log Out** to invalidate the browser session. If you intentionally need to reset the password, stop Task List and delete `data\auth.json`; the next visit will offer first-run password setup again.
 
 ## Data model
 
@@ -45,13 +57,15 @@ One displayed subtask level is supported; deeper nested checklist items are flat
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
-## v0.8.3.1
+## v0.8.4
 
-- Fixed the consolidated SQLite transaction helper functions so the project compiles under top-level C# statements.
-- Removed legacy database migration and compatibility code.
-- Removed the obsolete `completed` boolean from the current schema and all application logic; `status` is the single source of truth.
-- Consolidated SQLite command creation, parameter binding, scalar execution, and non-query execution into shared helpers.
-- Consolidated repeated task/subtask status buttons into one shared status-action definition.
-- Windows file/product/assembly version is `0.8.3.1`.
+- Added single-user password setup and login.
+- Added HttpOnly ASP.NET Core cookie authentication.
+- All normal `/api` task/list/stat/import endpoints now require authentication.
+- Added **File > Log Out**.
+- Added a dedicated retro login/setup screen.
+- Passwords are stored only as PBKDF2-SHA256 hashes with random salts.
+- Kept the clean current-only database schema from v0.8.3.x.
+- Windows file/product/assembly version is `0.8.4`.
 - Targets `win-x64`, framework-dependent.
-- PWA cache is v8.3.1.
+- PWA cache is v8.4.

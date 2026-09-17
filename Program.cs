@@ -1,18 +1,117 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Data.Sqlite;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "TaskList.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
+        options.SlidingExpiration = true;
+        options.LoginPath = "/login.html";
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            else
+                context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            else
+                context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+    });
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 var dataDir = Path.Combine(app.Environment.ContentRootPath, "data");
 Directory.CreateDirectory(dataDir);
 var connectionString = $"Data Source={Path.Combine(dataDir, "task-list.db")};Foreign Keys=True";
+var authPath = Path.Combine(dataDir, "auth.json");
 InitializeDatabase(connectionString);
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Keep the actual app shell behind the login screen. Static assets remain public,
+// but every API route below is authenticated, so loading an asset alone exposes no task data.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var authenticated = context.User.Identity?.IsAuthenticated == true;
+
+    if ((path == "/" || path == "/index.html") && !authenticated)
+    {
+        context.Response.Redirect("/login.html");
+        return;
+    }
+
+    if (path == "/login.html" && authenticated)
+    {
+        context.Response.Redirect("/");
+        return;
+    }
+
+    await next();
+});
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapGet("/api/lists", async () =>
+app.MapGet("/api/auth/status", (HttpContext context) => Results.Ok(new
+{
+    configured = PasswordConfigured(authPath),
+    authenticated = context.User.Identity?.IsAuthenticated == true
+}));
+
+app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context) =>
+{
+    if (PasswordConfigured(authPath))
+        return Results.Conflict(new { error = "A password has already been configured." });
+
+    var passwordError = ValidateNewPassword(request.Password, request.ConfirmPassword);
+    if (passwordError is not null)
+        return Results.BadRequest(new { error = passwordError });
+
+    SavePassword(authPath, request.Password!);
+    await SignInOwner(context);
+    return Results.Ok(new { authenticated = true });
+});
+
+app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context) =>
+{
+    if (!PasswordConfigured(authPath))
+        return Results.Conflict(new { error = "No password has been configured yet." });
+    if (string.IsNullOrEmpty(request.Password) || !VerifyPassword(authPath, request.Password))
+        return Results.Unauthorized();
+
+    await SignInOwner(context);
+    return Results.Ok(new { authenticated = true });
+});
+
+app.MapPost("/api/auth/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.NoContent();
+}).RequireAuthorization();
+
+var api = app.MapGroup("/api").RequireAuthorization();
+
+api.MapGet("/lists", async () =>
 {
     var lists = new List<TaskListInfo>();
     await using var connection = await OpenConnection(connectionString);
@@ -31,14 +130,14 @@ app.MapGet("/api/lists", async () =>
     return Results.Ok(lists);
 });
 
-app.MapGet("/api/stats", async () =>
+api.MapGet("/stats", async () =>
 {
     await using var connection = await OpenConnection(connectionString);
     var highestUniversalId = await ScalarLongAsync(connection, "SELECT COALESCE(MAX(id), 0) FROM universal_ids;");
     return Results.Ok(new { highestUniversalId });
 });
 
-app.MapPost("/api/lists", async (CreateListRequest request) =>
+api.MapPost("/lists", async (CreateListRequest request) =>
 {
     var name = request.Name?.Trim();
     if (string.IsNullOrWhiteSpace(name))
@@ -60,7 +159,7 @@ app.MapPost("/api/lists", async (CreateListRequest request) =>
     return Results.Created($"/api/lists/{id}", new TaskListInfo(id, name, description, now, 0));
 });
 
-app.MapPatch("/api/lists/{id:long}", async (long id, UpdateListRequest request) =>
+api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
 {
     await using var connection = await OpenConnection(connectionString);
     var existing = await GetList(connection, id);
@@ -81,7 +180,7 @@ app.MapPatch("/api/lists/{id:long}", async (long id, UpdateListRequest request) 
     return Results.Ok(existing with { Name = name, Description = description });
 });
 
-app.MapDelete("/api/lists/{id:long}", async (long id) =>
+api.MapDelete("/lists/{id:long}", async (long id) =>
 {
     await using var connection = await OpenConnection(connectionString);
     if (await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists;") <= 1)
@@ -98,7 +197,7 @@ app.MapDelete("/api/lists/{id:long}", async (long id) =>
     return Results.NoContent();
 });
 
-app.MapGet("/api/lists/{listId:long}/tasks", async (long listId) =>
+api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
 {
     await using var connection = await OpenConnection(connectionString);
     if (await GetList(connection, listId) is null)
@@ -144,7 +243,7 @@ app.MapGet("/api/lists/{listId:long}/tasks", async (long listId) =>
     return Results.Ok(tasks);
 });
 
-app.MapPost("/api/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest request) =>
+api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest request) =>
 {
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title))
@@ -182,7 +281,7 @@ app.MapPost("/api/lists/{listId:long}/tasks", async (long listId, CreateTaskRequ
         title, description, "Open", now, null, null, null, null, []));
 });
 
-app.MapPost("/api/tasks/{parentId:long}/subtasks", async (long parentId, CreateTaskRequest request) =>
+api.MapPost("/tasks/{parentId:long}/subtasks", async (long parentId, CreateTaskRequest request) =>
 {
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title))
@@ -219,7 +318,7 @@ app.MapPost("/api/tasks/{parentId:long}/subtasks", async (long parentId, CreateT
         title, description, "Open", now, null, null, null, null));
 });
 
-app.MapPatch("/api/tasks/{id:long}", async (long id, UpdateTaskRequest request) =>
+api.MapPatch("/tasks/{id:long}", async (long id, UpdateTaskRequest request) =>
 {
     await using var connection = await OpenConnection(connectionString);
     var existing = await GetTask(connection, id);
@@ -238,7 +337,7 @@ app.MapPatch("/api/tasks/{id:long}", async (long id, UpdateTaskRequest request) 
     });
 });
 
-app.MapPatch("/api/subtasks/{id:long}", async (long id, UpdateTaskRequest request) =>
+api.MapPatch("/subtasks/{id:long}", async (long id, UpdateTaskRequest request) =>
 {
     await using var connection = await OpenConnection(connectionString);
     var existing = await GetSubtask(connection, id);
@@ -257,7 +356,7 @@ app.MapPatch("/api/subtasks/{id:long}", async (long id, UpdateTaskRequest reques
     });
 });
 
-app.MapDelete("/api/tasks/{id:long}", async (long id) =>
+api.MapDelete("/tasks/{id:long}", async (long id) =>
 {
     await using var connection = await OpenConnection(connectionString);
     if (await GetTask(connection, id) is null) return Results.NotFound();
@@ -271,14 +370,14 @@ app.MapDelete("/api/tasks/{id:long}", async (long id) =>
     return Results.NoContent();
 });
 
-app.MapDelete("/api/subtasks/{id:long}", async (long id) =>
+api.MapDelete("/subtasks/{id:long}", async (long id) =>
 {
     await using var connection = await OpenConnection(connectionString);
     var changed = await ExecuteAsync(connection, "DELETE FROM subtasks WHERE id = $id;", ("$id", id));
     return changed == 0 ? Results.NotFound() : Results.NoContent();
 });
 
-app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, HttpRequest request) =>
+api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequest request) =>
 {
     using var body = new StreamReader(request.Body);
     var markdown = await body.ReadToEndAsync();
@@ -372,7 +471,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
     return Results.Ok(new { imported = tasksImported + subtasksImported, tasksImported, subtasksImported });
 });
 
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html").RequireAuthorization();
 app.Run();
 
 static void InitializeDatabase(string connectionString)
@@ -643,9 +742,66 @@ static async Task<SubtaskItem?> GetSubtask(SqliteConnection connection, long id)
     return await reader.ReadAsync() ? ReadSubtask(reader) : null;
 }
 
+static bool PasswordConfigured(string authPath) => File.Exists(authPath);
+
+static string? ValidateNewPassword(string? password, string? confirmation)
+{
+    if (string.IsNullOrEmpty(password) || password.Length < 8)
+        return "Password must be at least 8 characters long.";
+    if (password != confirmation)
+        return "Passwords do not match.";
+    return null;
+}
+
+static void SavePassword(string authPath, string password)
+{
+    const int iterations = 210_000;
+    var salt = RandomNumberGenerator.GetBytes(16);
+    var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
+    var auth = new PasswordFile(1, iterations, Convert.ToBase64String(salt), Convert.ToBase64String(hash));
+    File.WriteAllText(authPath, JsonSerializer.Serialize(auth));
+}
+
+static bool VerifyPassword(string authPath, string password)
+{
+    try
+    {
+        var auth = JsonSerializer.Deserialize<PasswordFile>(File.ReadAllText(authPath));
+        if (auth is null || auth.Version != 1 || auth.Iterations < 1) return false;
+        var salt = Convert.FromBase64String(auth.Salt);
+        var expected = Convert.FromBase64String(auth.Hash);
+        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, auth.Iterations, HashAlgorithmName.SHA256, expected.Length);
+        return CryptographicOperations.FixedTimeEquals(actual, expected);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+static async Task SignInOwner(HttpContext context)
+{
+    var identity = new ClaimsIdentity(
+        [new Claim(ClaimTypes.NameIdentifier, "owner"), new Claim(ClaimTypes.Name, "Owner")],
+        CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
+    await context.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal,
+        new AuthenticationProperties
+        {
+            IsPersistent = true,
+            AllowRefresh = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+        });
+}
+
 record TaskListInfo(long Id, string Name, string Description, string CreatedAt, long TaskCount);
 record CreateListRequest(string? Name, string? Description);
 record UpdateListRequest(string? Name, string? Description);
+record LoginRequest(string? Password);
+record SetupRequest(string? Password, string? ConfirmPassword);
+record PasswordFile(int Version, int Iterations, string Salt, string Hash);
 record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);
 

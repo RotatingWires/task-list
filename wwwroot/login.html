@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#c0c0c0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Task List">
+  <title>Task List Login</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-page">
+  <main class="window login-window">
+    <header class="titlebar">
+      <span class="title-app-name">Task List v0.8.4</span>
+      <span class="title-list-name" id="loginWindowTitle">Log In</span>
+      <span class="title-buttons" aria-hidden="true">_ □ ×</span>
+    </header>
+
+    <form id="authForm" class="login-form">
+      <div class="login-intro" id="loginIntro">Enter your password to open Task List.</div>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required autofocus>
+
+      <div id="confirmGroup" class="login-confirm" hidden>
+        <label for="confirmPassword">Confirm password</label>
+        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8">
+      </div>
+
+      <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
+      <div class="login-actions">
+        <button id="loginButton" type="submit">Log In</button>
+      </div>
+    </form>
+  </main>
+  <script src="/login.js" defer></script>
+</body>
+</html>

@@ -439,3 +439,51 @@ button:disabled {
   font-weight: 400;
   white-space: nowrap;
 }
+
+/* v0.8.4: single-user login/setup screen. */
+input[type="password"] {
+  min-width: 0;
+  padding: 6px 7px;
+  background: #fff;
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  border-radius: 0;
+  outline: none;
+}
+.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+.login-window {
+  width: min(470px, 100%);
+  min-height: 0;
+}
+.login-form {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+.login-intro {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.login-confirm {
+  display: grid;
+  gap: 8px;
+}
+.login-error {
+  min-height: 18px;
+  color: #800000;
+  font-weight: 700;
+}
+.login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+.login-actions button {
+  min-width: 110px;
+}
