@@ -1,4 +1,4 @@
-# Task List v0.8.4
+# Task List v0.8.5
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -69,3 +69,12 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Windows file/product/assembly version is `0.8.4`.
 - Targets `win-x64`, framework-dependent.
 - PWA cache is v8.4.
+
+
+## v0.8.5
+
+- Normal login now displays only the password field.
+- First-run password creation still requires Password and Confirm password.
+- Fixed the CSS rule that caused the confirmation field to appear even when the HTML `hidden` attribute was set.
+- Windows file/product/assembly version is `0.8.5`.
+- PWA cache is v8.5.

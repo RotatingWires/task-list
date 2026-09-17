@@ -440,7 +440,7 @@ button:disabled {
   white-space: nowrap;
 }
 
-/* v0.8.4: single-user login/setup screen. */
+/* v0.8.5: single-user login/setup screen. */
 input[type="password"] {
   min-width: 0;
   padding: 6px 7px;
@@ -473,6 +473,9 @@ input[type="password"] {
 .login-confirm {
   display: grid;
   gap: 8px;
+}
+.login-confirm[hidden] {
+  display: none;
 }
 .login-error {
   min-height: 18px;
