@@ -1,4 +1,4 @@
-# Task List v0.8.1
+# Task List v0.8.2
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -53,6 +53,15 @@ One displayed subtask level is currently supported; deeper nested checklist item
 
 In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.
 
+
+
+## v0.8.2 changes
+
+- Windows file/product/assembly version metadata is now `0.8.2` instead of the SDK default `1.0.0`.
+- The project explicitly targets `win-x64` and remains framework-dependent, so the build selects Windows x64 runtime assets instead of carrying SQLite native binaries for unrelated operating systems.
+- Help uses the requested message ordering, with the version on the final line.
+- PWA cache bumped to v8.2.
+- If upgrading from an older build, delete `bin` and `obj` once before rebuilding so stale cross-platform runtime files are removed.
 
 ## v0.8.1 changes
 
