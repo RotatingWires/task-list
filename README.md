@@ -1,4 +1,4 @@
-# Task List v0.8.5
+# Task List v0.8.6
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -78,3 +78,12 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Fixed the CSS rule that caused the confirmation field to appear even when the HTML `hidden` attribute was set.
 - Windows file/product/assembly version is `0.8.5`.
 - PWA cache is v8.5.
+
+
+## v0.8.6
+
+- Login and first-run password setup remain centered, bordered retro windows on mobile instead of expanding into the full-screen mobile app shell.
+- Main Task List mobile layout is unchanged.
+- Preserved Manage Lists wording: `N lifetime entries counting deletions`.
+- Windows file/product/assembly version is `0.8.6`.
+- PWA cache is v8.6.

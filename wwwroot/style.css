@@ -490,3 +490,21 @@ input[type="password"] {
 .login-actions button {
   min-width: 110px;
 }
+
+
+/* v0.8.6: keep login/setup as a bordered window on mobile. */
+@media (max-width: 650px) {
+  body.login-page {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    background: #008080;
+  }
+  .login-page .login-window {
+    width: min(470px, calc(100vw - 20px));
+    min-height: 0;
+    border-top: 2px solid var(--light);
+    border-left: 2px solid var(--light);
+    border-right: 2px solid var(--dark);
+    border-bottom: 2px solid var(--dark);
+    box-shadow: 1px 1px 0 var(--shadow);
+  }
+}
