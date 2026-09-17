@@ -208,7 +208,7 @@ api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
     using (var command = Sql(connection, """
         SELECT id, universal_id, list_id, task_number, title, description, status,
                created_at, updated_at, completed_at, cancelled_at, reopened_at
-        FROM tasks WHERE list_id = $listId ORDER BY task_number;
+        FROM tasks WHERE list_id = $listId ORDER BY task_number DESC;
         """, ("$listId", listId)))
     await using (var reader = await command.ExecuteReaderAsync())
     {
@@ -229,7 +229,7 @@ api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
             FROM subtasks s
             JOIN tasks t ON t.id = s.parent_task_id
             WHERE t.list_id = $listId
-            ORDER BY t.task_number, s.subtask_number;
+            ORDER BY t.task_number DESC, s.subtask_number;
             """, ("$listId", listId));
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -389,7 +389,8 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     var completedDate = new Regex(@"\s*✅\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
 
     // Parse in source order first so indentation can establish parent/subtask relationships.
-    // Import is then performed bottom-up so older items receive lower task and Universal IDs.
+    // Parent groups are imported bottom-up so older tasks receive lower task and Universal IDs.
+    // Subtasks keep their source order within each parent.
     var groups = new List<ImportGroup>();
     ImportGroup? currentGroup = null;
 
@@ -455,7 +456,7 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
         tasksImported++;
         var nextSubtaskNumber = 1;
 
-        for (var subIndex = group.Subtasks.Count - 1; subIndex >= 0; subIndex--)
+        for (var subIndex = 0; subIndex < group.Subtasks.Count; subIndex++)
         {
             var subtask = group.Subtasks[subIndex];
             var subtaskUid = await AllocateUniversalId(connection, transaction);

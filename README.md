@@ -1,4 +1,4 @@
-# Task List v0.9
+# Task List v0.9.1
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -80,10 +80,11 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - PWA cache is v8.5.
 
 
-## v0.9
+## v0.9.1
 
-- Markdown imports now assign IDs from the bottom of the source file upward, so older entries receive lower Task IDs and Universal IDs.
-- Subtasks within each imported parent are also numbered bottom-up.
+- Parent tasks are displayed newest-first (highest Task ID first).
+- Markdown parent groups still import bottom-up, so older parent tasks receive lower Task IDs and Universal IDs.
+- Imported subtasks now keep their top-to-bottom order from the Markdown file instead of being reversed.
 - Normal task and subtask creation behavior is unchanged.
-- Windows file/product/assembly version is `0.9`.
-- PWA cache is v0.9.
+- Windows file/product/assembly version is `0.9.1`.
+- PWA cache is v0.9.1.
