@@ -1,4 +1,4 @@
-# Task List v0.8.2
+# Task List v0.8.3
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -7,7 +7,7 @@ A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 - ASP.NET Core / C# minimal API
 - SQLite via Microsoft.Data.Sqlite
 - Plain HTML, CSS, and JavaScript
-- No React, Node.js, npm, Electron, Bootstrap, or Entity Framework
+- No React, Node.js, npm, Electron, Bootstrap, Entity Framework, or ORM
 
 ## Run
 
@@ -16,70 +16,41 @@ dotnet restore
 dotnet run --urls "http://0.0.0.0:8711"
 ```
 
-Then open `http://localhost:8711` on the NAS or `http://NAS-IP:8711` from another device on the LAN/VPN.
+Open `http://localhost:8711` on the NAS or `http://NAS-IP:8711` from another device on the LAN/VPN.
 
-## Data
+The database is stored at `data\task-list.db`.
 
-The database is stored at:
+## Data model
 
-```text
-data\task-list.db
-```
+Each list has its own visible task-number sequence starting at `#1`. Subtasks use the parent number plus a decimal, such as `#12.1`.
 
-When upgrading from v0.4 or earlier, an existing `data\todo.db` is automatically renamed to `data\task-list.db` on first launch.
+Every task and subtask also receives a global Universal ID. Universal IDs increment across every list and are never reused; they are shown only in Task Information.
 
-Existing tasks are migrated into a default list named `Tasks`. Their visible task numbers are preserved. New lists each maintain their own task-number sequence starting at `#1`.
-
-Every task and subtask also receives a global Universal ID. Universal IDs increment across every list and are never reused; they are visible only in Task Information.
-
-## Lists
-
-Use **File** to switch lists, create a list, or open **Manage Lists...**. Each list has a name and optional description. Deleting a list deletes the tasks and subtasks inside it. The final remaining list cannot be deleted.
+The current database schema is created directly on first run. This build contains no legacy schema migrations or backwards-compatibility conversion code.
 
 ## Markdown import
 
-Import always targets the currently selected list. Basic nested checklists are supported:
+Import targets the currently selected list. Nested checklist items become subtasks:
 
 ```markdown
-- [ ] Parent task
-  - [x] Completed subtask
-  - [ ] Open subtask
+- [ ] Parent task ➕ 2026-09-12
+  - [x] Completed subtask ➕ 2026-09-12 ✅ 2026-09-14
 ```
 
-One displayed subtask level is currently supported; deeper nested checklist items are treated as subtasks of the current parent.
+`➕ YYYY-MM-DD` becomes Created and `✅ YYYY-MM-DD` becomes Completed. Missing source dates are stored as `Unknown` where applicable. Imported items use `Unknown` for Last updated because the source does not contain that information.
 
+One displayed subtask level is supported; deeper nested checklist items are flattened under the current parent.
 
 ## Keyboard behavior
 
-In task/subtask/list description boxes, **Enter** saves the form and **Shift+Enter** inserts a new line.
+In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+## v0.8.3
 
-
-## v0.8.2 changes
-
-- Windows file/product/assembly version metadata is now `0.8.2` instead of the SDK default `1.0.0`.
-- The project explicitly targets `win-x64` and remains framework-dependent, so the build selects Windows x64 runtime assets instead of carrying SQLite native binaries for unrelated operating systems.
-- Help uses the requested message ordering, with the version on the final line.
-- PWA cache bumped to v8.2.
-- If upgrading from an older build, delete `bin` and `obj` once before rebuilding so stale cross-platform runtime files are removed.
-
-## v0.8.1 changes
-
-- Imported Markdown items now use `Unknown` for **Last updated**, because the source file does not contain that metadata.
-- Existing items imported by v0.8 are upgraded to show `Unknown` for Last updated as well.
-- **Manage Lists...** displays the highest Universal ID as `UID total entries` without parentheses.
-- Help now explains what `Unknown` dates mean.
-- PWA cache bumped to v8.1.
-
-## v0.8 changes
-
-- Obsidian import now reads `➕ YYYY-MM-DD` as the creation date and `✅ YYYY-MM-DD` as the completion date.
-- Missing creation dates import as `Unknown`; completed items with no completion date import as `Unknown`.
-- Date-only imports display as dates without timezone shifting.
-- **Manage Lists...** now shows the highest allocated Universal ID as `(UID) total entries` at the far right of its title bar.
-- PWA cache bumped to v8.
-
-
-## v0.8 Markdown import
-
-Obsidian checklist dates are supported: `➕ YYYY-MM-DD` is imported as Created and `✅ YYYY-MM-DD` as Completed. Missing creation dates are stored as `Unknown`; completed checklist items with no completion date get `Unknown` for Completed. Nested checklist items import as subtasks.
+- Removed legacy database migration and compatibility code.
+- Removed the obsolete `completed` boolean from the current schema and all application logic; `status` is the single source of truth.
+- Consolidated SQLite command creation, parameter binding, scalar execution, and non-query execution into shared helpers.
+- Consolidated repeated task/subtask status buttons into one shared status-action definition.
+- Windows file/product/assembly version is `0.8.3`.
+- Targets `win-x64`, framework-dependent.
+- PWA cache is v8.3.

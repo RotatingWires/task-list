@@ -62,6 +62,12 @@ let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
 let highestUniversalId = 0;
 
+const STATUS_ACTIONS = {
+  Open: [['Complete', 'Done'], ['Cancel', 'Cancelled']],
+  Done: [['Reopen', 'Open'], ['Cancel', 'Cancelled']],
+  Cancelled: [['Reopen', 'Open']]
+};
+
 function setStatus(message) {
   statusText.textContent = message;
 }
@@ -78,6 +84,14 @@ async function api(url, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+function jsonApi(url, method, body) {
+  return api(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
 }
 
 async function loadStats() {
@@ -235,38 +249,27 @@ function createTaskRow(item, isSubtask) {
   actionsCell.dataset.label = 'Actions';
   actionsCell.className = 'task-actions';
 
-  if (item.status === 'Open') {
-    actionsCell.append(
-      actionButton('Complete', () => updateItem(item, { status: 'Done' })),
-      actionButton('Cancel', () => updateItem(item, { status: 'Cancelled' }))
-    );
-  } else if (item.status === 'Done') {
-    actionsCell.append(
-      actionButton('Reopen', () => updateItem(item, { status: 'Open' })),
-      actionButton('Cancel', () => updateItem(item, { status: 'Cancelled' }))
-    );
-  } else if (item.status === 'Cancelled') {
-    actionsCell.append(actionButton('Reopen', () => updateItem(item, { status: 'Open' })));
-  }
-
-  if (!isSubtask)
-    actionsCell.append(actionButton('Add Subtask', () => openSubtaskDialog(item)));
-
-  actionsCell.append(
-    actionButton('Edit', () => openEdit(item)),
-    actionButton('Delete', () => deleteItem(item))
-  );
+  const actions = (STATUS_ACTIONS[item.status] ?? [])
+    .map(([label, status]) => [label, () => updateItem(item, { status })]);
+  if (!isSubtask) actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
+  actions.push(['Edit', () => openEdit(item)], ['Delete', () => deleteItem(item)]);
+  appendActions(actionsCell, actions);
 
   row.append(idCell, titleCell, statusCell, actionsCell);
   return row;
 }
 
-function actionButton(label, handler) {
+function actionButton(label, handler, disabled = false) {
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
+  button.disabled = disabled;
   button.addEventListener('click', handler);
   return button;
+}
+
+function appendActions(container, actions) {
+  container.append(...actions.map(([label, handler, disabled]) => actionButton(label, handler, disabled)));
 }
 
 newTaskForm.addEventListener('submit', async event => {
@@ -276,11 +279,7 @@ newTaskForm.addEventListener('submit', async event => {
 
   setStatus('Adding task...');
   try {
-    await api(`/api/lists/${currentListId}/tasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: '' })
-    });
+    await jsonApi(`/api/lists/${currentListId}/tasks`, 'POST', { title, description: '' });
     newTaskTitle.value = '';
     currentView = 'open';
     updateViewMenu();
@@ -304,11 +303,7 @@ function itemEndpoint(item) {
 async function updateItem(item, changes) {
   setStatus(`Updating #${item.displayId}...`);
   try {
-    await api(itemEndpoint(item), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(changes)
-    });
+    await jsonApi(itemEndpoint(item), 'PATCH', changes);
     await loadTasks();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -380,11 +375,7 @@ subtaskForm.addEventListener('submit', async event => {
 
   setStatus(`Adding subtask to #${parent.displayId}...`);
   try {
-    await api(`/api/tasks/${parent.id}/subtasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description })
-    });
+    await jsonApi(`/api/tasks/${parent.id}/subtasks`, 'POST', { title, description });
     await loadTasks();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -558,21 +549,13 @@ listForm.addEventListener('submit', async event => {
 
   try {
     if (wasEditing) {
-      await api(`/api/lists/${wasEditing.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
-      });
+      await jsonApi(`/api/lists/${wasEditing.id}`, 'PATCH', { name, description });
       editingList = null;
       await loadLists(currentListId);
       if (manageListsDialog.open) renderManageLists();
       setStatus('List updated.');
     } else {
-      const created = await api('/api/lists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description })
-      });
+      const created = await jsonApi('/api/lists', 'POST', { name, description });
       await loadLists(created.id);
       currentView = 'open';
       updateViewMenu();
@@ -627,12 +610,10 @@ function renderManageLists() {
 
     const actions = document.createElement('div');
     actions.className = 'manage-list-actions';
-    actions.append(
-      actionButton('Edit', () => openEditList(list)),
-      actionButton('Delete', () => deleteList(list))
-    );
-    if (lists.length === 1)
-      actions.lastElementChild.disabled = true;
+    appendActions(actions, [
+      ['Edit', () => openEditList(list)],
+      ['Delete', () => deleteList(list), lists.length === 1]
+    ]);
 
     row.append(details, actions);
     manageListsBody.append(row);
@@ -661,7 +642,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v0.8.2'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v0.8.3'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
