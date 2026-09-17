@@ -89,7 +89,7 @@ app.MapDelete("/api/lists/{id:long}", async (long id) =>
     if (await GetList(connection, id) is null) return Results.NotFound();
 
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    await ExecuteAsync(connection, transaction, """
+    await ExecuteTxAsync(connection, transaction, """
         DELETE FROM subtasks WHERE parent_task_id IN (SELECT id FROM tasks WHERE list_id = $listId);
         DELETE FROM tasks WHERE list_id = $listId;
         DELETE FROM lists WHERE id = $listId;
@@ -155,14 +155,14 @@ app.MapPost("/api/lists/{listId:long}/tasks", async (long listId, CreateTaskRequ
     await using var connection = await OpenConnection(connectionString);
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
 
-    var taskNumberValue = await ScalarAsync(connection, transaction,
+    var taskNumberValue = await ScalarTxAsync(connection, transaction,
         "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
     if (taskNumberValue is null)
         return Results.NotFound(new { error = "List not found." });
 
     var taskNumber = Convert.ToInt32(taskNumberValue);
     var universalId = await AllocateUniversalId(connection, transaction);
-    var id = await ScalarLongAsync(connection, transaction, """
+    var id = await ScalarLongTxAsync(connection, transaction, """
         INSERT INTO tasks
             (universal_id, list_id, task_number, title, description, status,
              created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
@@ -195,10 +195,10 @@ app.MapPost("/api/tasks/{parentId:long}/subtasks", async (long parentId, CreateT
     if (parent is null) return Results.NotFound(new { error = "Parent task was not found." });
 
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var subtaskNumber = Convert.ToInt32(await ScalarAsync(connection, transaction,
+    var subtaskNumber = Convert.ToInt32(await ScalarTxAsync(connection, transaction,
         "SELECT next_subtask_number FROM tasks WHERE id = $id;", ("$id", parentId)));
     var universalId = await AllocateUniversalId(connection, transaction);
-    var id = await ScalarLongAsync(connection, transaction, """
+    var id = await ScalarLongTxAsync(connection, transaction, """
         INSERT INTO subtasks
             (universal_id, parent_task_id, subtask_number, title, description, status,
              created_at, updated_at, completed_at, cancelled_at, reopened_at)
@@ -263,7 +263,7 @@ app.MapDelete("/api/tasks/{id:long}", async (long id) =>
     if (await GetTask(connection, id) is null) return Results.NotFound();
 
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    await ExecuteAsync(connection, transaction, """
+    await ExecuteTxAsync(connection, transaction, """
         DELETE FROM subtasks WHERE parent_task_id = $id;
         DELETE FROM tasks WHERE id = $id;
         """, ("$id", id));
@@ -291,7 +291,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
 
     await using var connection = await OpenConnection(connectionString);
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var nextTaskValue = await ScalarAsync(connection, transaction,
+    var nextTaskValue = await ScalarTxAsync(connection, transaction,
         "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
     if (nextTaskValue is null)
         return Results.NotFound(new { error = "List not found." });
@@ -324,7 +324,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
 
         if (parentId is null || indent <= parentIndent)
         {
-            parentId = await ScalarLongAsync(connection, transaction, """
+            parentId = await ScalarLongTxAsync(connection, transaction, """
                 INSERT INTO tasks
                     (universal_id, list_id, task_number, title, description, status,
                      created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
@@ -344,7 +344,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
         else
         {
             nextSubtaskNumber++;
-            await ExecuteAsync(connection, transaction, """
+            await ExecuteTxAsync(connection, transaction, """
                 INSERT INTO subtasks
                     (universal_id, parent_task_id, subtask_number, title, description, status,
                      created_at, updated_at, completed_at, cancelled_at, reopened_at)
@@ -359,7 +359,7 @@ app.MapPost("/api/lists/{listId:long}/import/markdown", async (long listId, Http
         }
     }
 
-    await ExecuteAsync(connection, transaction, """
+    await ExecuteTxAsync(connection, transaction, """
         UPDATE tasks
         SET next_subtask_number = MAX(next_subtask_number, COALESCE((
             SELECT MAX(subtask_number) + 1 FROM subtasks WHERE parent_task_id = tasks.id
@@ -447,18 +447,29 @@ static async Task<SqliteConnection> OpenConnection(string connectionString)
     return connection;
 }
 
-static SqliteCommand Sql(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) =>
-    Sql(connection, text, null, parameters);
+static SqliteCommand Sql(SqliteConnection connection, string text,
+    params (string Name, object? Value)[] parameters)
+{
+    var command = connection.CreateCommand();
+    command.CommandText = text;
+    AddParameters(command, parameters);
+    return command;
+}
 
-static SqliteCommand Sql(SqliteConnection connection, string text, SqliteTransaction? transaction,
+static SqliteCommand SqlTx(SqliteConnection connection, SqliteTransaction transaction, string text,
     params (string Name, object? Value)[] parameters)
 {
     var command = connection.CreateCommand();
     command.Transaction = transaction;
     command.CommandText = text;
+    AddParameters(command, parameters);
+    return command;
+}
+
+static void AddParameters(SqliteCommand command, params (string Name, object? Value)[] parameters)
+{
     foreach (var (name, value) in parameters)
         command.Parameters.AddWithValue(name, value ?? DBNull.Value);
-    return command;
 }
 
 static async Task<object?> ScalarAsync(SqliteConnection connection, string text,
@@ -468,10 +479,10 @@ static async Task<object?> ScalarAsync(SqliteConnection connection, string text,
     return await command.ExecuteScalarAsync();
 }
 
-static async Task<object?> ScalarAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
+static async Task<object?> ScalarTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
     params (string Name, object? Value)[] parameters)
 {
-    using var command = Sql(connection, text, transaction, parameters);
+    using var command = SqlTx(connection, transaction, text, parameters);
     return await command.ExecuteScalarAsync();
 }
 
@@ -479,9 +490,9 @@ static async Task<long> ScalarLongAsync(SqliteConnection connection, string text
     params (string Name, object? Value)[] parameters) =>
     Convert.ToInt64(await ScalarAsync(connection, text, parameters));
 
-static async Task<long> ScalarLongAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
+static async Task<long> ScalarLongTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
     params (string Name, object? Value)[] parameters) =>
-    Convert.ToInt64(await ScalarAsync(connection, transaction, text, parameters));
+    Convert.ToInt64(await ScalarTxAsync(connection, transaction, text, parameters));
 
 static async Task<int> ExecuteAsync(SqliteConnection connection, string text,
     params (string Name, object? Value)[] parameters)
@@ -490,15 +501,15 @@ static async Task<int> ExecuteAsync(SqliteConnection connection, string text,
     return await command.ExecuteNonQueryAsync();
 }
 
-static async Task<int> ExecuteAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
+static async Task<int> ExecuteTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
     params (string Name, object? Value)[] parameters)
 {
-    using var command = Sql(connection, text, transaction, parameters);
+    using var command = SqlTx(connection, transaction, text, parameters);
     return await command.ExecuteNonQueryAsync();
 }
 
 static async Task<long> AllocateUniversalId(SqliteConnection connection, SqliteTransaction transaction) =>
-    await ScalarLongAsync(connection, transaction,
+    await ScalarLongTxAsync(connection, transaction,
         "INSERT INTO universal_ids DEFAULT VALUES; SELECT last_insert_rowid();");
 
 static async Task<TaskListInfo?> GetList(SqliteConnection connection, long id)

@@ -1,4 +1,4 @@
-# Task List v0.8.3
+# Task List v0.8.3.1
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -45,12 +45,13 @@ One displayed subtask level is supported; deeper nested checklist items are flat
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
-## v0.8.3
+## v0.8.3.1
 
+- Fixed the consolidated SQLite transaction helper functions so the project compiles under top-level C# statements.
 - Removed legacy database migration and compatibility code.
 - Removed the obsolete `completed` boolean from the current schema and all application logic; `status` is the single source of truth.
 - Consolidated SQLite command creation, parameter binding, scalar execution, and non-query execution into shared helpers.
 - Consolidated repeated task/subtask status buttons into one shared status-action definition.
-- Windows file/product/assembly version is `0.8.3`.
+- Windows file/product/assembly version is `0.8.3.1`.
 - Targets `win-x64`, framework-dependent.
-- PWA cache is v8.3.
+- PWA cache is v8.3.1.
