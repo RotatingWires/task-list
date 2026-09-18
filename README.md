@@ -1,4 +1,4 @@
-# Task List v1.0.1
+# Task List v1.0.2
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -80,13 +80,6 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - PWA cache is v8.5.
 
 
-## v1.0.1
-
-- Mobile app shell now follows `window.visualViewport` height/offset so the title/menu/toolbar stay pinned in third-party iOS browsers such as Brave.
-- Only the task panel scrolls; the bottom status bar remains inside the visible viewport.
-- Login/setup page uses the same live viewport-height variable without becoming a full-screen window.
-- PWA cache is v1.0.1.
-
 ## v1.0
 
 - Parent tasks are displayed newest-first (highest Task ID first).
@@ -95,3 +88,11 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Normal task and subtask creation behavior is unchanged.
 - Windows file/product/assembly version is `1.0`.
 - PWA cache is v1.0.
+
+
+## v1.0.2
+
+- Based on v1.0 (does not include the discarded Brave visualViewport experiment).
+- Fixed login/create-password window inheriting the main app full-viewport height on desktop.
+- Login window now sizes to its content with a viewport max-height fallback.
+- PWA cache is v1.0.2.

@@ -8,8 +8,6 @@
   --shadow: #808080;
   --dark: #000;
   --blue: #000080;
-  --app-height: 100dvh;
-  --app-top: 0px;
 }
 
 * { box-sizing: border-box; }
@@ -49,7 +47,7 @@ button { cursor: pointer; }
 
 .window {
   width: min(1080px, 100%);
-  height: calc(var(--app-height, 100dvh) - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)));
+  height: calc(100dvh - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)));
   min-height: 0;
   margin: 0 auto;
   background: var(--face);
@@ -302,12 +300,7 @@ button:active {
     overflow: hidden;
   }
   .window {
-    position: fixed;
-    top: calc(var(--app-top, 0px) + env(safe-area-inset-top));
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: calc(var(--app-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     min-height: 0;
     border: 0;
     box-shadow: none;
@@ -503,11 +496,14 @@ input[type="password"] {
 .login-page {
   display: grid;
   place-items: center;
-  min-height: var(--app-height, 100dvh);
+  min-height: 100vh;
 }
 .login-window {
   width: min(470px, 100%);
+  height: auto;
   min-height: 0;
+  max-height: calc(100dvh - 20px);
+  overflow: auto;
 }
 .login-form {
   display: grid;
@@ -563,13 +559,10 @@ input[type="password"] {
     background: #008080;
   }
   .login-page .login-window {
-    position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    height: auto;
     width: min(470px, calc(100vw - 20px));
+    height: auto;
     min-height: 0;
+    max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)));
     border-top: 2px solid var(--light);
     border-left: 2px solid var(--light);
     border-right: 2px solid var(--dark);
