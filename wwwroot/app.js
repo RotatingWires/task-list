@@ -1,3 +1,19 @@
+function syncAppViewport() {
+  const viewport = window.visualViewport;
+  const height = Math.round(viewport?.height ?? window.innerHeight);
+  const top = Math.round(viewport?.offsetTop ?? 0);
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+  document.documentElement.style.setProperty('--app-top', `${top}px`);
+}
+
+syncAppViewport();
+window.addEventListener('resize', syncAppViewport);
+window.addEventListener('orientationchange', syncAppViewport);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncAppViewport);
+  window.visualViewport.addEventListener('scroll', syncAppViewport);
+}
+
 const taskList = document.querySelector('#taskList');
 const emptyState = document.querySelector('#emptyState');
 const statusText = document.querySelector('#statusText');
@@ -661,7 +677,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v1.0'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nSelf-hosted, minimal, and deliberately boring.\nTask List v1.0.1'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

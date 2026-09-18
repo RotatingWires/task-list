@@ -1,3 +1,19 @@
+function syncAppViewport() {
+  const viewport = window.visualViewport;
+  const height = Math.round(viewport?.height ?? window.innerHeight);
+  const top = Math.round(viewport?.offsetTop ?? 0);
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+  document.documentElement.style.setProperty('--app-top', `${top}px`);
+}
+
+syncAppViewport();
+window.addEventListener('resize', syncAppViewport);
+window.addEventListener('orientationchange', syncAppViewport);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', syncAppViewport);
+  window.visualViewport.addEventListener('scroll', syncAppViewport);
+}
+
 const authForm = document.querySelector('#authForm');
 const password = document.querySelector('#password');
 const confirmGroup = document.querySelector('#confirmGroup');
