@@ -570,3 +570,34 @@ input[type="password"] {
     box-shadow: 1px 1px 0 var(--shadow);
   }
 }
+
+/* v1.0.3: on iPhone/PWA, match the top safe area to the blue title bar. */
+@media (max-width: 650px) {
+  body:not(.login-page) {
+    background:
+      linear-gradient(
+        to bottom,
+        var(--blue) 0,
+        var(--blue) env(safe-area-inset-top),
+        var(--face) env(safe-area-inset-top),
+        var(--face) 100%
+      );
+  }
+
+  /* Login/setup is a compact dialog-like window, not the full-height app shell. */
+  .login-page .login-window {
+    display: block;
+    flex: none;
+    align-self: center;
+    width: min(470px, calc(100vw - 32px));
+    height: fit-content !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
+    overflow: auto;
+  }
+
+  .login-page .login-form {
+    height: auto;
+    min-height: 0;
+  }
+}

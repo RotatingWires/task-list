@@ -1,4 +1,4 @@
-# Task List v1.0.2
+# Task List v1.0.3
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -90,9 +90,15 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - PWA cache is v1.0.
 
 
-## v1.0.2
+## v1.0.3
 
 - Based on v1.0 (does not include the discarded Brave visualViewport experiment).
 - Fixed login/create-password window inheriting the main app full-viewport height on desktop.
 - Login window now sizes to its content with a viewport max-height fallback.
-- PWA cache is v1.0.2.
+- PWA cache is v1.0.3.
+
+## v1.0.3
+
+- Login/create-password window is forced to content height on mobile instead of inheriting the full app-shell height.
+- Main PWA top safe-area strip now matches the blue title bar.
+- Theme color updated to classic Windows blue.
