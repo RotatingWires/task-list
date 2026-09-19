@@ -121,7 +121,7 @@ app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context)
         return Results.Conflict(new { error = "No setup token is active. Restart Task List to generate a new one." });
 
     if (!SetupTokenMatches(setupToken, request.SetupToken))
-        return Results.Unauthorized(new { error = "Invalid setup token." });
+        return Results.Json(new { error = "Invalid setup token." }, statusCode: StatusCodes.Status401Unauthorized);
 
     var passwordError = ValidateNewPassword(request.Password, request.ConfirmPassword);
     if (passwordError is not null)
