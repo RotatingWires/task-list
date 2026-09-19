@@ -1,5 +1,7 @@
 const authForm = document.querySelector('#authForm');
 const password = document.querySelector('#password');
+const setupTokenGroup = document.querySelector('#setupTokenGroup');
+const setupToken = document.querySelector('#setupToken');
 const confirmGroup = document.querySelector('#confirmGroup');
 const confirmPassword = document.querySelector('#confirmPassword');
 const loginButton = document.querySelector('#loginButton');
@@ -13,7 +15,7 @@ async function request(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
   if (response.ok) return response.status === 204 ? null : response.json();
 
-  let message = response.status === 401 ? 'Incorrect password.' : `${response.status} ${response.statusText}`;
+  let message = response.status === 401 ? 'Incorrect password.' : response.status === 429 ? 'Too many attempts. Try again in one minute.' : `${response.status} ${response.statusText}`;
   try {
     const body = await response.json();
     if (body.error) message = body.error;
@@ -32,13 +34,15 @@ async function initialize() {
     setupMode = !status.configured;
     if (setupMode) {
       loginWindowTitle.textContent = 'Create Password';
-      loginIntro.textContent = 'First run: create the password used to access Task List and its API.';
+      loginIntro.textContent = 'First run: enter the setup token printed in the Task List server console, then create your password.';
+      setupTokenGroup.hidden = false;
+      setupToken.required = true;
       confirmGroup.hidden = false;
       confirmPassword.required = true;
       password.autocomplete = 'new-password';
       loginButton.textContent = 'Create Password';
     }
-    password.focus();
+    (setupMode ? setupToken : password).focus();
   } catch (error) {
     loginError.textContent = error.message;
   }
@@ -51,7 +55,7 @@ authForm.addEventListener('submit', async event => {
 
   try {
     const body = setupMode
-      ? { password: password.value, confirmPassword: confirmPassword.value }
+      ? { setupToken: setupToken.value, password: password.value, confirmPassword: confirmPassword.value }
       : { password: password.value };
     await request(setupMode ? '/api/auth/setup' : '/api/auth/login', {
       method: 'POST',
@@ -61,8 +65,9 @@ authForm.addEventListener('submit', async event => {
     window.location.replace('/');
   } catch (error) {
     loginError.textContent = error.message;
-    password.focus();
-    password.select();
+    const target = setupMode && error.message.toLowerCase().includes('setup token') ? setupToken : password;
+    target.focus();
+    target.select();
   } finally {
     loginButton.disabled = false;
   }

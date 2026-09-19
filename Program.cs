@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -35,6 +37,21 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 var app = builder.Build();
 
@@ -44,6 +61,23 @@ var connectionString = $"Data Source={Path.Combine(dataDir, "task-list.db")};For
 var authPath = Path.Combine(dataDir, "auth.json");
 InitializeDatabase(connectionString);
 
+string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
+if (setupToken is not null)
+{
+    Console.WriteLine();
+    Console.WriteLine("============================================================");
+    Console.WriteLine("TASK LIST FIRST-RUN SETUP TOKEN");
+    Console.WriteLine();
+    Console.WriteLine($"  {setupToken}");
+    Console.WriteLine();
+    Console.WriteLine("Enter this token on the Create Password screen.");
+    Console.WriteLine("It changes each time Task List restarts until setup is complete.");
+    Console.WriteLine("============================================================");
+    Console.WriteLine();
+}
+
+app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -83,14 +117,21 @@ app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context)
     if (PasswordConfigured(authPath))
         return Results.Conflict(new { error = "A password has already been configured." });
 
+    if (setupToken is null)
+        return Results.Conflict(new { error = "No setup token is active. Restart Task List to generate a new one." });
+
+    if (!SetupTokenMatches(setupToken, request.SetupToken))
+        return Results.Unauthorized(new { error = "Invalid setup token." });
+
     var passwordError = ValidateNewPassword(request.Password, request.ConfirmPassword);
     if (passwordError is not null)
         return Results.BadRequest(new { error = passwordError });
 
     SavePassword(authPath, request.Password!);
+    setupToken = null;
     await SignInOwner(context);
     return Results.Ok(new { authenticated = true });
-});
+}).RequireRateLimiting("auth");
 
 app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context) =>
 {
@@ -101,7 +142,7 @@ app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context)
 
     await SignInOwner(context);
     return Results.Ok(new { authenticated = true });
-});
+}).RequireRateLimiting("auth");
 
 app.MapPost("/api/auth/logout", async (HttpContext context) =>
 {
@@ -761,6 +802,20 @@ static async Task<SubtaskItem?> GetSubtask(SqliteConnection connection, long id)
     return await reader.ReadAsync() ? ReadSubtask(reader) : null;
 }
 
+static string GenerateSetupToken()
+{
+    var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
+    return $"{raw[..4]}-{raw[4..8]}-{raw[8..12]}-{raw[12..16]}";
+}
+
+static bool SetupTokenMatches(string expected, string? supplied)
+{
+    if (string.IsNullOrWhiteSpace(supplied)) return false;
+    var expectedValue = expected.Replace("-", string.Empty, StringComparison.Ordinal);
+    var suppliedValue = Regex.Replace(supplied, @"[\s-]", string.Empty);
+    return string.Equals(expectedValue, suppliedValue, StringComparison.OrdinalIgnoreCase);
+}
+
 static bool PasswordConfigured(string authPath) => File.Exists(authPath);
 
 static string? ValidateNewPassword(string? password, string? confirmation)
@@ -821,7 +876,7 @@ record TaskListInfo(long Id, string Name, string Description, string CreatedAt, 
 record CreateListRequest(string? Name, string? Description);
 record UpdateListRequest(string? Name, string? Description);
 record LoginRequest(string? Password);
-record SetupRequest(string? Password, string? ConfirmPassword);
+record SetupRequest(string? SetupToken, string? Password, string? ConfirmPassword);
 record PasswordFile(int Version, int Iterations, string Salt, string Hash);
 record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);

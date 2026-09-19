@@ -17,7 +17,7 @@
 <body class="login-page">
   <main class="window login-window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.0.3</span>
+      <span class="title-app-name">Task List v1.0.4</span>
       <span class="title-list-name" id="loginWindowTitle">Log In</span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -26,6 +26,11 @@
       <div class="login-intro" id="loginIntro">Enter your password to open Task List.</div>
 
       <input class="password-autofill-username" id="username" name="username" type="text" value="tasklist" autocomplete="username" tabindex="-1" aria-hidden="true">
+
+      <div id="setupTokenGroup" class="login-confirm" hidden>
+        <label for="setupToken">Setup token</label>
+        <input id="setupToken" name="setupToken" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next">
+      </div>
 
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" minlength="8" required autofocus>

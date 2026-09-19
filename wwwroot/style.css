@@ -571,17 +571,22 @@ input[type="password"] {
   }
 }
 
-/* v1.0.3: on iPhone/PWA, match the top safe area to the blue title bar. */
+/* Mobile safe-area experiment retained from the final local baseline. */
 @media (max-width: 650px) {
   body:not(.login-page) {
-    background:
-      linear-gradient(
-        to bottom,
-        var(--blue) 0,
-        var(--blue) env(safe-area-inset-top),
-        var(--face) env(safe-area-inset-top),
-        var(--face) 100%
-      );
+    background: var(--face);
+  }
+
+  body:not(.login-page)::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: var(--blue);
+    z-index: 9999;
+    pointer-events: none;
   }
 
   /* Login/setup is a compact dialog-like window, not the full-height app shell. */

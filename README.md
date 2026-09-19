@@ -1,4 +1,4 @@
-# Task List v1.0.3
+# Task List v1.0.4
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -24,13 +24,15 @@ Authentication settings are stored at `data\auth.json`.
 
 ## Login and API authentication
 
-On first launch, opening Task List displays a setup screen that asks you to create a password of at least 8 characters. The plaintext password is never stored. `auth.json` contains a random salt and a PBKDF2-SHA256 password hash.
+On first launch, Task List prints a random setup token in the server console. Opening Task List displays a setup screen that requires that token plus a new password of at least 8 characters and password confirmation. The plaintext password is never stored. `auth.json` contains a random salt and a PBKDF2-SHA256 password hash.
 
 After login, ASP.NET Core issues an HttpOnly, SameSite=Strict authentication cookie. Normal same-origin browser requests automatically send that cookie with every Task List API request. All task/list/import/stat API routes require authentication.
 
 The cookie is persistent for up to 30 days and uses sliding expiration. Its Secure flag follows the request: it works over HTTP for the current LAN-only setup and will automatically be marked Secure when the app is accessed over HTTPS.
 
-Use **File > Log Out** to invalidate the browser session. If you intentionally need to reset the password, stop Task List and delete `data\auth.json`; the next visit will offer first-run password setup again.
+Login and first-run setup are rate-limited per source IP to 5 attempts per minute. Excess requests receive HTTP 429 until the fixed one-minute window resets.
+
+Use **File > Log Out** to invalidate the browser session. If you intentionally need to reset the password, stop Task List, delete `data\auth.json`, and restart it. A new setup token will be printed in the server console. If Task List normally runs hidden under Task Scheduler, run it interactively once so you can see the token.
 
 ## Data model
 
@@ -42,7 +44,7 @@ The current database schema is created directly on first run. This build contain
 
 ## Markdown import
 
-Import targets the currently selected list. Parent task groups are imported from the bottom of the Markdown file upward so older source entries receive lower Task IDs and Universal IDs. Subtasks within a parent are also numbered bottom-up. Nested checklist items become subtasks:
+Import targets the currently selected list. Parent task groups are imported from the bottom of the Markdown file upward so older source entries receive lower Task IDs and Universal IDs. Subtasks within a parent keep their original top-to-bottom order from the Markdown file. Nested checklist items become subtasks:
 
 ```markdown
 - [ ] Parent task ➕ 2026-09-12
@@ -102,3 +104,15 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Login/create-password window is forced to content height on mobile instead of inheriting the full app-shell height.
 - Main PWA top safe-area strip now matches the blue title bar.
 - Theme color updated to classic Windows blue.
+
+
+## v1.0.4
+
+- Added per-IP rate limiting to login and first-run setup: 5 attempts per one-minute fixed window.
+- Added a one-time first-run setup token generated with a cryptographically secure random number generator.
+- The setup token is printed only in the server console and is required before the initial password can be created.
+- The setup token changes on every restart until setup is completed, and is discarded after successful setup.
+- Added setup-token input to the first-run screen and a friendly HTTP 429 message for rate limits.
+- Preserved the final local About text and mobile safe-area CSS changes.
+- Windows file/product/assembly version is `1.0.4`.
+- PWA cache is v1.0.4.
