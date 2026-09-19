@@ -1,4 +1,4 @@
-# Task List v1.0.4
+# Task List v1.0.5
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -106,6 +106,11 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Theme color updated to classic Windows blue.
 
 
+## v1.0.5
+
+- Manage Lists title now shows the current number of lists, for example `Manage Lists (2)`.
+- The lifetime Universal ID counter now uses comma thousands separators, for example `3,141 lifetime entries counting deletions`.
+
 ## v1.0.4
 
 - Added per-IP rate limiting to login and first-run setup: 5 attempts per one-minute fixed window.
@@ -114,5 +119,5 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - The setup token changes on every restart until setup is completed, and is discarded after successful setup.
 - Added setup-token input to the first-run screen and a friendly HTTP 429 message for rate limits.
 - Preserved the final local About text and mobile safe-area CSS changes.
-- Windows file/product/assembly version is `1.0.4`.
-- PWA cache is v1.0.4.
+- Windows file/product/assembly version is `1.0.5`.
+- PWA cache is v1.0.5.

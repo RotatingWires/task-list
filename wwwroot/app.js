@@ -50,6 +50,7 @@ const listDescription = document.querySelector('#listDescription');
 const cancelListEdit = document.querySelector('#cancelListEdit');
 const manageListsDialog = document.querySelector('#manageListsDialog');
 const manageListsBody = document.querySelector('#manageListsBody');
+const manageListsTitleText = document.querySelector('#manageListsTitleText');
 const manageListsUidTotal = document.querySelector('#manageListsUidTotal');
 const closeManageLists = document.querySelector('#closeManageLists');
 
@@ -101,7 +102,7 @@ function jsonApi(url, method, body) {
 async function loadStats() {
   const stats = await api('/api/stats');
   highestUniversalId = Number(stats.highestUniversalId) || 0;
-  manageListsUidTotal.textContent = `${highestUniversalId} lifetime entries counting deletions`;
+  manageListsUidTotal.textContent = `${highestUniversalId.toLocaleString('en-US')} lifetime entries counting deletions`;
 }
 
 function currentList() {
@@ -604,6 +605,7 @@ async function openManageLists() {
 }
 
 function renderManageLists() {
+  manageListsTitleText.textContent = `Manage Lists (${lists.length.toLocaleString('en-US')})`;
   manageListsBody.replaceChildren();
 
   for (const list of lists) {
@@ -661,7 +663,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.0.4'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.0.5'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
