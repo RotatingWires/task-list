@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -57,9 +58,10 @@ var app = builder.Build();
 
 var dataDir = Path.Combine(app.Environment.ContentRootPath, "data");
 Directory.CreateDirectory(dataDir);
-var connectionString = $"Data Source={Path.Combine(dataDir, "task-list.db")};Foreign Keys=True";
+var databasePath = Path.Combine(dataDir, "task-list.db");
+var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
-InitializeDatabase(connectionString);
+InitializeDatabase(connectionString, databasePath);
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -81,8 +83,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Keep the actual app shell behind the login screen. Static assets remain public,
-// but every API route below is authenticated, so loading an asset alone exposes no task data.
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
@@ -157,10 +157,10 @@ api.MapGet("/lists", async () =>
     var lists = new List<TaskListInfo>();
     await using var connection = await OpenConnection(connectionString);
     using var command = Sql(connection, """
-        SELECT l.id, l.name, l.description, l.created_at, COUNT(t.id)
+        SELECT l.id, l.name, l.description, l.created_at,
+               (SELECT COUNT(*) FROM items i
+                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count
         FROM lists l
-        LEFT JOIN tasks t ON t.list_id = l.id
-        GROUP BY l.id, l.name, l.description, l.created_at
         ORDER BY l.id;
         """);
 
@@ -228,13 +228,7 @@ api.MapDelete("/lists/{id:long}", async (long id) =>
         return Results.BadRequest(new { error = "You cannot delete the only remaining list." });
     if (await GetList(connection, id) is null) return Results.NotFound();
 
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    await ExecuteTxAsync(connection, transaction, """
-        DELETE FROM subtasks WHERE parent_task_id IN (SELECT id FROM tasks WHERE list_id = $listId);
-        DELETE FROM tasks WHERE list_id = $listId;
-        DELETE FROM lists WHERE id = $listId;
-        """, ("$listId", id));
-    await transaction.CommitAsync();
+    await ExecuteAsync(connection, "DELETE FROM lists WHERE id = $id;", ("$id", id));
     return Results.NoContent();
 });
 
@@ -244,44 +238,42 @@ api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
     if (await GetList(connection, listId) is null)
         return Results.NotFound(new { error = "List not found." });
 
-    var tasks = new List<TaskItem>();
-    var taskById = new Dictionary<long, TaskItem>();
+    var allItems = new List<TaskItem>();
+    var byDisplayId = new Dictionary<string, TaskItem>(StringComparer.Ordinal);
     using (var command = Sql(connection, """
-        SELECT id, universal_id, list_id, task_number, title, description, status,
+        SELECT universal_id, list_id, display_id, parent_display_id, title, description, status,
                created_at, updated_at, completed_at, cancelled_at, reopened_at
-        FROM tasks WHERE list_id = $listId ORDER BY task_number DESC;
+        FROM items
+        WHERE list_id = $listId;
         """, ("$listId", listId)))
     await using (var reader = await command.ExecuteReaderAsync())
     {
         while (await reader.ReadAsync())
         {
-            var task = ReadTask(reader);
-            tasks.Add(task);
-            taskById[task.Id] = task;
+            var item = ReadItem(reader);
+            allItems.Add(item);
+            byDisplayId[item.DisplayId] = item;
         }
     }
 
-    if (taskById.Count > 0)
+    var roots = new List<TaskItem>();
+    foreach (var item in allItems)
     {
-        using var command = Sql(connection, """
-            SELECT s.id, s.universal_id, s.parent_task_id, t.task_number, s.subtask_number,
-                   s.title, s.description, s.status, s.created_at, s.updated_at,
-                   s.completed_at, s.cancelled_at, s.reopened_at
-            FROM subtasks s
-            JOIN tasks t ON t.id = s.parent_task_id
-            WHERE t.list_id = $listId
-            ORDER BY t.task_number DESC, s.subtask_number;
-            """, ("$listId", listId));
-        await using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        if (item.ParentDisplayId is null)
         {
-            var subtask = ReadSubtask(reader);
-            if (taskById.TryGetValue(subtask.ParentTaskId, out var parent))
-                parent.Subtasks.Add(subtask);
+            roots.Add(item);
+            continue;
         }
+
+        if (byDisplayId.TryGetValue(item.ParentDisplayId, out var parent))
+            parent.Subtasks.Add(item);
     }
 
-    return Results.Ok(tasks);
+    roots.Sort((a, b) => DisplaySegmentNumber(b.DisplayId).CompareTo(DisplaySegmentNumber(a.DisplayId)));
+    foreach (var root in roots)
+        SortChildren(root);
+
+    return Results.Ok(roots);
 });
 
 api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest request) =>
@@ -300,121 +292,111 @@ api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest 
     if (taskNumberValue is null)
         return Results.NotFound(new { error = "List not found." });
 
-    var taskNumber = Convert.ToInt32(taskNumberValue);
+    var taskNumber = Convert.ToInt64(taskNumberValue);
+    var displayId = taskNumber.ToString(CultureInfo.InvariantCulture);
     var universalId = await AllocateUniversalId(connection, transaction);
-    var id = await ScalarLongTxAsync(connection, transaction, """
-        INSERT INTO tasks
-            (universal_id, list_id, task_number, title, description, status,
-             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
+
+    await ExecuteTxAsync(connection, transaction, """
+        INSERT INTO items
+            (universal_id, list_id, display_id, parent_display_id, title, description, status,
+             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
         VALUES
-            ($uid, $listId, $number, $title, $description, 'Open',
+            ($uid, $listId, $displayId, NULL, $title, $description, 'Open',
              $createdAt, NULL, NULL, NULL, NULL, 1);
         UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;
-        SELECT last_insert_rowid();
         """,
-        ("$uid", universalId), ("$listId", listId), ("$number", taskNumber),
+        ("$uid", universalId), ("$listId", listId), ("$displayId", displayId),
         ("$title", title), ("$description", description), ("$createdAt", now),
         ("$nextNumber", taskNumber + 1));
 
     await transaction.CommitAsync();
-    return Results.Created($"/api/tasks/{id}", new TaskItem(
-        id, universalId, listId, taskNumber, taskNumber.ToString(), false,
+    return Results.Created($"/api/lists/{listId}/items/{displayId}", new TaskItem(
+        universalId, listId, displayId, null, false,
         title, description, "Open", now, null, null, null, null, []));
 });
 
-api.MapPost("/tasks/{parentId:long}/subtasks", async (long parentId, CreateTaskRequest request) =>
+api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", async (
+    long listId, string displayId, CreateTaskRequest request) =>
 {
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title))
         return Results.BadRequest(new { error = "Subtask title is required." });
+    if (!IsValidDisplayId(displayId))
+        return Results.BadRequest(new { error = "Invalid task ID." });
 
     var description = request.Description?.Trim() ?? string.Empty;
     var now = DateTimeOffset.UtcNow.ToString("O");
     await using var connection = await OpenConnection(connectionString);
-    var parent = await GetTask(connection, parentId);
-    if (parent is null) return Results.NotFound(new { error = "Parent task was not found." });
+    var parent = await GetItem(connection, listId, displayId);
+    if (parent is null)
+        return Results.NotFound(new { error = "Parent task was not found." });
 
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var subtaskNumber = Convert.ToInt32(await ScalarTxAsync(connection, transaction,
-        "SELECT next_subtask_number FROM tasks WHERE id = $id;", ("$id", parentId)));
+    var childNumberValue = await ScalarTxAsync(connection, transaction, """
+        SELECT next_child_number
+        FROM items
+        WHERE list_id = $listId AND display_id = $displayId;
+        """, ("$listId", listId), ("$displayId", displayId));
+    if (childNumberValue is null)
+        return Results.NotFound(new { error = "Parent task was not found." });
+
+    var childNumber = Convert.ToInt64(childNumberValue);
+    var childDisplayId = $"{displayId}.{childNumber.ToString(CultureInfo.InvariantCulture)}";
     var universalId = await AllocateUniversalId(connection, transaction);
-    var id = await ScalarLongTxAsync(connection, transaction, """
-        INSERT INTO subtasks
-            (universal_id, parent_task_id, subtask_number, title, description, status,
-             created_at, updated_at, completed_at, cancelled_at, reopened_at)
-        VALUES
-            ($uid, $parentId, $number, $title, $description, 'Open',
-             $createdAt, NULL, NULL, NULL, NULL);
-        UPDATE tasks SET next_subtask_number = $nextNumber WHERE id = $parentId;
-        SELECT last_insert_rowid();
-        """,
-        ("$uid", universalId), ("$parentId", parentId), ("$number", subtaskNumber),
-        ("$title", title), ("$description", description), ("$createdAt", now),
-        ("$nextNumber", subtaskNumber + 1));
 
-    await transaction.CommitAsync();
-    return Results.Created($"/api/subtasks/{id}", new SubtaskItem(
-        id, universalId, parentId, parent.TaskNumber, subtaskNumber,
-        $"{parent.TaskNumber}.{subtaskNumber}", true,
-        title, description, "Open", now, null, null, null, null));
-});
-
-api.MapPatch("/tasks/{id:long}", async (long id, UpdateTaskRequest request) =>
-{
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetTask(connection, id);
-    if (existing is null) return Results.NotFound();
-
-    var values = BuildUpdatedValues(existing.Title, existing.Description, existing.Status,
-        existing.UpdatedAt, existing.CompletedAt, existing.CancelledAt, existing.ReopenedAt, request);
-    if (values.Error is not null) return Results.BadRequest(new { error = values.Error });
-
-    await ApplyItemUpdate(connection, "tasks", id, values);
-    return Results.Ok(existing with
-    {
-        Title = values.Title!, Description = values.Description!, Status = values.Status!,
-        UpdatedAt = values.UpdatedAt, CompletedAt = values.CompletedAt,
-        CancelledAt = values.CancelledAt, ReopenedAt = values.ReopenedAt
-    });
-});
-
-api.MapPatch("/subtasks/{id:long}", async (long id, UpdateTaskRequest request) =>
-{
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetSubtask(connection, id);
-    if (existing is null) return Results.NotFound();
-
-    var values = BuildUpdatedValues(existing.Title, existing.Description, existing.Status,
-        existing.UpdatedAt, existing.CompletedAt, existing.CancelledAt, existing.ReopenedAt, request);
-    if (values.Error is not null) return Results.BadRequest(new { error = values.Error });
-
-    await ApplyItemUpdate(connection, "subtasks", id, values);
-    return Results.Ok(existing with
-    {
-        Title = values.Title!, Description = values.Description!, Status = values.Status!,
-        UpdatedAt = values.UpdatedAt, CompletedAt = values.CompletedAt,
-        CancelledAt = values.CancelledAt, ReopenedAt = values.ReopenedAt
-    });
-});
-
-api.MapDelete("/tasks/{id:long}", async (long id) =>
-{
-    await using var connection = await OpenConnection(connectionString);
-    if (await GetTask(connection, id) is null) return Results.NotFound();
-
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
     await ExecuteTxAsync(connection, transaction, """
-        DELETE FROM subtasks WHERE parent_task_id = $id;
-        DELETE FROM tasks WHERE id = $id;
-        """, ("$id", id));
+        INSERT INTO items
+            (universal_id, list_id, display_id, parent_display_id, title, description, status,
+             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+        VALUES
+            ($uid, $listId, $childDisplayId, $parentDisplayId, $title, $description, 'Open',
+             $createdAt, NULL, NULL, NULL, NULL, 1);
+        UPDATE items
+        SET next_child_number = $nextNumber
+        WHERE list_id = $listId AND display_id = $parentDisplayId;
+        """,
+        ("$uid", universalId), ("$listId", listId), ("$childDisplayId", childDisplayId),
+        ("$parentDisplayId", displayId), ("$title", title), ("$description", description),
+        ("$createdAt", now), ("$nextNumber", childNumber + 1));
+
     await transaction.CommitAsync();
-    return Results.NoContent();
+    return Results.Created($"/api/lists/{listId}/items/{childDisplayId}", new TaskItem(
+        universalId, listId, childDisplayId, displayId, true,
+        title, description, "Open", now, null, null, null, null, []));
 });
 
-api.MapDelete("/subtasks/{id:long}", async (long id) =>
+api.MapPatch("/lists/{listId:long}/items/{displayId}", async (
+    long listId, string displayId, UpdateTaskRequest request) =>
 {
+    if (!IsValidDisplayId(displayId))
+        return Results.BadRequest(new { error = "Invalid task ID." });
+
     await using var connection = await OpenConnection(connectionString);
-    var changed = await ExecuteAsync(connection, "DELETE FROM subtasks WHERE id = $id;", ("$id", id));
+    var existing = await GetItem(connection, listId, displayId);
+    if (existing is null) return Results.NotFound();
+
+    var values = BuildUpdatedValues(existing.Title, existing.Description, existing.Status,
+        existing.UpdatedAt, existing.CompletedAt, existing.CancelledAt, existing.ReopenedAt, request);
+    if (values.Error is not null) return Results.BadRequest(new { error = values.Error });
+
+    await ApplyItemUpdate(connection, listId, displayId, values);
+    return Results.Ok(existing with
+    {
+        Title = values.Title!, Description = values.Description!, Status = values.Status!,
+        UpdatedAt = values.UpdatedAt, CompletedAt = values.CompletedAt,
+        CancelledAt = values.CancelledAt, ReopenedAt = values.ReopenedAt
+    });
+});
+
+api.MapDelete("/lists/{listId:long}/items/{displayId}", async (long listId, string displayId) =>
+{
+    if (!IsValidDisplayId(displayId))
+        return Results.BadRequest(new { error = "Invalid task ID." });
+
+    await using var connection = await OpenConnection(connectionString);
+    var changed = await ExecuteAsync(connection,
+        "DELETE FROM items WHERE list_id = $listId AND display_id = $displayId;",
+        ("$listId", listId), ("$displayId", displayId));
     return changed == 0 ? Results.NotFound() : Results.NoContent();
 });
 
@@ -429,11 +411,8 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     var createdDate = new Regex(@"\s*➕\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
     var completedDate = new Regex(@"\s*✅\s*(?<date>\d{4}-\d{2}-\d{2})", RegexOptions.Compiled);
 
-    // Parse in source order first so indentation can establish parent/subtask relationships.
-    // Parent groups are imported bottom-up so older tasks receive lower task and Universal IDs.
-    // Subtasks keep their source order within each parent.
-    var groups = new List<ImportGroup>();
-    ImportGroup? currentGroup = null;
+    var roots = new List<ImportNode>();
+    var stack = new Stack<ImportNode>();
 
     foreach (var line in markdown.Replace("\r\n", "\n").Split('\n'))
     {
@@ -448,22 +427,22 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
 
         var indent = IndentWidth(match.Groups["indent"].Value);
         var done = match.Groups["state"].Value != " ";
-        var item = new ImportItem(
+        var node = new ImportNode(new ImportItem(
             title,
             done ? "Done" : "Open",
             createdMatch.Success ? createdMatch.Groups["date"].Value : "Unknown",
             done ? completedMatch.Success ? completedMatch.Groups["date"].Value : "Unknown" : null,
-            indent);
+            indent), []);
 
-        if (currentGroup is null || indent <= currentGroup.Parent.Indent)
-        {
-            currentGroup = new ImportGroup(item, []);
-            groups.Add(currentGroup);
-        }
+        while (stack.Count > 0 && indent <= stack.Peek().Item.Indent)
+            stack.Pop();
+
+        if (stack.Count == 0)
+            roots.Add(node);
         else
-        {
-            currentGroup.Subtasks.Add(item);
-        }
+            stack.Peek().Children.Add(node);
+
+        stack.Push(node);
     }
 
     await using var connection = await OpenConnection(connectionString);
@@ -473,53 +452,20 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     if (nextTaskValue is null)
         return Results.NotFound(new { error = "List not found." });
 
-    var nextTaskNumber = Convert.ToInt32(nextTaskValue);
+    var nextTaskNumber = Convert.ToInt64(nextTaskValue);
     var tasksImported = 0;
     var subtasksImported = 0;
 
-    for (var groupIndex = groups.Count - 1; groupIndex >= 0; groupIndex--)
+    // Import root groups bottom-up so older roots receive lower visible and Universal IDs.
+    // Descendants keep source order at every nesting level.
+    for (var rootIndex = roots.Count - 1; rootIndex >= 0; rootIndex--)
     {
-        var group = groups[groupIndex];
-        var parentUid = await AllocateUniversalId(connection, transaction);
-        var parentId = await ScalarLongTxAsync(connection, transaction, """
-            INSERT INTO tasks
-                (universal_id, list_id, task_number, title, description, status,
-                 created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number)
-            VALUES
-                ($uid, $listId, $number, $title, '', $status,
-                 $createdAt, 'Unknown', $completedAt, NULL, NULL, 1);
-            SELECT last_insert_rowid();
-            """,
-            ("$uid", parentUid), ("$listId", listId), ("$number", nextTaskNumber),
-            ("$title", group.Parent.Title), ("$status", group.Parent.Status),
-            ("$createdAt", group.Parent.CreatedAt), ("$completedAt", group.Parent.CompletedAt));
-
+        var root = roots[rootIndex];
+        var displayId = nextTaskNumber.ToString(CultureInfo.InvariantCulture);
+        var rootUid = await AllocateUniversalId(connection, transaction);
+        await InsertImportedItem(connection, transaction, listId, displayId, null, rootUid, root);
         tasksImported++;
-        var nextSubtaskNumber = 1;
-
-        for (var subIndex = 0; subIndex < group.Subtasks.Count; subIndex++)
-        {
-            var subtask = group.Subtasks[subIndex];
-            var subtaskUid = await AllocateUniversalId(connection, transaction);
-            await ExecuteTxAsync(connection, transaction, """
-                INSERT INTO subtasks
-                    (universal_id, parent_task_id, subtask_number, title, description, status,
-                     created_at, updated_at, completed_at, cancelled_at, reopened_at)
-                VALUES
-                    ($uid, $parentId, $number, $title, '', $status,
-                     $createdAt, 'Unknown', $completedAt, NULL, NULL);
-                """,
-                ("$uid", subtaskUid), ("$parentId", parentId), ("$number", nextSubtaskNumber),
-                ("$title", subtask.Title), ("$status", subtask.Status),
-                ("$createdAt", subtask.CreatedAt), ("$completedAt", subtask.CompletedAt));
-            nextSubtaskNumber++;
-            subtasksImported++;
-        }
-
-        await ExecuteTxAsync(connection, transaction,
-            "UPDATE tasks SET next_subtask_number = $nextSubtaskNumber WHERE id = $id;",
-            ("$nextSubtaskNumber", nextSubtaskNumber), ("$id", parentId));
-
+        subtasksImported += await InsertImportedChildren(connection, transaction, listId, displayId, root.Children);
         nextTaskNumber++;
     }
 
@@ -534,11 +480,26 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
 app.MapFallbackToFile("index.html").RequireAuthorization();
 app.Run();
 
-static void InitializeDatabase(string connectionString)
+static void InitializeDatabase(string connectionString, string databasePath)
 {
     using var connection = new SqliteConnection(connectionString);
     connection.Open();
-    using var command = Sql(connection, """
+
+    var hasLegacyTasks = TableExists(connection, "tasks");
+    var hasItems = TableExists(connection, "items");
+
+    if (hasLegacyTasks && !hasItems && File.Exists(databasePath))
+    {
+        connection.Close();
+        var backupPath = Path.Combine(
+            Path.GetDirectoryName(databasePath)!,
+            $"task-list-pre-v1.1.0-{DateTime.Now:yyyyMMdd-HHmmssfff}.db");
+        File.Copy(databasePath, backupPath, overwrite: false);
+        Console.WriteLine($"Task List database backup created: {backupPath}");
+        connection.Open();
+    }
+
+    using (var command = Sql(connection, """
         CREATE TABLE IF NOT EXISTS lists (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             name             TEXT NOT NULL COLLATE NOCASE UNIQUE,
@@ -550,46 +511,18 @@ static void InitializeDatabase(string connectionString)
         CREATE TABLE IF NOT EXISTS universal_ids (
             id INTEGER PRIMARY KEY AUTOINCREMENT
         );
+        """))
+    {
+        command.ExecuteNonQuery();
+    }
 
-        CREATE TABLE IF NOT EXISTS tasks (
-            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-            universal_id        INTEGER NOT NULL UNIQUE,
-            list_id             INTEGER NOT NULL,
-            task_number         INTEGER NOT NULL,
-            title               TEXT NOT NULL,
-            description         TEXT NOT NULL DEFAULT '',
-            status              TEXT NOT NULL DEFAULT 'Open' CHECK(status IN ('Open', 'Done', 'Cancelled')),
-            created_at          TEXT NOT NULL,
-            updated_at          TEXT NULL,
-            completed_at        TEXT NULL,
-            cancelled_at        TEXT NULL,
-            reopened_at         TEXT NULL,
-            next_subtask_number INTEGER NOT NULL DEFAULT 1,
-            UNIQUE(list_id, task_number),
-            FOREIGN KEY(list_id) REFERENCES lists(id) ON DELETE CASCADE
-        );
+    hasItems = TableExists(connection, "items");
+    hasLegacyTasks = TableExists(connection, "tasks");
 
-        CREATE TABLE IF NOT EXISTS subtasks (
-            id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            universal_id   INTEGER NOT NULL UNIQUE,
-            parent_task_id INTEGER NOT NULL,
-            subtask_number INTEGER NOT NULL,
-            title          TEXT NOT NULL,
-            description    TEXT NOT NULL DEFAULT '',
-            status         TEXT NOT NULL DEFAULT 'Open' CHECK(status IN ('Open', 'Done', 'Cancelled')),
-            created_at     TEXT NOT NULL,
-            updated_at     TEXT NULL,
-            completed_at   TEXT NULL,
-            cancelled_at   TEXT NULL,
-            reopened_at    TEXT NULL,
-            UNIQUE(parent_task_id, subtask_number),
-            FOREIGN KEY(parent_task_id) REFERENCES tasks(id) ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_tasks_list ON tasks(list_id, task_number);
-        CREATE INDEX IF NOT EXISTS idx_subtasks_parent ON subtasks(parent_task_id, subtask_number);
-        """);
-    command.ExecuteNonQuery();
+    if (!hasItems && hasLegacyTasks)
+        MigrateLegacyTaskSchema(connection);
+    else if (!hasItems)
+        CreateItemsSchema(connection);
 
     using var ensureDefault = Sql(connection, """
         INSERT INTO lists (name, description, next_task_number, created_at)
@@ -597,6 +530,118 @@ static void InitializeDatabase(string connectionString)
         WHERE NOT EXISTS (SELECT 1 FROM lists);
         """, ("$createdAt", DateTimeOffset.UtcNow.ToString("O")));
     ensureDefault.ExecuteNonQuery();
+}
+
+static void CreateItemsSchema(SqliteConnection connection, SqliteTransaction? transaction = null)
+{
+    const string schemaSql = """
+        CREATE TABLE IF NOT EXISTS items (
+            universal_id       INTEGER NOT NULL UNIQUE,
+            list_id            INTEGER NOT NULL,
+            display_id         TEXT NOT NULL,
+            parent_display_id  TEXT NULL,
+            title              TEXT NOT NULL,
+            description        TEXT NOT NULL DEFAULT '',
+            status             TEXT NOT NULL DEFAULT 'Open' CHECK(status IN ('Open', 'Done', 'Cancelled')),
+            created_at         TEXT NOT NULL,
+            updated_at         TEXT NULL,
+            completed_at       TEXT NULL,
+            cancelled_at       TEXT NULL,
+            reopened_at        TEXT NULL,
+            next_child_number  INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (list_id, display_id),
+            FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE,
+            FOREIGN KEY (list_id, parent_display_id) REFERENCES items(list_id, display_id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_items_list_parent
+            ON items(list_id, parent_display_id, display_id);
+        """;
+
+    using var command = transaction is null
+        ? Sql(connection, schemaSql)
+        : SqlTx(connection, transaction, schemaSql);
+    command.ExecuteNonQuery();
+}
+
+static void MigrateLegacyTaskSchema(SqliteConnection connection)
+{
+    using var transaction = connection.BeginTransaction();
+
+    var oldTaskCount = Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM tasks;") ?? 0L);
+    var oldSubtaskCount = TableExists(connection, "subtasks", transaction)
+        ? Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM subtasks;") ?? 0L)
+        : 0L;
+    var expectedCount = oldTaskCount + oldSubtaskCount;
+
+    CreateItemsSchema(connection, transaction);
+
+    using (var copyTasks = SqlTx(connection, transaction, """
+        INSERT INTO items
+            (universal_id, list_id, display_id, parent_display_id, title, description, status,
+             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+        SELECT universal_id, list_id, CAST(task_number AS TEXT), NULL, title, description, status,
+               created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number
+        FROM tasks;
+        """))
+    {
+        copyTasks.ExecuteNonQuery();
+    }
+
+    if (oldSubtaskCount > 0)
+    {
+        using var copySubtasks = SqlTx(connection, transaction, """
+            INSERT INTO items
+                (universal_id, list_id, display_id, parent_display_id, title, description, status,
+                 created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+            SELECT s.universal_id,
+                   t.list_id,
+                   CAST(t.task_number AS TEXT) || '.' || CAST(s.subtask_number AS TEXT),
+                   CAST(t.task_number AS TEXT),
+                   s.title, s.description, s.status,
+                   s.created_at, s.updated_at, s.completed_at, s.cancelled_at, s.reopened_at,
+                   1
+            FROM subtasks s
+            JOIN tasks t ON t.id = s.parent_task_id;
+            """);
+        copySubtasks.ExecuteNonQuery();
+    }
+
+    var migratedCount = Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM items;") ?? 0L);
+    var uniqueUidCount = Convert.ToInt64(ScalarTxSync(connection, transaction,
+        "SELECT COUNT(DISTINCT universal_id) FROM items;") ?? 0L);
+
+    if (migratedCount != expectedCount || uniqueUidCount != expectedCount)
+        throw new InvalidOperationException(
+            $"Task database migration failed verification. Expected {expectedCount} items, found {migratedCount}.");
+
+    if (TableExists(connection, "subtasks", transaction))
+    {
+        using var dropSubtasks = SqlTx(connection, transaction, "DROP TABLE subtasks;");
+        dropSubtasks.ExecuteNonQuery();
+    }
+
+    using (var dropTasks = SqlTx(connection, transaction, "DROP TABLE tasks;"))
+        dropTasks.ExecuteNonQuery();
+
+    transaction.Commit();
+    Console.WriteLine($"Task List database migrated to recursive items: {oldTaskCount} tasks + {oldSubtaskCount} subtasks = {expectedCount} items.");
+}
+
+static bool TableExists(SqliteConnection connection, string tableName, SqliteTransaction? transaction = null)
+{
+    using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name);";
+    command.Parameters.AddWithValue("$name", tableName);
+    return Convert.ToInt64(command.ExecuteScalar()) != 0;
+}
+
+static object? ScalarTxSync(SqliteConnection connection, SqliteTransaction transaction, string text,
+    params (string Name, object? Value)[] parameters)
+{
+    using var command = SqlTx(connection, transaction, text, parameters);
+    return command.ExecuteScalar();
 }
 
 static async Task<SqliteConnection> OpenConnection(string connectionString)
@@ -649,10 +694,6 @@ static async Task<long> ScalarLongAsync(SqliteConnection connection, string text
     params (string Name, object? Value)[] parameters) =>
     Convert.ToInt64(await ScalarAsync(connection, text, parameters));
 
-static async Task<long> ScalarLongTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text,
-    params (string Name, object? Value)[] parameters) =>
-    Convert.ToInt64(await ScalarTxAsync(connection, transaction, text, parameters));
-
 static async Task<int> ExecuteAsync(SqliteConnection connection, string text,
     params (string Name, object? Value)[] parameters)
 {
@@ -668,17 +709,17 @@ static async Task<int> ExecuteTxAsync(SqliteConnection connection, SqliteTransac
 }
 
 static async Task<long> AllocateUniversalId(SqliteConnection connection, SqliteTransaction transaction) =>
-    await ScalarLongTxAsync(connection, transaction,
-        "INSERT INTO universal_ids DEFAULT VALUES; SELECT last_insert_rowid();");
+    Convert.ToInt64(await ScalarTxAsync(connection, transaction,
+        "INSERT INTO universal_ids DEFAULT VALUES; SELECT last_insert_rowid();"));
 
 static async Task<TaskListInfo?> GetList(SqliteConnection connection, long id)
 {
     using var command = Sql(connection, """
-        SELECT l.id, l.name, l.description, l.created_at, COUNT(t.id)
+        SELECT l.id, l.name, l.description, l.created_at,
+               (SELECT COUNT(*) FROM items i
+                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count
         FROM lists l
-        LEFT JOIN tasks t ON t.list_id = l.id
-        WHERE l.id = $id
-        GROUP BY l.id, l.name, l.description, l.created_at;
+        WHERE l.id = $id;
         """, ("$id", id));
     await using var reader = await command.ExecuteReaderAsync();
     return await reader.ReadAsync() ? ReadList(reader) : null;
@@ -700,19 +741,20 @@ static async Task<bool> ListNameExists(SqliteConnection connection, string name,
     return result != 0;
 }
 
-static async Task ApplyItemUpdate(SqliteConnection connection, string table, long id, UpdateValues values)
+static async Task ApplyItemUpdate(
+    SqliteConnection connection, long listId, string displayId, UpdateValues values)
 {
-    if (table is not ("tasks" or "subtasks")) throw new ArgumentOutOfRangeException(nameof(table));
-    await ExecuteAsync(connection, $"""
-        UPDATE {table}
+    await ExecuteAsync(connection, """
+        UPDATE items
         SET title = $title, description = $description, status = $status,
             updated_at = $updatedAt, completed_at = $completedAt,
             cancelled_at = $cancelledAt, reopened_at = $reopenedAt
-        WHERE id = $id;
+        WHERE list_id = $listId AND display_id = $displayId;
         """,
         ("$title", values.Title), ("$description", values.Description), ("$status", values.Status),
         ("$updatedAt", values.UpdatedAt), ("$completedAt", values.CompletedAt),
-        ("$cancelledAt", values.CancelledAt), ("$reopenedAt", values.ReopenedAt), ("$id", id));
+        ("$cancelledAt", values.CancelledAt), ("$reopenedAt", values.ReopenedAt),
+        ("$listId", listId), ("$displayId", displayId));
 }
 
 static UpdateValues BuildUpdatedValues(
@@ -753,53 +795,91 @@ static string? NormalizeStatus(string status) => status.ToLowerInvariant() switc
 
 static int IndentWidth(string indent) => indent.Sum(ch => ch == '\t' ? 4 : 1);
 
-static TaskItem ReadTask(SqliteDataReader reader)
+static TaskItem ReadItem(SqliteDataReader reader)
 {
-    var id = reader.GetInt64(0);
-    var taskNumber = reader.GetInt32(3);
+    var parentDisplayId = NullableString(reader, 3);
     return new TaskItem(
-        id, reader.GetInt64(1), reader.GetInt64(2), taskNumber, taskNumber.ToString(), false,
+        reader.GetInt64(0), reader.GetInt64(1), reader.GetString(2), parentDisplayId,
+        parentDisplayId is not null,
         reader.GetString(4), reader.IsDBNull(5) ? string.Empty : reader.GetString(5), reader.GetString(6),
         reader.GetString(7), NullableString(reader, 8), NullableString(reader, 9),
         NullableString(reader, 10), NullableString(reader, 11), []);
 }
 
-static SubtaskItem ReadSubtask(SqliteDataReader reader)
-{
-    var parentNumber = reader.GetInt32(3);
-    var subtaskNumber = reader.GetInt32(4);
-    return new SubtaskItem(
-        reader.GetInt64(0), reader.GetInt64(1), reader.GetInt64(2), parentNumber, subtaskNumber,
-        $"{parentNumber}.{subtaskNumber}", true, reader.GetString(5),
-        reader.IsDBNull(6) ? string.Empty : reader.GetString(6), reader.GetString(7), reader.GetString(8),
-        NullableString(reader, 9), NullableString(reader, 10), NullableString(reader, 11), NullableString(reader, 12));
-}
-
 static string? NullableString(SqliteDataReader reader, int index) =>
     reader.IsDBNull(index) ? null : reader.GetString(index);
 
-static async Task<TaskItem?> GetTask(SqliteConnection connection, long id)
+static async Task<TaskItem?> GetItem(SqliteConnection connection, long listId, string displayId)
 {
     using var command = Sql(connection, """
-        SELECT id, universal_id, list_id, task_number, title, description, status,
+        SELECT universal_id, list_id, display_id, parent_display_id, title, description, status,
                created_at, updated_at, completed_at, cancelled_at, reopened_at
-        FROM tasks WHERE id = $id;
-        """, ("$id", id));
+        FROM items
+        WHERE list_id = $listId AND display_id = $displayId;
+        """, ("$listId", listId), ("$displayId", displayId));
     await using var reader = await command.ExecuteReaderAsync();
-    return await reader.ReadAsync() ? ReadTask(reader) : null;
+    return await reader.ReadAsync() ? ReadItem(reader) : null;
 }
 
-static async Task<SubtaskItem?> GetSubtask(SqliteConnection connection, long id)
+static long DisplaySegmentNumber(string displayId)
 {
-    using var command = Sql(connection, """
-        SELECT s.id, s.universal_id, s.parent_task_id, t.task_number, s.subtask_number,
-               s.title, s.description, s.status, s.created_at, s.updated_at,
-               s.completed_at, s.cancelled_at, s.reopened_at
-        FROM subtasks s JOIN tasks t ON t.id = s.parent_task_id
-        WHERE s.id = $id;
-        """, ("$id", id));
-    await using var reader = await command.ExecuteReaderAsync();
-    return await reader.ReadAsync() ? ReadSubtask(reader) : null;
+    var separator = displayId.LastIndexOf('.');
+    var segment = separator < 0 ? displayId : displayId[(separator + 1)..];
+    return long.TryParse(segment, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0;
+}
+
+static bool IsValidDisplayId(string displayId) =>
+    Regex.IsMatch(displayId, @"^\d+(?:\.\d+)*$", RegexOptions.CultureInvariant);
+
+static void SortChildren(TaskItem item)
+{
+    item.Subtasks.Sort((a, b) => DisplaySegmentNumber(a.DisplayId).CompareTo(DisplaySegmentNumber(b.DisplayId)));
+    foreach (var child in item.Subtasks)
+        SortChildren(child);
+}
+
+static async Task InsertImportedItem(
+    SqliteConnection connection,
+    SqliteTransaction transaction,
+    long listId,
+    string displayId,
+    string? parentDisplayId,
+    long universalId,
+    ImportNode node)
+{
+    await ExecuteTxAsync(connection, transaction, """
+        INSERT INTO items
+            (universal_id, list_id, display_id, parent_display_id, title, description, status,
+             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+        VALUES
+            ($uid, $listId, $displayId, $parentDisplayId, $title, '', $status,
+             $createdAt, 'Unknown', $completedAt, NULL, NULL, $nextChildNumber);
+        """,
+        ("$uid", universalId), ("$listId", listId), ("$displayId", displayId),
+        ("$parentDisplayId", parentDisplayId), ("$title", node.Item.Title),
+        ("$status", node.Item.Status), ("$createdAt", node.Item.CreatedAt),
+        ("$completedAt", node.Item.CompletedAt), ("$nextChildNumber", node.Children.Count + 1));
+}
+
+static async Task<int> InsertImportedChildren(
+    SqliteConnection connection,
+    SqliteTransaction transaction,
+    long listId,
+    string parentDisplayId,
+    List<ImportNode> children)
+{
+    var inserted = 0;
+    for (var index = 0; index < children.Count; index++)
+    {
+        var child = children[index];
+        var childNumber = index + 1;
+        var displayId = $"{parentDisplayId}.{childNumber.ToString(CultureInfo.InvariantCulture)}";
+        var universalId = await AllocateUniversalId(connection, transaction);
+        await InsertImportedItem(connection, transaction, listId, displayId, parentDisplayId, universalId, child);
+        inserted++;
+        inserted += await InsertImportedChildren(connection, transaction, listId, displayId, child.Children);
+    }
+    return inserted;
 }
 
 static string GenerateSetupToken()
@@ -871,7 +951,7 @@ static async Task SignInOwner(HttpContext context)
 }
 
 record ImportItem(string Title, string Status, string CreatedAt, object? CompletedAt, int Indent);
-record ImportGroup(ImportItem Parent, List<ImportItem> Subtasks);
+record ImportNode(ImportItem Item, List<ImportNode> Children);
 record TaskListInfo(long Id, string Name, string Description, string CreatedAt, long TaskCount);
 record CreateListRequest(string? Name, string? Description);
 record UpdateListRequest(string? Name, string? Description);
@@ -882,14 +962,9 @@ record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);
 
 record TaskItem(
-    long Id, long UniversalId, long ListId, int TaskNumber, string DisplayId, bool IsSubtask,
+    long UniversalId, long ListId, string DisplayId, string? ParentDisplayId, bool IsSubtask,
     string Title, string Description, string Status, string CreatedAt, string? UpdatedAt,
-    string? CompletedAt, string? CancelledAt, string? ReopenedAt, List<SubtaskItem> Subtasks);
-
-record SubtaskItem(
-    long Id, long UniversalId, long ParentTaskId, int ParentTaskNumber, int SubtaskNumber,
-    string DisplayId, bool IsSubtask, string Title, string Description, string Status,
-    string CreatedAt, string? UpdatedAt, string? CompletedAt, string? CancelledAt, string? ReopenedAt);
+    string? CompletedAt, string? CancelledAt, string? ReopenedAt, List<TaskItem> Subtasks);
 
 record UpdateValues(
     string? Title, string? Description, string? Status, string? UpdatedAt,

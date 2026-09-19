@@ -227,23 +227,32 @@ function renderTasks() {
   emptyState.hidden = visibleTasks.length > 0;
   emptyState.textContent = currentView === 'all' ? 'No tasks.' : `No ${currentView} tasks.`;
 
-  for (const task of visibleTasks) {
-    taskList.append(createTaskRow(task, false));
-    for (const subtask of task.subtasks ?? [])
-      taskList.append(createTaskRow(subtask, true));
-  }
+  for (const task of visibleTasks)
+    appendTaskTree(task, 0);
 
   const open = tasks.filter(task => task.status === 'Open').length;
   const done = tasks.filter(task => task.status === 'Done').length;
   const cancelled = tasks.filter(task => task.status === 'Cancelled').length;
-  const subtaskTotal = tasks.reduce((sum, task) => sum + (task.subtasks?.length ?? 0), 0);
+  const subtaskTotal = tasks.reduce((sum, task) => sum + countDescendants(task), 0);
   taskCount.textContent = `${open} open / ${done} done / ${cancelled} cancelled / ${tasks.length} tasks / ${subtaskTotal} subtasks`;
 }
 
-function createTaskRow(item, isSubtask) {
+function appendTaskTree(item, depth) {
+  taskList.append(createTaskRow(item, depth));
+  for (const child of item.subtasks ?? [])
+    appendTaskTree(child, depth + 1);
+}
+
+function countDescendants(item) {
+  return (item.subtasks ?? []).reduce((sum, child) => sum + 1 + countDescendants(child), 0);
+}
+
+function createTaskRow(item, depth) {
+  const isSubtask = depth > 0;
   const row = document.createElement('tr');
   row.classList.add(`status-${item.status.toLowerCase()}`);
   if (isSubtask) row.classList.add('subtask-row');
+  row.dataset.depth = String(depth);
 
   const idCell = document.createElement('td');
   idCell.dataset.label = 'ID';
@@ -259,7 +268,24 @@ function createTaskRow(item, isSubtask) {
   const titleCell = document.createElement('td');
   titleCell.dataset.label = 'Task';
   titleCell.className = 'task-title';
-  titleCell.textContent = item.title;
+
+  if (isSubtask) {
+    const tree = document.createElement('span');
+    tree.className = 'task-title-tree';
+
+    const marker = document.createElement('span');
+    marker.className = 'task-tree-marker';
+    marker.textContent = '└─';
+    marker.style.marginLeft = `${(depth - 1) * 18}px`;
+
+    const titleText = document.createElement('span');
+    titleText.className = 'task-title-text';
+    titleText.textContent = item.title;
+    tree.append(marker, titleText);
+    titleCell.append(tree);
+  } else {
+    titleCell.textContent = item.title;
+  }
 
   const statusCell = document.createElement('td');
   statusCell.dataset.label = 'Status';
@@ -271,7 +297,7 @@ function createTaskRow(item, isSubtask) {
 
   const actions = (STATUS_ACTIONS[item.status] ?? [])
     .map(([label, status]) => [label, () => updateItem(item, { status })]);
-  if (!isSubtask) actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
+  actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
   actions.push(['Edit', () => openEdit(item)], ['Delete', () => deleteItem(item)]);
   appendActions(actionsCell, actions);
 
@@ -317,7 +343,7 @@ async function refreshListCounts() {
 }
 
 function itemEndpoint(item) {
-  return item.isSubtask ? `/api/subtasks/${item.id}` : `/api/tasks/${item.id}`;
+  return `/api/lists/${item.listId}/items/${encodeURIComponent(item.displayId)}`;
 }
 
 async function updateItem(item, changes) {
@@ -374,7 +400,7 @@ cancelEdit.addEventListener('click', () => {
 
 function openSubtaskDialog(parent) {
   subtaskParent = parent;
-  subtaskParentId.textContent = `#${parent.displayId}`;
+  subtaskParentId.textContent = `#${parent.displayId} - ${parent.title}`;
   subtaskTitle.value = '';
   subtaskDescription.value = '';
   subtaskDialog.showModal();
@@ -395,7 +421,7 @@ subtaskForm.addEventListener('submit', async event => {
 
   setStatus(`Adding subtask to #${parent.displayId}...`);
   try {
-    await jsonApi(`/api/tasks/${parent.id}/subtasks`, 'POST', { title, description });
+    await jsonApi(`/api/lists/${parent.listId}/items/${encodeURIComponent(parent.displayId)}/subtasks`, 'POST', { title, description });
     await loadTasks();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -435,9 +461,9 @@ function formatDate(value) {
 closeInfo.addEventListener('click', () => infoDialog.close());
 
 async function deleteItem(item) {
-  const subtaskCount = item.isSubtask ? 0 : (item.subtasks?.length ?? 0);
+  const subtaskCount = countDescendants(item);
   const extra = subtaskCount > 0
-    ? `\n\nThis will also delete ${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}.`
+    ? `\n\nThis will also delete ${subtaskCount} descendant subtask${subtaskCount === 1 ? '' : 's'}.`
     : '';
 
   if (!confirm(`Delete ${item.isSubtask ? 'subtask' : 'task'} #${item.displayId}?\n\n${item.title}${extra}`)) return;
@@ -663,7 +689,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.0.5'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.1.0'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

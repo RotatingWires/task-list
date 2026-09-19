@@ -345,17 +345,28 @@ button:active {
 .subtask-row td {
   background: #fafafa;
 }
-.subtask-row .task-title {
-  padding-left: 24px;
-  position: relative;
+.task-title-tree {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
 }
-.subtask-row .task-title::before {
-  content: "└─";
-  position: absolute;
-  left: 7px;
-  color: #666;
+.task-tree-marker {
+  display: inline-block;
+  flex: 0 0 auto;
+  margin-right: 5px;
+  color: #444;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 900;
+  font-family: Consolas, "Courier New", monospace;
   user-select: none;
   -webkit-user-select: none;
+}
+.task-title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* v0.5: multi-list File menu and list management. */
@@ -426,39 +437,10 @@ button:disabled {
   justify-content: flex-end;
 }
 
-/* Make the subtask relationship much more obvious. */
-.subtask-row td:first-child {
-  padding-left: 20px;
-}
-.subtask-row .task-title {
-  padding-left: 54px;
-}
-.subtask-row .task-title::before {
-  content: "└─";
-  left: 12px;
-  top: 50%;
-  transform: translateY(-52%);
-  color: #444;
-  font-size: 21px;
-  line-height: 1;
-  font-weight: 900;
-  font-family: Consolas, "Courier New", monospace;
-}
-
+/* Recursive subtasks use the visible ID for hierarchy and an indented tree marker. */
 @media (max-width: 650px) {
   .subtask-row {
-    margin-left: 18px;
-    width: calc(100% - 18px) !important;
     border-left: 3px solid #a0a0a0;
-  }
-  .subtask-row td:first-child {
-    padding-left: 8px;
-  }
-  .subtask-row .task-title {
-    padding-left: 46px;
-  }
-  .subtask-row .task-title::before {
-    left: 5px;
   }
   .manage-list-row {
     grid-template-columns: 1fr;
