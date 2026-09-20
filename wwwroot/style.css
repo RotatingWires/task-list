@@ -437,7 +437,19 @@ button:disabled {
   justify-content: flex-end;
 }
 
-/* Recursive subtasks use the visible ID for hierarchy and an indented tree marker. */
+/* Recursive subtasks use the visible ID for hierarchy and an indented tree marker.
+   The left hierarchy/status line is applied to the first cell on desktop because
+   table rows do not reliably render a left border, and to the block row on mobile. */
+@media (min-width: 651px) {
+  .subtask-row.status-open > td:first-child {
+    border-left: 3px solid #800e06;
+  }
+  .subtask-row.status-done > td:first-child,
+  .subtask-row.status-cancelled > td:first-child {
+    border-left: 3px solid #06801b;
+  }
+}
+
 @media (max-width: 650px) {
   .subtask-row.status-open {
     border-left: 3px solid #800e06;

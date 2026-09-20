@@ -1,4 +1,4 @@
-# Task List v1.1.1
+# Task List v1.1.2
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.2
+
+- Subtask hierarchy/status line now appears on desktop as well as mobile.
+- Open subtasks use `#800e06`; Done and Cancelled subtasks use `#06801b`.
+- Desktop applies the line to the first table cell so it renders reliably with the existing table layout.
+- Windows file/product/assembly version is `1.1.2`.
+- PWA cache is v1.1.2.
 
 ## v1.1.1
 
