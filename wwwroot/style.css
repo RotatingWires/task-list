@@ -439,8 +439,12 @@ button:disabled {
 
 /* Recursive subtasks use the visible ID for hierarchy and an indented tree marker. */
 @media (max-width: 650px) {
-  .subtask-row {
-    border-left: 3px solid #a0a0a0;
+  .subtask-row.status-open {
+    border-left: 3px solid #800e06;
+  }
+  .subtask-row.status-done,
+  .subtask-row.status-cancelled {
+    border-left: 3px solid #06801b;
   }
   .manage-list-row {
     grid-template-columns: 1fr;

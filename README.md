@@ -1,4 +1,4 @@
-# Task List v1.1.0
+# Task List v1.1.1
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,13 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.1
+
+- Subtask hierarchy line is now `#800e06` for Open subtasks.
+- Subtask hierarchy line is now `#06801b` for Done and Cancelled subtasks.
+- Windows file/product/assembly version is `1.1.1`.
+- PWA cache is v1.1.1.
 
 ## v1.1.0
 
