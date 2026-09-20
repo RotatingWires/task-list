@@ -39,6 +39,8 @@ async function initialize() {
       setupToken.required = true;
       confirmGroup.hidden = false;
       confirmPassword.required = true;
+      password.minLength = 8;
+      confirmPassword.minLength = 8;
       password.autocomplete = 'new-password';
       loginButton.textContent = 'Create Password';
     }

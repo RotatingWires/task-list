@@ -1,4 +1,4 @@
-# Task List v1.1.2
+# Task List v1.1.3
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.3
+
+- Normal login no longer applies the 8-character browser `minlength` validation.
+- The 8-character minimum is applied only while creating the first-run password.
+- Server-side first-run password validation remains unchanged.
+- Windows file/product/assembly version is `1.1.3`.
+- PWA cache is v1.1.3.
 
 ## v1.1.2
 
