@@ -1,4 +1,4 @@
-# Task List v1.1.3
+# Task List v1.1.4
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.4
+
+- Root/parent task ID numbers are larger than subtask ID numbers for easier visual scanning.
+- The larger root ID applies even when the task has no subtasks.
+- Preserves the preferred hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
+- Windows file/product/assembly version is `1.1.4`.
+- PWA cache is v1.1.4.
 
 ## v1.1.3
 

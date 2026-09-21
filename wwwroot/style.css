@@ -232,6 +232,12 @@ button:active {
 .task-id-link:hover { color: #0000d0; }
 .task-id-link:active { border: 0; }
 
+/* Root/parent task IDs are larger than nested subtask IDs for quick scanning.
+   This applies to every root task, even when it has no subtasks. */
+.task-table tr:not(.subtask-row) .task-id-link {
+  font-size: 18px;
+}
+
 .empty-state { padding: 24px 12px; text-align: center; color: #555; }
 
 .statusbar {
@@ -442,21 +448,21 @@ button:disabled {
    table rows do not reliably render a left border, and to the block row on mobile. */
 @media (min-width: 651px) {
   .subtask-row.status-open > td:first-child {
-    border-left: 3px solid #800e06;
+    border-left: 3px solid #e02d04;
   }
   .subtask-row.status-done > td:first-child,
   .subtask-row.status-cancelled > td:first-child {
-    border-left: 3px solid #06801b;
+    border-left: 3px solid #02bd34;
   }
 }
 
 @media (max-width: 650px) {
   .subtask-row.status-open {
-    border-left: 3px solid #800e06;
+    border-left: 3px solid #e02d04;
   }
   .subtask-row.status-done,
   .subtask-row.status-cancelled {
-    border-left: 3px solid #06801b;
+    border-left: 3px solid #02bd34;
   }
   .manage-list-row {
     grid-template-columns: 1fr;
