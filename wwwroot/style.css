@@ -564,6 +564,16 @@ button:disabled {
   .task-table tr.subtask-row .task-actions {
     margin-top: 4px;
   }
+
+  /* When a subtask group ends, let the following root task provide a
+     full-width divider instead of leaving an inset line/gap at the left. */
+  .task-table tr.subtask-row:has(+ tr:not(.subtask-row)) {
+    border-bottom: 0;
+  }
+  .task-table tr.subtask-row + tr:not(.subtask-row) {
+    border-top: 2px solid #c0c0c0;
+  }
+
   .manage-list-row {
     grid-template-columns: 1fr;
   }

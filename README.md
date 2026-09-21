@@ -1,4 +1,4 @@
-# Task List v1.1.7
+# Task List v1.1.8
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,15 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.8
+
+- Mobile now uses a full-width divider when a subtask group ends and the next row is a root task.
+- The last subtask drops its inset bottom divider at that boundary, avoiding the left-side gap shown before the next root task.
+- Desktop behavior from v1.1.7 is unchanged.
+- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
+- Windows file/product/assembly version is `1.1.8`.
+- PWA cache is v1.1.8.
 
 ## v1.1.7
 
