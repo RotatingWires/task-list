@@ -1,4 +1,4 @@
-# Task List v1.1.4
+# Task List v1.1.5
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -77,13 +77,15 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
-## v1.1.4
+## v1.1.5
 
-- Root/parent task ID numbers are larger than subtask ID numbers for easier visual scanning.
-- The larger root ID applies even when the task has no subtasks.
-- Preserves the preferred hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
-- Windows file/product/assembly version is `1.1.4`.
-- PWA cache is v1.1.4.
+- Based on v1.1.3; does not include the abandoned parent-ID enlargement experiment.
+- Subtasks now use a slightly darker inset background and tighter vertical spacing so they read as children of the parent task.
+- Nested subtasks are increasingly indented by depth on both desktop and mobile.
+- Mobile subtask rows are inset as attached blocks instead of occupying the full top-level row width.
+- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
+- Windows file/product/assembly version is `1.1.5`.
+- PWA cache is v1.1.5.
 
 ## v1.1.3
 

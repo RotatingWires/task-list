@@ -232,12 +232,6 @@ button:active {
 .task-id-link:hover { color: #0000d0; }
 .task-id-link:active { border: 0; }
 
-/* Root/parent task IDs are larger than nested subtask IDs for quick scanning.
-   This applies to every root task, even when it has no subtasks. */
-.task-table tr:not(.subtask-row) .task-id-link {
-  font-size: 18px;
-}
-
 .empty-state { padding: 24px 12px; text-align: center; color: #555; }
 
 .statusbar {
@@ -349,7 +343,17 @@ button:active {
   min-width: 0;
 }
 .subtask-row td {
-  background: #fafafa;
+  background: #f4f4f4;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+/* Keep nested items visually attached to their parent instead of reading like
+   another full-strength top-level task. */
+@media (min-width: 651px) {
+  .subtask-row > td:first-child {
+    padding-left: calc(8px + var(--tree-indent));
+  }
 }
 .task-title-tree {
   display: flex;
@@ -359,6 +363,7 @@ button:active {
 .task-tree-marker {
   display: inline-block;
   flex: 0 0 auto;
+  margin-left: var(--tree-indent);
   margin-right: 5px;
   color: #444;
   font-size: 18px;
@@ -463,6 +468,21 @@ button:disabled {
   .subtask-row.status-done,
   .subtask-row.status-cancelled {
     border-left: 3px solid #02bd34;
+  }
+  .task-table tr.subtask-row {
+    margin-left: var(--mobile-row-indent);
+    width: calc(100% - var(--mobile-row-indent));
+    padding: 6px 8px;
+    border-bottom: 1px solid #d0d0d0;
+    background: #f4f4f4;
+  }
+  .task-table tr.subtask-row > td {
+    background: transparent;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .task-table tr.subtask-row .task-actions {
+    margin-top: 4px;
   }
   .manage-list-row {
     grid-template-columns: 1fr;
