@@ -354,13 +354,66 @@ button:active {
   /* Match the mobile inset on desktop: the subtask block begins farther in
      as nesting gets deeper, while keeping the existing table columns. */
   .task-table tr.subtask-row {
-    background: linear-gradient(
-      to right,
-      transparent 0 var(--row-indent),
-      #f4f4f4 var(--row-indent) 100%
-    );
-    border-top: 1px solid #d0d0d0;
-    border-bottom: 1px solid #d0d0d0;
+    /* Keep internal subtask dividers inside the inset block so they do not
+       stick out to the left of the colored hierarchy/status line. */
+    background:
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #d0d0d0 var(--row-indent) 100%
+      ) top left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #d0d0d0 var(--row-indent) 100%
+      ) bottom left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #f4f4f4 var(--row-indent) 100%
+      );
+  }
+
+  /* At the edge of a root-task group, use a full-width divider. */
+  .task-table tr:not(.subtask-row) + tr.subtask-row {
+    background:
+      linear-gradient(#d0d0d0, #d0d0d0) top left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #d0d0d0 var(--row-indent) 100%
+      ) bottom left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #f4f4f4 var(--row-indent) 100%
+      );
+  }
+
+  .task-table tr.subtask-row:has(+ tr:not(.subtask-row)) {
+    background:
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #d0d0d0 var(--row-indent) 100%
+      ) top left / 100% 1px no-repeat,
+      linear-gradient(#d0d0d0, #d0d0d0) bottom left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #f4f4f4 var(--row-indent) 100%
+      );
+  }
+
+  .task-table tr:not(.subtask-row) + tr.subtask-row:has(+ tr:not(.subtask-row)) {
+    background:
+      linear-gradient(#d0d0d0, #d0d0d0) top left / 100% 1px no-repeat,
+      linear-gradient(#d0d0d0, #d0d0d0) bottom left / 100% 1px no-repeat,
+      linear-gradient(
+        to right,
+        transparent 0 var(--row-indent),
+        #f4f4f4 var(--row-indent) 100%
+      );
   }
   .task-table tr.subtask-row > td {
     background: transparent;
