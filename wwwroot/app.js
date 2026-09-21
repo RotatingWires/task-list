@@ -254,7 +254,7 @@ function createTaskRow(item, depth) {
   if (isSubtask) row.classList.add('subtask-row');
   row.dataset.depth = String(depth);
   row.style.setProperty('--tree-indent', `${Math.max(0, depth - 1) * 18}px`);
-  row.style.setProperty('--mobile-row-indent', `${depth * 12}px`);
+  row.style.setProperty('--row-indent', `${depth * 12}px`);
 
   const idCell = document.createElement('td');
   idCell.dataset.label = 'ID';
@@ -690,7 +690,7 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.1.5'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.1.6'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

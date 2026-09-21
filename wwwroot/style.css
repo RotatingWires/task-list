@@ -351,8 +351,24 @@ button:active {
 /* Keep nested items visually attached to their parent instead of reading like
    another full-strength top-level task. */
 @media (min-width: 651px) {
+  /* Match the mobile inset on desktop: the subtask block begins farther in
+     as nesting gets deeper, while keeping the existing table columns. */
+  .task-table tr.subtask-row {
+    background: linear-gradient(
+      to right,
+      transparent 0 var(--row-indent),
+      #f4f4f4 var(--row-indent) 100%
+    );
+    border-top: 1px solid #d0d0d0;
+    border-bottom: 1px solid #d0d0d0;
+  }
+  .task-table tr.subtask-row > td {
+    background: transparent;
+    border-bottom: 0;
+  }
   .subtask-row > td:first-child {
-    padding-left: calc(8px + var(--tree-indent));
+    position: relative;
+    padding-left: calc(8px + var(--row-indent));
   }
 }
 .task-title-tree {
@@ -452,12 +468,22 @@ button:disabled {
    The left hierarchy/status line is applied to the first cell on desktop because
    table rows do not reliably render a left border, and to the block row on mobile. */
 @media (min-width: 651px) {
-  .subtask-row.status-open > td:first-child {
-    border-left: 3px solid #e02d04;
+  /* A normal table-row left border stays at the outer table edge, so draw
+     the status line inside the first cell at the same inset as the block. */
+  .subtask-row > td:first-child::before {
+    content: "";
+    position: absolute;
+    left: var(--row-indent);
+    top: 0;
+    bottom: 0;
+    width: 3px;
   }
-  .subtask-row.status-done > td:first-child,
-  .subtask-row.status-cancelled > td:first-child {
-    border-left: 3px solid #02bd34;
+  .subtask-row.status-open > td:first-child::before {
+    background: #e02d04;
+  }
+  .subtask-row.status-done > td:first-child::before,
+  .subtask-row.status-cancelled > td:first-child::before {
+    background: #02bd34;
   }
 }
 
@@ -470,9 +496,10 @@ button:disabled {
     border-left: 3px solid #02bd34;
   }
   .task-table tr.subtask-row {
-    margin-left: var(--mobile-row-indent);
-    width: calc(100% - var(--mobile-row-indent));
+    margin-left: var(--row-indent);
+    width: calc(100% - var(--row-indent));
     padding: 6px 8px;
+    border-top: 1px solid #d0d0d0;
     border-bottom: 1px solid #d0d0d0;
     background: #f4f4f4;
   }
