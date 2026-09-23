@@ -1,4 +1,4 @@
-# Task List v1.1.8
+# Task List v1.1.9
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.1.9
+
+- On mobile, the main app window now starts below a minimum 58px top safe zone so newer iPhones do not blur the blue Task List titlebar into the system status-bar area.
+- Removed the old blue safe-area `::before` overlay; the reserved area above the app is now the normal gray window background.
+- Preserved the user's solid `#c8c8c8` base task separators instead of the older dotted separators.
+- Windows file/product/assembly version is `1.1.9`.
+- PWA cache is v1.1.9.
 
 ## v1.1.8
 

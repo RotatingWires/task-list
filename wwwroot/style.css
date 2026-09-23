@@ -212,7 +212,7 @@ button:active {
   border-bottom: 2px solid #404040;
   padding: 6px;
 }
-.task-table td { padding: 7px 6px; border-bottom: 1px dotted #c8c8c8; vertical-align: middle; }
+.task-table td { padding: 7px 6px; border-bottom: 1px solid #c8c8c8; vertical-align: middle; }
 .task-table tr.status-done .task-title { text-decoration: line-through; color: #666; }
 .task-table tr.status-cancelled .task-title { text-decoration: line-through; color: #777; font-style: italic; }
 .id-col { width: 80px; }
@@ -685,22 +685,17 @@ input[type="password"] {
   }
 }
 
-/* Mobile safe-area experiment retained from the final local baseline. */
+/* Keep the app chrome below iOS' translucent/blurred status-bar material.
+   Some installed Home Screen PWAs report too small a top safe-area inset, so
+   reserve a small minimum zone instead of drawing the blue titlebar beneath it. */
 @media (max-width: 650px) {
   body:not(.login-page) {
     background: var(--face);
+    padding-top: max(env(safe-area-inset-top), 20px);
   }
 
-  body:not(.login-page)::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top);
-    background: var(--blue);
-    z-index: 9999;
-    pointer-events: none;
+  body:not(.login-page) .window {
+    height: calc(100dvh - max(env(safe-area-inset-top), 20px) - env(safe-area-inset-bottom));
   }
 
   /* Login/setup is a compact dialog-like window, not the full-height app shell. */
