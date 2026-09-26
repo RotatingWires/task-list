@@ -1,4 +1,4 @@
-# Task List v1.2.9
+# Task List v1.2.10
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -78,13 +78,20 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
 
+## v1.2.10
+
+- Search results no longer use a separate View button. Clicking the task title performs the same action: switches to the result's list, opens the All view, and shows Task Information.
+- Search result titles use the same retro blue underlined clickable treatment as task IDs.
+- Windows file/product/assembly version is `1.2.10`.
+- PWA cache is v1.2.10.
+
 ## v1.2.9
 
 - Task Information status text is selectable without changing main task-table selection behavior.
 - Parent-task labels use an em dash (`—`) instead of two hyphens.
 
 - Task Information now shows the immediate parent task directly under the task ID when viewing a subtask.
-- Parent display includes both the parent task number and title, for example `#182 -- IST 210`.
+- Parent display includes both the parent task number and title, for example `#182 — IST 210`.
 - Windows file/product/assembly version is `1.2.9`.
 - PWA cache is v1.2.9.
 

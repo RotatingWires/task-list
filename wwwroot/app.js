@@ -1014,9 +1014,12 @@ function renderFilteredSearchResults() {
 
     heading.append(location, kind);
 
-    const title = document.createElement('div');
+    const title = document.createElement('button');
+    title.type = 'button';
     title.className = 'search-result-title';
     title.textContent = item.title;
+    title.title = `View information for ${depth > 0 ? 'subtask' : 'task'} #${item.displayId}`;
+    title.addEventListener('click', () => viewSearchResult(result));
 
     const description = document.createElement('div');
     description.className = 'search-result-description';
@@ -1027,12 +1030,7 @@ function renderFilteredSearchResults() {
     meta.textContent = `${item.status} • Created ${formatDate(item.createdAt)}`;
 
     details.append(heading, title, description, meta);
-
-    const actions = document.createElement('div');
-    actions.className = 'search-result-actions';
-    actions.append(actionButton('View', () => viewSearchResult(result)));
-
-    row.append(details, actions);
+    row.append(details);
     searchResults.append(row);
   }
 }
@@ -1150,7 +1148,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.9'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.10'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
