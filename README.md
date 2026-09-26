@@ -1,4 +1,4 @@
-# Task List v1.2.3
+# Task List v1.2.4
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.2.4
+
+- Replaced Search's native List selector with a custom Win95-style dropdown matching the app's View/File menus. It still filters only the already-loaded cross-list search results.
+- Date Search now accepts `m/d` or `mm/dd` with no year; those forms automatically use the current year from the browser/device. Existing `m/d/yy`, `mm/dd/yy`, and four-digit-year input still works.
+- Updated the date-field hint to show that the year is optional.
+- Windows file/product/assembly version is `1.2.4`.
+- PWA cache is v1.2.4.
 
 ## v1.2.3
 

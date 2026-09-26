@@ -64,7 +64,9 @@ const searchKeyword = document.querySelector('#searchKeyword');
 const searchStartDate = document.querySelector('#searchStartDate');
 const searchEndDate = document.querySelector('#searchEndDate');
 const searchSummary = document.querySelector('#searchSummary');
-const searchListFilter = document.querySelector('#searchListFilter');
+const searchListFilterButton = document.querySelector('#searchListFilterButton');
+const searchListFilterLabel = document.querySelector('#searchListFilterLabel');
+const searchListFilterDropdown = document.querySelector('#searchListFilterDropdown');
 const searchResults = document.querySelector('#searchResults');
 const closeSearch = document.querySelector('#closeSearch');
 
@@ -77,6 +79,7 @@ let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
 let highestUniversalId = 0;
 let searchResultSet = [];
+let searchListFilterValue = 'all';
 
 const STATUS_ACTIONS = {
   Open: [['Complete', 'Done'], ['Cancel', 'Cancelled']],
@@ -707,11 +710,18 @@ async function deleteList(list) {
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
 
+function closeSearchListFilterMenu() {
+  searchListFilterDropdown.hidden = true;
+  searchListFilterButton.setAttribute('aria-expanded', 'false');
+}
+
 function resetSearchListFilter() {
   searchResultSet = [];
-  searchListFilter.replaceChildren(new Option('All lists', 'all'));
-  searchListFilter.value = 'all';
-  searchListFilter.disabled = true;
+  searchListFilterValue = 'all';
+  searchListFilterLabel.textContent = 'All lists';
+  searchListFilterDropdown.replaceChildren();
+  searchListFilterButton.disabled = true;
+  closeSearchListFilterMenu();
 }
 
 function openSearch() {
@@ -746,6 +756,7 @@ function setSearchTab(tab) {
 keywordSearchTab.addEventListener('click', () => setSearchTab('keyword'));
 dateSearchTab.addEventListener('click', () => setSearchTab('date'));
 closeSearch.addEventListener('click', () => searchDialog.close());
+searchDialog.addEventListener('close', closeSearchListFilterMenu);
 
 function flattenSearchItems(items, list, depth = 0, output = []) {
   for (const item of items) {
@@ -850,13 +861,19 @@ function keywordMatchScore(query, item) {
 }
 
 function parseSearchDate(value) {
-  const match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s*$/.exec(value);
+  const match = /^\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?\s*$/.exec(value);
   if (!match) return null;
 
   const month = Number(match[1]);
   const day = Number(match[2]);
-  let year = Number(match[3]);
-  if (match[3].length === 2) year += 2000;
+  let year;
+
+  if (!match[3]) {
+    year = new Date().getFullYear();
+  } else {
+    year = Number(match[3]);
+    if (match[3].length === 2) year += 2000;
+  }
 
   const date = new Date(year, month - 1, day);
   if (
@@ -888,25 +905,62 @@ function compareSearchCreatedNewest(a, b) {
   return b.item.universalId - a.item.universalId;
 }
 
+function addSearchListFilterChoice(value, label) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.setAttribute('role', 'menuitemradio');
+  button.setAttribute('aria-checked', value === searchListFilterValue ? 'true' : 'false');
+  button.dataset.value = value;
+
+  const check = document.createElement('span');
+  check.className = 'menu-check';
+  check.textContent = value === searchListFilterValue ? '•' : '';
+
+  const text = document.createElement('span');
+  text.className = 'menu-label';
+  text.textContent = label;
+
+  button.append(check, text);
+  button.addEventListener('click', () => {
+    searchListFilterValue = value;
+    searchListFilterLabel.textContent = label;
+
+    for (const choice of searchListFilterDropdown.querySelectorAll('[data-value]')) {
+      const selected = choice.dataset.value === searchListFilterValue;
+      choice.setAttribute('aria-checked', selected ? 'true' : 'false');
+      choice.querySelector('.menu-check').textContent = selected ? '•' : '';
+    }
+
+    closeSearchListFilterMenu();
+    renderFilteredSearchResults();
+  });
+
+  searchListFilterDropdown.append(button);
+}
+
 function configureSearchListFilter(results) {
   const counts = new Map();
   for (const result of results) {
     counts.set(result.list.id, (counts.get(result.list.id) ?? 0) + 1);
   }
 
-  searchListFilter.replaceChildren(new Option('All lists', 'all'));
+  searchListFilterValue = 'all';
+  searchListFilterLabel.textContent = 'All lists';
+  searchListFilterDropdown.replaceChildren();
+  addSearchListFilterChoice('all', 'All lists');
+
   for (const list of lists) {
     const count = counts.get(list.id);
     if (!count) continue;
-    searchListFilter.append(new Option(`${list.name} (${count.toLocaleString('en-US')})`, String(list.id)));
+    addSearchListFilterChoice(String(list.id), `${list.name} (${count.toLocaleString('en-US')})`);
   }
 
-  searchListFilter.value = 'all';
-  searchListFilter.disabled = results.length === 0;
+  searchListFilterButton.disabled = results.length === 0;
+  closeSearchListFilterMenu();
 }
 
 function renderFilteredSearchResults() {
-  const selected = searchListFilter.value;
+  const selected = searchListFilterValue;
   const visibleResults = selected === 'all'
     ? searchResultSet
     : searchResultSet.filter(result => String(result.list.id) === selected);
@@ -971,7 +1025,21 @@ function renderSearchResults(results, summary) {
   renderFilteredSearchResults();
 }
 
-searchListFilter.addEventListener('change', renderFilteredSearchResults);
+searchListFilterButton.addEventListener('click', event => {
+  event.stopPropagation();
+  if (searchListFilterButton.disabled) return;
+  const willOpen = searchListFilterDropdown.hidden;
+  searchListFilterDropdown.hidden = !willOpen;
+  searchListFilterButton.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+});
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('.search-list-menu')) closeSearchListFilterMenu();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeSearchListFilterMenu();
+});
 
 async function viewSearchResult(result) {
   searchDialog.close();
@@ -1032,7 +1100,7 @@ dateSearchForm.addEventListener('submit', async event => {
   const end = parseSearchDate(searchEndDate.value);
 
   if (start === null || end === null) {
-    searchSummary.textContent = 'Enter both dates as m/d/yy or mm/dd/yy.';
+    searchSummary.textContent = 'Enter both dates as m/d, m/d/yy, or m/d/yyyy.';
     return;
   }
 
@@ -1063,7 +1131,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.3'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.4'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

@@ -586,9 +586,39 @@ button:disabled {
   padding: 0 3px 7px;
   font-size: 12px;
 }
-.search-list-filter select {
+.search-list-menu {
   min-width: 180px;
   max-width: 100%;
+}
+.search-list-filter-button {
+  width: 100%;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.search-list-filter-arrow {
+  flex: 0 0 auto;
+  font-size: 9px;
+}
+.search-list-filter-dropdown {
+  min-width: 100%;
+  max-width: min(320px, calc(100vw - 54px));
+  max-height: 220px;
+  overflow-y: auto;
+}
+.search-list-filter-dropdown button {
+  white-space: nowrap;
+}
+.search-list-filter-dropdown .menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-list-filter-button:disabled {
+  color: #777;
 }
 .search-results {
   max-height: min(48vh, 480px);
