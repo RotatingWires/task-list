@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 using System.Globalization;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
@@ -61,7 +62,23 @@ Directory.CreateDirectory(dataDir);
 var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
+var siriApiPath = Path.Combine(dataDir, "siri-api.json");
 InitializeDatabase(connectionString, databasePath);
+var (siriApiKey, siriApiKeyCreated) = LoadOrCreateSiriApiKey(siriApiPath);
+
+if (siriApiKeyCreated)
+{
+    Console.WriteLine();
+    Console.WriteLine("============================================================");
+    Console.WriteLine("TASK LIST SIRI API KEY");
+    Console.WriteLine();
+    Console.WriteLine($"  {siriApiKey}");
+    Console.WriteLine();
+    Console.WriteLine("Enter this key in the Task List iOS Siri bridge app.");
+    Console.WriteLine($"It is also stored in: {siriApiPath}");
+    Console.WriteLine("============================================================");
+    Console.WriteLine();
+}
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -98,6 +115,22 @@ app.Use(async (context, next) =>
     {
         context.Response.Redirect("/");
         return;
+    }
+
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/siri"))
+    {
+        var suppliedKey = context.Request.Headers["X-TaskList-Siri-Key"].FirstOrDefault();
+        if (!SiriApiKeyMatches(siriApiKey, suppliedKey))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new { error = "Invalid Siri API key." });
+            return;
+        }
     }
 
     await next();
@@ -149,6 +182,85 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.NoContent();
 }).RequireAuthorization();
+
+app.MapGet("/api/siri/ping", () => Results.Ok(new { ok = true, service = "Task List Siri API" }));
+
+app.MapGet("/api/siri/lists", async () =>
+{
+    var lists = new List<SiriListInfo>();
+    await using var connection = await OpenConnection(connectionString);
+    using var command = Sql(connection, "SELECT id, name FROM lists ORDER BY id;");
+    await using var reader = await command.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+        lists.Add(new SiriListInfo(reader.GetInt64(0), reader.GetString(1)));
+
+    return Results.Ok(lists);
+});
+
+app.MapPost("/api/siri/tasks", async (SiriCreateTaskRequest request) =>
+{
+    var listName = request.ListName?.Trim();
+    var title = request.Title?.Trim();
+    if (string.IsNullOrWhiteSpace(listName))
+        return Results.BadRequest(new { error = "List name is required." });
+    if (string.IsNullOrWhiteSpace(title))
+        return Results.BadRequest(new { error = "Task title is required." });
+
+    var description = request.Description?.Trim() ?? string.Empty;
+    await using var connection = await OpenConnection(connectionString);
+
+    var matches = new List<SiriListInfo>();
+    using (var listCommand = Sql(connection,
+        "SELECT id, name FROM lists WHERE name = $name COLLATE NOCASE ORDER BY id;",
+        ("$name", listName)))
+    await using (var reader = await listCommand.ExecuteReaderAsync())
+    {
+        while (await reader.ReadAsync())
+            matches.Add(new SiriListInfo(reader.GetInt64(0), reader.GetString(1)));
+    }
+
+    if (matches.Count == 0)
+        return Results.NotFound(new { error = $"List '{listName}' was not found." });
+    if (matches.Count > 1)
+        return Results.Conflict(new { error = $"More than one list matches '{listName}'. Rename one of the lists so their names differ by more than capitalization." });
+
+    var list = matches[0];
+    var now = DateTimeOffset.UtcNow.ToString("O");
+    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+
+    var taskNumberValue = await ScalarTxAsync(connection, transaction,
+        "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", list.Id));
+    if (taskNumberValue is null)
+        return Results.NotFound(new { error = "List not found." });
+
+    var taskNumber = Convert.ToInt64(taskNumberValue);
+    var displayId = taskNumber.ToString(CultureInfo.InvariantCulture);
+    var universalId = await AllocateUniversalId(connection, transaction);
+
+    await ExecuteTxAsync(connection, transaction, """
+        INSERT INTO items
+            (universal_id, list_id, display_id, parent_display_id, title, description, status,
+             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+        VALUES
+            ($uid, $listId, $displayId, NULL, $title, $description, 'Open',
+             $createdAt, NULL, NULL, NULL, NULL, 1);
+        UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;
+        """,
+        ("$uid", universalId), ("$listId", list.Id), ("$displayId", displayId),
+        ("$title", title), ("$description", description), ("$createdAt", now),
+        ("$nextNumber", taskNumber + 1));
+
+    await transaction.CommitAsync();
+    return Results.Created($"/api/lists/{list.Id}/items/{displayId}", new
+    {
+        listId = list.Id,
+        listName = list.Name,
+        displayId,
+        universalId,
+        title,
+        message = $"Added {title} to {list.Name} as #{displayId}."
+    });
+});
 
 var api = app.MapGroup("/api").RequireAuthorization();
 
@@ -882,6 +994,39 @@ static async Task<int> InsertImportedChildren(
     return inserted;
 }
 
+static (string Key, bool Created) LoadOrCreateSiriApiKey(string path)
+{
+    if (File.Exists(path))
+    {
+        try
+        {
+            var existing = JsonSerializer.Deserialize<SiriApiFile>(File.ReadAllText(path));
+            if (existing is not null && existing.Version == 1 && !string.IsNullOrWhiteSpace(existing.Key))
+                return (existing.Key, false);
+        }
+        catch
+        {
+            // Fall through to a clear startup error below.
+        }
+
+        throw new InvalidOperationException(
+            $"The Siri API key file is invalid: {path}. Stop Task List, repair or delete the file, then restart.");
+    }
+
+    var key = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+    File.WriteAllText(path, JsonSerializer.Serialize(new SiriApiFile(1, key)));
+    return (key, true);
+}
+
+static bool SiriApiKeyMatches(string expected, string? supplied)
+{
+    if (string.IsNullOrWhiteSpace(supplied)) return false;
+    var expectedBytes = Encoding.UTF8.GetBytes(expected);
+    var suppliedBytes = Encoding.UTF8.GetBytes(supplied.Trim());
+    return expectedBytes.Length == suppliedBytes.Length &&
+           CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
+}
+
 static string GenerateSetupToken()
 {
     var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
@@ -958,6 +1103,9 @@ record UpdateListRequest(string? Name, string? Description);
 record LoginRequest(string? Password);
 record SetupRequest(string? SetupToken, string? Password, string? ConfirmPassword);
 record PasswordFile(int Version, int Iterations, string Salt, string Hash);
+record SiriApiFile(int Version, string Key);
+record SiriListInfo(long Id, string Name);
+record SiriCreateTaskRequest(string? ListName, string? Title, string? Description);
 record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);
 
