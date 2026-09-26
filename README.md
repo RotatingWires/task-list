@@ -1,6 +1,6 @@
 # Task List v1.3.1
 
-A small self-hosted task-list application for a Windows NAS and web/PWA clients.
+A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
 ## Stack
 
