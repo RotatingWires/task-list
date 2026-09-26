@@ -23,7 +23,6 @@ button,
 .dialog-title,
 .dialog-id,
 .info-grid dt,
-#infoStatus,
 .empty-state {
   user-select: none;
   -webkit-user-select: none;
@@ -31,7 +30,7 @@ button,
 
 /* Actual task content and task information stay copyable. */
 .task-title,
-.info-grid dd:not(#infoStatus) {
+.info-grid dd {
   user-select: text;
   -webkit-user-select: text;
 }
