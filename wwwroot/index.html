@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.2.10</span>
+      <span class="title-app-name">Task List v1.3</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -164,7 +164,7 @@
         <form id="keywordSearchForm" class="search-form">
           <label for="searchKeyword">Keyword</label>
           <div class="search-inline-row">
-            <input type="text" id="searchKeyword" autocomplete="off" maxlength="500">
+            <input type="text" id="searchKeyword" autocomplete="off" maxlength="500" required>
             <button type="submit">Search</button>
           </div>
         </form>
@@ -173,9 +173,9 @@
       <section id="dateSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="dateSearchTab" hidden>
         <form id="dateSearchForm" class="search-form">
           <label for="searchStartDate">Start date</label>
-          <input type="text" id="searchStartDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy">
+          <input type="text" id="searchStartDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
           <label for="searchEndDate">End date</label>
-          <input type="text" id="searchEndDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy">
+          <input type="text" id="searchEndDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
           <div class="search-date-actions">
             <button type="submit">Search</button>
           </div>

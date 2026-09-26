@@ -676,7 +676,10 @@ button:disabled {
   color: #555;
 }
 .search-result-row {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
   padding: 9px 8px;
   border-bottom: 1px solid #c8c8c8;
 }
@@ -731,9 +734,16 @@ button:disabled {
   font-size: 12px;
   color: #666;
 }
+.search-result-actions {
+  align-self: center;
+}
 @media (max-width: 650px) {
-  .search-inline-row {
+  .search-inline-row,
+  .search-result-row {
     grid-template-columns: 1fr;
+  }
+  .search-result-actions {
+    justify-self: start;
   }
   .search-results {
     max-height: 43vh;

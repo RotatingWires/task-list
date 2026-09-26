@@ -274,6 +274,7 @@ function createTaskRow(item, depth) {
   row.classList.add(`status-${item.status.toLowerCase()}`);
   if (isSubtask) row.classList.add('subtask-row');
   row.dataset.depth = String(depth);
+  row.dataset.displayId = item.displayId;
   row.style.setProperty('--tree-indent', `${Math.max(0, depth - 1) * 18}px`);
   row.style.setProperty('--row-indent', `${depth * 12}px`);
 
@@ -455,11 +456,11 @@ cancelSubtask.addEventListener('click', () => {
   subtaskParent = null;
 });
 
-function openInfo(item) {
+function openInfo(item, sourceItems = tasks) {
   infoTaskId.textContent = `#${item.displayId}`;
 
   if (item.parentDisplayId) {
-    const parent = findItemByDisplayId(tasks, item.parentDisplayId);
+    const parent = findItemByDisplayId(sourceItems, item.parentDisplayId);
     infoParentTask.textContent = parent
       ? `#${parent.displayId} — ${parent.title}`
       : `#${item.parentDisplayId}`;
@@ -772,10 +773,10 @@ dateSearchTab.addEventListener('click', () => setSearchTab('date'));
 closeSearch.addEventListener('click', () => searchDialog.close());
 searchDialog.addEventListener('close', closeSearchListFilterMenu);
 
-function flattenSearchItems(items, list, depth = 0, output = []) {
+function flattenSearchItems(items, list, depth = 0, output = [], sourceItems = items) {
   for (const item of items) {
-    output.push({ item, list, depth });
-    flattenSearchItems(item.subtasks ?? [], list, depth + 1, output);
+    output.push({ item, list, depth, sourceItems });
+    flattenSearchItems(item.subtasks ?? [], list, depth + 1, output, sourceItems);
   }
   return output;
 }
@@ -784,7 +785,7 @@ async function loadAllSearchItems() {
   const listSnapshot = [...lists];
   const groups = await Promise.all(listSnapshot.map(async list => {
     const listTasks = await api(`/api/lists/${list.id}/tasks`);
-    return flattenSearchItems(listTasks, list);
+    return flattenSearchItems(listTasks, list, 0, [], listTasks);
   }));
   return groups.flat();
 }
@@ -1019,7 +1020,7 @@ function renderFilteredSearchResults() {
     title.className = 'search-result-title';
     title.textContent = item.title;
     title.title = `View information for ${depth > 0 ? 'subtask' : 'task'} #${item.displayId}`;
-    title.addEventListener('click', () => viewSearchResult(result));
+    title.addEventListener('click', () => openInfo(item, result.sourceItems));
 
     const description = document.createElement('div');
     description.className = 'search-result-description';
@@ -1030,7 +1031,12 @@ function renderFilteredSearchResults() {
     meta.textContent = `${item.status} • Created ${formatDate(item.createdAt)}`;
 
     details.append(heading, title, description, meta);
-    row.append(details);
+
+    const actions = document.createElement('div');
+    actions.className = 'search-result-actions';
+    actions.append(actionButton('View', () => viewSearchResult(result)));
+
+    row.append(details, actions);
     searchResults.append(row);
   }
 }
@@ -1068,8 +1074,12 @@ async function viewSearchResult(result) {
   updateListTitle();
 
   await loadTasks();
-  const liveItem = findItemByDisplayId(tasks, result.item.displayId) ?? result.item;
-  openInfo(liveItem);
+
+  requestAnimationFrame(() => {
+    const targetRow = [...taskList.querySelectorAll('tr[data-display-id]')]
+      .find(row => row.dataset.displayId === result.item.displayId);
+    targetRow?.scrollIntoView({ block: 'start', inline: 'nearest' });
+  });
 }
 
 function findItemByDisplayId(items, displayId) {
@@ -1084,11 +1094,6 @@ function findItemByDisplayId(items, displayId) {
 keywordSearchForm.addEventListener('submit', async event => {
   event.preventDefault();
   const query = searchKeyword.value.trim();
-  if (!query) {
-    searchSummary.textContent = 'Enter a keyword to search.';
-    searchKeyword.focus();
-    return;
-  }
 
   searchSummary.textContent = 'Searching all lists...';
   resetSearchListFilter();
@@ -1117,7 +1122,7 @@ dateSearchForm.addEventListener('submit', async event => {
   const end = parseSearchDate(searchEndDate.value);
 
   if (start === null || end === null) {
-    searchSummary.textContent = 'Enter both dates as m/d, m/d/yy, or m/d/yyyy.';
+    searchSummary.textContent = 'Use m/d, m/d/yy, or m/d/yyyy.';
     return;
   }
 
@@ -1148,7 +1153,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.10'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.3'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

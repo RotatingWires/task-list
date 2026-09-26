@@ -1,4 +1,4 @@
-# Task List v1.2.10
+# Task List v1.3
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -77,6 +77,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+
+## v1.3
+
+- Search fields now use the same browser-native required-field validation as the main Add Task field.
+- Search result task titles open Task Information only and do not change the current list or view.
+- Restored the **View** button in search results. View switches to the result's list, changes the main view to **All**, and scrolls the matching task to the top without opening Task Information.
+- Windows file/product/assembly version is `1.3`.
+- PWA cache is v1.3.
 
 ## v1.2.10
 
