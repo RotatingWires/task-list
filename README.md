@@ -1,4 +1,4 @@
-# Task List v1.2.2
+# Task List v1.2.3
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.2.3
+
+- Added a **List** filter directly below the Search summary. Search still runs across every list first; the dropdown only filters the displayed result set afterward.
+- The List dropdown contains **All lists** plus each list represented in the current results, with the number of matching items from that list.
+- Search summaries now count the lists that actually contain matches instead of always using the total number of lists.
+- Windows file/product/assembly version is `1.2.3`.
+- PWA cache is v1.2.3.
 
 ## v1.2.2
 

@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.2.2</span>
+      <span class="title-app-name">Task List v1.2.3</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -182,6 +182,12 @@
       </section>
 
       <div id="searchSummary" class="search-summary">Searches all lists.</div>
+      <div class="search-list-filter">
+        <label for="searchListFilter">List:</label>
+        <select id="searchListFilter" disabled>
+          <option value="all">All lists</option>
+        </select>
+      </div>
       <div id="searchResults" class="search-results" aria-live="polite">
         <div class="search-placeholder">Enter a keyword or date range to search.</div>
       </div>

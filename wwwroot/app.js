@@ -64,6 +64,7 @@ const searchKeyword = document.querySelector('#searchKeyword');
 const searchStartDate = document.querySelector('#searchStartDate');
 const searchEndDate = document.querySelector('#searchEndDate');
 const searchSummary = document.querySelector('#searchSummary');
+const searchListFilter = document.querySelector('#searchListFilter');
 const searchResults = document.querySelector('#searchResults');
 const closeSearch = document.querySelector('#closeSearch');
 
@@ -75,6 +76,7 @@ let editingList = null;
 let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
 let highestUniversalId = 0;
+let searchResultSet = [];
 
 const STATUS_ACTIONS = {
   Open: [['Complete', 'Done'], ['Cancel', 'Cancelled']],
@@ -705,6 +707,13 @@ async function deleteList(list) {
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
 
+function resetSearchListFilter() {
+  searchResultSet = [];
+  searchListFilter.replaceChildren(new Option('All lists', 'all'));
+  searchListFilter.value = 'all';
+  searchListFilter.disabled = true;
+}
+
 function openSearch() {
   closeFileMenu();
   setSearchTab('keyword');
@@ -712,6 +721,7 @@ function openSearch() {
   searchStartDate.value = '';
   searchEndDate.value = '';
   searchSummary.textContent = 'Searches all lists.';
+  resetSearchListFilter();
   searchResults.replaceChildren(Object.assign(document.createElement('div'), {
     className: 'search-placeholder',
     textContent: 'Enter a keyword or date range to search.'
@@ -878,11 +888,32 @@ function compareSearchCreatedNewest(a, b) {
   return b.item.universalId - a.item.universalId;
 }
 
-function renderSearchResults(results, summary) {
-  searchSummary.textContent = summary;
+function configureSearchListFilter(results) {
+  const counts = new Map();
+  for (const result of results) {
+    counts.set(result.list.id, (counts.get(result.list.id) ?? 0) + 1);
+  }
+
+  searchListFilter.replaceChildren(new Option('All lists', 'all'));
+  for (const list of lists) {
+    const count = counts.get(list.id);
+    if (!count) continue;
+    searchListFilter.append(new Option(`${list.name} (${count.toLocaleString('en-US')})`, String(list.id)));
+  }
+
+  searchListFilter.value = 'all';
+  searchListFilter.disabled = results.length === 0;
+}
+
+function renderFilteredSearchResults() {
+  const selected = searchListFilter.value;
+  const visibleResults = selected === 'all'
+    ? searchResultSet
+    : searchResultSet.filter(result => String(result.list.id) === selected);
+
   searchResults.replaceChildren();
 
-  if (!results.length) {
+  if (!visibleResults.length) {
     const empty = document.createElement('div');
     empty.className = 'search-placeholder';
     empty.textContent = 'No matching tasks or subtasks.';
@@ -890,7 +921,7 @@ function renderSearchResults(results, summary) {
     return;
   }
 
-  for (const result of results) {
+  for (const result of visibleResults) {
     const { item, list, depth } = result;
     const row = document.createElement('div');
     row.className = 'search-result-row';
@@ -933,6 +964,15 @@ function renderSearchResults(results, summary) {
   }
 }
 
+function renderSearchResults(results, summary) {
+  searchResultSet = results;
+  searchSummary.textContent = summary;
+  configureSearchListFilter(results);
+  renderFilteredSearchResults();
+}
+
+searchListFilter.addEventListener('change', renderFilteredSearchResults);
+
 async function viewSearchResult(result) {
   searchDialog.close();
   currentListId = result.list.id;
@@ -966,6 +1006,7 @@ keywordSearchForm.addEventListener('submit', async event => {
   }
 
   searchSummary.textContent = 'Searching all lists...';
+  resetSearchListFilter();
   searchResults.replaceChildren();
 
   try {
@@ -977,7 +1018,7 @@ keywordSearchForm.addEventListener('submit', async event => {
 
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} match${matches.length === 1 ? '' : 'es'} across ${lists.length.toLocaleString('en-US')} list${lists.length === 1 ? '' : 's'}.`
+      `${matches.length.toLocaleString('en-US')} match${matches.length === 1 ? '' : 'es'} across ${new Set(matches.map(result => result.list.id)).size.toLocaleString('en-US')} list${new Set(matches.map(result => result.list.id)).size === 1 ? '' : 's'}.`
     );
   } catch (error) {
     searchSummary.textContent = `Search error: ${error.message}`;
@@ -1001,6 +1042,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 
   searchSummary.textContent = 'Searching all lists...';
+  resetSearchListFilter();
   searchResults.replaceChildren();
 
   try {
@@ -1014,14 +1056,14 @@ dateSearchForm.addEventListener('submit', async event => {
 
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in that range across ${lists.length.toLocaleString('en-US')} list${lists.length === 1 ? '' : 's'}.`
+      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in that range across ${new Set(matches.map(result => result.list.id)).size.toLocaleString('en-US')} list${new Set(matches.map(result => result.list.id)).size === 1 ? '' : 's'}.`
     );
   } catch (error) {
     searchSummary.textContent = `Search error: ${error.message}`;
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.2'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.3'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
