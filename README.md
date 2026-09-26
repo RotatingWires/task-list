@@ -1,4 +1,4 @@
-# Task List v1.2.1
+# Task List v1.2.2
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.2.2
+
+- Date-search fields now use the normal text keyboard on iOS so `/` can be entered in dates such as `9/25/26`.
+- Search-result action button is now labeled **View** instead of **Open**.
+- Search behavior is otherwise unchanged and still runs across all lists.
+- Windows file/product/assembly version is `1.2.2`.
+- PWA cache is v1.2.2.
 
 ## v1.2.1
 

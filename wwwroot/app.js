@@ -926,14 +926,14 @@ function renderSearchResults(results, summary) {
 
     const actions = document.createElement('div');
     actions.className = 'search-result-actions';
-    actions.append(actionButton('Open', () => openSearchResult(result)));
+    actions.append(actionButton('View', () => viewSearchResult(result)));
 
     row.append(details, actions);
     searchResults.append(row);
   }
 }
 
-async function openSearchResult(result) {
+async function viewSearchResult(result) {
   searchDialog.close();
   currentListId = result.list.id;
   localStorage.setItem('task-list-current-list', String(currentListId));
@@ -1021,7 +1021,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.1'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.2'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
