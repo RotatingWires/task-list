@@ -1006,8 +1006,12 @@ function renderFilteredSearchResults() {
     const heading = document.createElement('div');
     heading.className = 'search-result-heading';
 
-    const location = document.createElement('strong');
+    const location = document.createElement('button');
+    location.type = 'button';
+    location.className = 'task-id-link search-result-location';
     location.textContent = `${list.name} — #${item.displayId}`;
+    location.title = `View information for ${depth > 0 ? 'subtask' : 'task'} #${item.displayId}`;
+    location.addEventListener('click', () => openInfo(item, result.sourceItems));
 
     const kind = document.createElement('span');
     kind.className = 'search-result-kind';
@@ -1015,12 +1019,9 @@ function renderFilteredSearchResults() {
 
     heading.append(location, kind);
 
-    const title = document.createElement('button');
-    title.type = 'button';
-    title.className = 'search-result-title';
+    const title = document.createElement('div');
+    title.className = 'search-result-title-text';
     title.textContent = item.title;
-    title.title = `View information for ${depth > 0 ? 'subtask' : 'task'} #${item.displayId}`;
-    title.addEventListener('click', () => openInfo(item, result.sourceItems));
 
     const description = document.createElement('div');
     description.className = 'search-result-description';
@@ -1078,7 +1079,18 @@ async function viewSearchResult(result) {
   requestAnimationFrame(() => {
     const targetRow = [...taskList.querySelectorAll('tr[data-display-id]')]
       .find(row => row.dataset.displayId === result.item.displayId);
-    targetRow?.scrollIntoView({ block: 'start', inline: 'nearest' });
+    if (!targetRow) return;
+
+    targetRow.scrollIntoView({ block: 'start', inline: 'nearest' });
+
+    // Keep the target row below the sticky desktop table header instead of
+    // letting the header cover the row's top edge/actions.
+    const taskPanel = targetRow.closest('.task-panel');
+    const tableHead = taskPanel?.querySelector('thead');
+    const headerVisible = tableHead && getComputedStyle(tableHead).display !== 'none';
+    const headerHeight = headerVisible ? tableHead.getBoundingClientRect().height : 0;
+    if (taskPanel && headerHeight > 0)
+      taskPanel.scrollTop = Math.max(0, taskPanel.scrollTop - headerHeight - 2);
   });
 }
 
@@ -1153,7 +1165,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.3'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.3.1'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

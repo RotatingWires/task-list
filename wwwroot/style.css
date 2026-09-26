@@ -695,33 +695,19 @@ button:disabled {
   gap: 8px;
   flex-wrap: wrap;
 }
-.search-result-heading strong {
-  color: #000080;
+.search-result-location {
+  max-width: 100%;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 .search-result-kind {
   font-size: 11px;
   color: #666;
 }
-.search-result-title {
-  display: block;
-  width: fit-content;
-  max-width: 100%;
+.search-result-title-text {
   margin-top: 3px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #000080;
-  text-align: left;
-  text-decoration: underline;
   font-weight: 700;
   overflow-wrap: anywhere;
-  box-shadow: none;
-}
-.search-result-title:hover { color: #0000d0; }
-.search-result-title:active {
-  border: 0;
-  box-shadow: none;
 }
 .search-result-description {
   margin-top: 3px;
