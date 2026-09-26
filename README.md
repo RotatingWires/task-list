@@ -1,4 +1,4 @@
-# Task List v1.2.6
+# Task List v1.2.7
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,15 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+
+## v1.2.7
+
+- Fixed Keyword Search for short terms: one-, two-, and three-character queries now use literal substring matching, so searches such as `e`, `re`, and `hom` work as expected.
+- Fuzzy typo matching remains for longer search terms.
+- Menu selection dots use the preferred 8px size.
+- Windows file/product/assembly version is `1.2.7`.
+- PWA cache is v1.2.7.
 
 ## v1.2.6
 

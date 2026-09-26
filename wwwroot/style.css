@@ -146,8 +146,8 @@ button { cursor: pointer; }
 }
 .menu-dropdown button[aria-checked="true"] .menu-check::before {
   content: "";
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
   display: block;

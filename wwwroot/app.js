@@ -811,10 +811,15 @@ function tokenSimilarity(term, word) {
   if (term === word) return 1;
   if (!term || !word) return 0;
 
-  if (word.includes(term) || term.includes(word)) {
-    const shorter = Math.min(term.length, word.length);
-    if (shorter >= 3) return 0.9;
+  // Short search terms should behave as literal substring searches rather than
+  // fuzzy matches. This makes queries like "e", "re", or "hom" match words
+  // that actually contain those characters, while typo tolerance stays reserved
+  // for longer terms where it is useful instead of noisy.
+  if (word.includes(term)) {
+    if (term.length <= 3) return 1;
+    return 0.9;
   }
+  if (term.includes(word) && word.length >= 3) return 0.9;
 
   if (term.length < 4 || word.length < 4) return 0;
   const longest = Math.max(term.length, word.length);
@@ -1131,7 +1136,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.6'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.7'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
