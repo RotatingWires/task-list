@@ -1,4 +1,4 @@
-# Task List v1.2.0
+# Task List v1.2.1
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -17,7 +17,7 @@ dotnet restore
 dotnet run --urls "http://0.0.0.0:8711"
 ```
 
-The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`. Siri integration uses a separate random key stored at `data\siri-api.json`.
+The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`.
 
 ## Login and API authentication
 
@@ -77,19 +77,16 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+## v1.2.1
 
-## v1.2.0
-
-- Added a dedicated Siri/API bridge for the native iOS companion app.
-- New `GET /api/siri/lists` endpoint exposes list names to the iOS App Entity resolver.
-- New `POST /api/siri/tasks` endpoint adds a root task by list name while preserving the normal visible-ID and Universal-ID allocation rules.
-- Siri endpoints use a separate 256-bit random `X-TaskList-Siri-Key`, stored in `data\siri-api.json`; they do not reuse the browser login cookie.
-- The Siri key is printed once when it is first generated.
-- Added `GET /api/siri/ping` for connection testing.
-- Mobile top safe zone uses the user's preferred 20px minimum instead of 58px.
-- Base task separators remain solid, not dotted.
-- Windows file/product/assembly version is `1.2.0`.
-- PWA cache is v1.2.0.
+- Added **File → Search...** immediately after Manage Lists.
+- Search always runs across every task list, including nested subtasks and all statuses.
+- **Keyword** search checks task titles and descriptions and uses lightweight fuzzy matching for partial words and small typos. No search library or new dependency was added.
+- **Date** search filters the Created date inclusively between Start date and End date. It accepts `m/d/yy`, `mm/dd/yy`, and also four-digit years.
+- Search results show the list, visible task ID, title, description, status, and creation date. **Open** switches to that list in All view and opens Task Information.
+- Preserved the current 20px mobile top safe-zone adjustment and solid `#c8c8c8` task separators.
+- Windows file/product/assembly version is `1.2.1`.
+- PWA cache is v1.2.1.
 
 ## v1.1.9
 
@@ -172,7 +169,3 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 - Preserved login rate limiting, first-run setup token, list-count title, comma-formatted lifetime UID counter, and existing UI behavior.
 - Windows file/product/assembly version is `1.1.0`.
 - PWA cache is v1.1.0.
-
-## Siri / iOS companion
-
-The source-only `TaskListSiriBridge` folder shipped beside this server contains the native App Intents bridge. On iOS 27+, its Reminders schema lets Siri resolve both the task title and Task List list name in a natural request such as `Add laundry to Tasks in Task List`. See `TaskListSiriBridge/SETUP.md` in the combined package.

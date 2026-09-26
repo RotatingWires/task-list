@@ -517,6 +517,143 @@ button:disabled {
   justify-content: flex-end;
 }
 
+
+/* v1.2.1: all-list keyword/date search. */
+.search-dialog {
+  width: min(760px, calc(100vw - 24px));
+}
+.search-body {
+  display: block;
+  padding: 10px;
+}
+.search-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 0 0 -2px 6px;
+  position: relative;
+  z-index: 1;
+}
+.search-tab {
+  padding: 5px 16px 6px;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+}
+.search-tab[aria-selected="true"] {
+  position: relative;
+  top: 2px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  border-bottom-color: var(--face);
+  z-index: 2;
+}
+.search-tab-panel {
+  padding: 12px;
+  background: var(--face);
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+}
+.search-tab-panel[hidden] {
+  display: none;
+}
+.search-form {
+  display: grid;
+  gap: 7px;
+}
+.search-inline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+.search-date-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+.search-summary {
+  min-height: 22px;
+  padding: 8px 3px 5px;
+  font-size: 12px;
+}
+.search-results {
+  max-height: min(48vh, 480px);
+  overflow: auto;
+  background: #fff;
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+.search-placeholder {
+  padding: 22px 12px;
+  text-align: center;
+  color: #555;
+}
+.search-result-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 8px;
+  border-bottom: 1px solid #c8c8c8;
+}
+.search-result-row:last-child {
+  border-bottom: 0;
+}
+.search-result-details {
+  min-width: 0;
+}
+.search-result-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.search-result-heading strong {
+  color: #000080;
+  overflow-wrap: anywhere;
+}
+.search-result-kind {
+  font-size: 11px;
+  color: #666;
+}
+.search-result-title {
+  margin-top: 3px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.search-result-description {
+  margin-top: 3px;
+  color: #444;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.search-result-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+}
+.search-result-actions {
+  align-self: center;
+}
+
+@media (max-width: 650px) {
+  .search-inline-row,
+  .search-result-row {
+    grid-template-columns: 1fr;
+  }
+  .search-result-actions {
+    justify-self: start;
+  }
+  .search-results {
+    max-height: 43vh;
+  }
+}
+
 /* Recursive subtasks use the visible ID for hierarchy and an indented tree marker.
    The left hierarchy/status line is applied to the first cell on desktop because
    table rows do not reliably render a left border, and to the block row on mobile. */

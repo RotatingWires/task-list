@@ -53,6 +53,19 @@ const manageListsBody = document.querySelector('#manageListsBody');
 const manageListsTitleText = document.querySelector('#manageListsTitleText');
 const manageListsUidTotal = document.querySelector('#manageListsUidTotal');
 const closeManageLists = document.querySelector('#closeManageLists');
+const searchDialog = document.querySelector('#searchDialog');
+const keywordSearchTab = document.querySelector('#keywordSearchTab');
+const dateSearchTab = document.querySelector('#dateSearchTab');
+const keywordSearchPanel = document.querySelector('#keywordSearchPanel');
+const dateSearchPanel = document.querySelector('#dateSearchPanel');
+const keywordSearchForm = document.querySelector('#keywordSearchForm');
+const dateSearchForm = document.querySelector('#dateSearchForm');
+const searchKeyword = document.querySelector('#searchKeyword');
+const searchStartDate = document.querySelector('#searchStartDate');
+const searchEndDate = document.querySelector('#searchEndDate');
+const searchSummary = document.querySelector('#searchSummary');
+const searchResults = document.querySelector('#searchResults');
+const closeSearch = document.querySelector('#closeSearch');
 
 let lists = [];
 let tasks = [];
@@ -175,7 +188,8 @@ function renderFileMenu() {
 
   fileDropdown.append(
     menuCommand('Create a List...', openCreateList),
-    menuCommand('Manage Lists...', openManageLists)
+    menuCommand('Manage Lists...', openManageLists),
+    menuCommand('Search...', openSearch)
   );
 
   const accountSeparator = document.createElement('div');
@@ -690,7 +704,324 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.0'));
+
+function openSearch() {
+  closeFileMenu();
+  setSearchTab('keyword');
+  searchKeyword.value = '';
+  searchStartDate.value = '';
+  searchEndDate.value = '';
+  searchSummary.textContent = 'Searches all lists.';
+  searchResults.replaceChildren(Object.assign(document.createElement('div'), {
+    className: 'search-placeholder',
+    textContent: 'Enter a keyword or date range to search.'
+  }));
+  searchDialog.showModal();
+  searchKeyword.focus();
+}
+
+function setSearchTab(tab) {
+  const keyword = tab === 'keyword';
+  keywordSearchTab.setAttribute('aria-selected', keyword ? 'true' : 'false');
+  dateSearchTab.setAttribute('aria-selected', keyword ? 'false' : 'true');
+  keywordSearchPanel.hidden = !keyword;
+  dateSearchPanel.hidden = keyword;
+
+  if (searchDialog.open) {
+    if (keyword) searchKeyword.focus();
+    else searchStartDate.focus();
+  }
+}
+
+keywordSearchTab.addEventListener('click', () => setSearchTab('keyword'));
+dateSearchTab.addEventListener('click', () => setSearchTab('date'));
+closeSearch.addEventListener('click', () => searchDialog.close());
+
+function flattenSearchItems(items, list, depth = 0, output = []) {
+  for (const item of items) {
+    output.push({ item, list, depth });
+    flattenSearchItems(item.subtasks ?? [], list, depth + 1, output);
+  }
+  return output;
+}
+
+async function loadAllSearchItems() {
+  const listSnapshot = [...lists];
+  const groups = await Promise.all(listSnapshot.map(async list => {
+    const listTasks = await api(`/api/lists/${list.id}/tasks`);
+    return flattenSearchItems(listTasks, list);
+  }));
+  return groups.flat();
+}
+
+function normalizeSearchText(value) {
+  return (value ?? '')
+    .toLocaleLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+function levenshteinDistance(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  let current = new Array(b.length + 1);
+
+  for (let i = 1; i <= a.length; i++) {
+    current[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      current[j] = Math.min(
+        current[j - 1] + 1,
+        previous[j] + 1,
+        previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+    [previous, current] = [current, previous];
+  }
+
+  return previous[b.length];
+}
+
+function tokenSimilarity(term, word) {
+  if (term === word) return 1;
+  if (!term || !word) return 0;
+
+  if (word.includes(term) || term.includes(word)) {
+    const shorter = Math.min(term.length, word.length);
+    if (shorter >= 3) return 0.9;
+  }
+
+  if (term.length < 4 || word.length < 4) return 0;
+  const longest = Math.max(term.length, word.length);
+  return 1 - (levenshteinDistance(term, word) / longest);
+}
+
+function bestTokenSimilarity(term, words) {
+  let best = 0;
+  for (const word of words) {
+    const similarity = tokenSimilarity(term, word);
+    if (similarity > best) best = similarity;
+    if (best === 1) break;
+  }
+  return best;
+}
+
+function keywordMatchScore(query, item) {
+  const q = normalizeSearchText(query);
+  if (!q) return 0;
+
+  const title = normalizeSearchText(item.title);
+  const description = normalizeSearchText(item.description);
+  const titleWords = title.split(' ').filter(Boolean);
+  const descriptionWords = description.split(' ').filter(Boolean);
+  const terms = q.split(' ').filter(Boolean);
+
+  let score = 0;
+  if (title.includes(q)) score += 300;
+  else if (description.includes(q)) score += 180;
+
+  for (const term of terms) {
+    const titleScore = bestTokenSimilarity(term, titleWords);
+    const descriptionScore = bestTokenSimilarity(term, descriptionWords);
+    const best = Math.max(titleScore * 1.15, descriptionScore);
+
+    const threshold = term.length <= 3 ? 0.92 : term.length <= 5 ? 0.72 : 0.64;
+    if (best < threshold) return 0;
+    score += best * 100;
+  }
+
+  if (title === q) score += 500;
+  if (title.startsWith(q)) score += 100;
+  return score;
+}
+
+function parseSearchDate(value) {
+  const match = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s*$/.exec(value);
+  if (!match) return null;
+
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  let year = Number(match[3]);
+  if (match[3].length === 2) year += 2000;
+
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) return null;
+
+  return year * 10000 + month * 100 + day;
+}
+
+function creationDateKey(value) {
+  if (!value || value === 'Unknown') return null;
+
+  const sourceDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (sourceDate) {
+    return Number(sourceDate[1]) * 10000 + Number(sourceDate[2]) * 100 + Number(sourceDate[3]);
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+function compareSearchCreatedNewest(a, b) {
+  const aKey = creationDateKey(a.item.createdAt) ?? 0;
+  const bKey = creationDateKey(b.item.createdAt) ?? 0;
+  if (aKey !== bKey) return bKey - aKey;
+  return b.item.universalId - a.item.universalId;
+}
+
+function renderSearchResults(results, summary) {
+  searchSummary.textContent = summary;
+  searchResults.replaceChildren();
+
+  if (!results.length) {
+    const empty = document.createElement('div');
+    empty.className = 'search-placeholder';
+    empty.textContent = 'No matching tasks or subtasks.';
+    searchResults.append(empty);
+    return;
+  }
+
+  for (const result of results) {
+    const { item, list, depth } = result;
+    const row = document.createElement('div');
+    row.className = 'search-result-row';
+
+    const details = document.createElement('div');
+    details.className = 'search-result-details';
+
+    const heading = document.createElement('div');
+    heading.className = 'search-result-heading';
+
+    const location = document.createElement('strong');
+    location.textContent = `${list.name} — #${item.displayId}`;
+
+    const kind = document.createElement('span');
+    kind.className = 'search-result-kind';
+    kind.textContent = depth > 0 ? 'Subtask' : 'Task';
+
+    heading.append(location, kind);
+
+    const title = document.createElement('div');
+    title.className = 'search-result-title';
+    title.textContent = item.title;
+
+    const description = document.createElement('div');
+    description.className = 'search-result-description';
+    description.textContent = item.description || 'No description';
+
+    const meta = document.createElement('div');
+    meta.className = 'search-result-meta';
+    meta.textContent = `${item.status} • Created ${formatDate(item.createdAt)}`;
+
+    details.append(heading, title, description, meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'search-result-actions';
+    actions.append(actionButton('Open', () => openSearchResult(result)));
+
+    row.append(details, actions);
+    searchResults.append(row);
+  }
+}
+
+async function openSearchResult(result) {
+  searchDialog.close();
+  currentListId = result.list.id;
+  localStorage.setItem('task-list-current-list', String(currentListId));
+  currentView = 'all';
+  updateViewMenu();
+  renderFileMenu();
+  updateListTitle();
+
+  await loadTasks();
+  const liveItem = findItemByDisplayId(tasks, result.item.displayId) ?? result.item;
+  openInfo(liveItem);
+}
+
+function findItemByDisplayId(items, displayId) {
+  for (const item of items) {
+    if (item.displayId === displayId) return item;
+    const nested = findItemByDisplayId(item.subtasks ?? [], displayId);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+keywordSearchForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const query = searchKeyword.value.trim();
+  if (!query) {
+    searchSummary.textContent = 'Enter a keyword to search.';
+    searchKeyword.focus();
+    return;
+  }
+
+  searchSummary.textContent = 'Searching all lists...';
+  searchResults.replaceChildren();
+
+  try {
+    const allItems = await loadAllSearchItems();
+    const matches = allItems
+      .map(result => ({ ...result, score: keywordMatchScore(query, result.item) }))
+      .filter(result => result.score > 0)
+      .sort((a, b) => b.score - a.score || compareSearchCreatedNewest(a, b));
+
+    renderSearchResults(
+      matches,
+      `${matches.length.toLocaleString('en-US')} match${matches.length === 1 ? '' : 'es'} across ${lists.length.toLocaleString('en-US')} list${lists.length === 1 ? '' : 's'}.`
+    );
+  } catch (error) {
+    searchSummary.textContent = `Search error: ${error.message}`;
+  }
+});
+
+dateSearchForm.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const start = parseSearchDate(searchStartDate.value);
+  const end = parseSearchDate(searchEndDate.value);
+
+  if (start === null || end === null) {
+    searchSummary.textContent = 'Enter both dates as m/d/yy or mm/dd/yy.';
+    return;
+  }
+
+  if (start > end) {
+    searchSummary.textContent = 'Start date must be on or before End date.';
+    return;
+  }
+
+  searchSummary.textContent = 'Searching all lists...';
+  searchResults.replaceChildren();
+
+  try {
+    const allItems = await loadAllSearchItems();
+    const matches = allItems
+      .filter(result => {
+        const created = creationDateKey(result.item.createdAt);
+        return created !== null && created >= start && created <= end;
+      })
+      .sort(compareSearchCreatedNewest);
+
+    renderSearchResults(
+      matches,
+      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in that range across ${lists.length.toLocaleString('en-US')} list${lists.length === 1 ? '' : 's'}.`
+    );
+  } catch (error) {
+    searchSummary.textContent = `Search error: ${error.message}`;
+  }
+});
+
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.1'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.2.0</span>
+      <span class="title-app-name">Task List v1.2.1</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -148,6 +148,46 @@
     <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
     <div class="dialog-buttons">
       <button type="button" id="closeManageLists">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="searchDialog" class="retro-dialog search-dialog">
+    <div class="dialog-title">Search</div>
+    <div class="dialog-body search-body">
+      <div class="search-tabs" role="tablist" aria-label="Search type">
+        <button type="button" id="keywordSearchTab" class="search-tab" role="tab" aria-selected="true" aria-controls="keywordSearchPanel">Keyword</button>
+        <button type="button" id="dateSearchTab" class="search-tab" role="tab" aria-selected="false" aria-controls="dateSearchPanel">Date</button>
+      </div>
+
+      <section id="keywordSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="keywordSearchTab">
+        <form id="keywordSearchForm" class="search-form">
+          <label for="searchKeyword">Keyword</label>
+          <div class="search-inline-row">
+            <input type="text" id="searchKeyword" autocomplete="off" maxlength="500">
+            <button type="submit">Search</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="dateSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="dateSearchTab" hidden>
+        <form id="dateSearchForm" class="search-form">
+          <label for="searchStartDate">Start date</label>
+          <input type="text" id="searchStartDate" inputmode="numeric" autocomplete="off" placeholder="m/d/yy">
+          <label for="searchEndDate">End date</label>
+          <input type="text" id="searchEndDate" inputmode="numeric" autocomplete="off" placeholder="m/d/yy">
+          <div class="search-date-actions">
+            <button type="submit">Search</button>
+          </div>
+        </form>
+      </section>
+
+      <div id="searchSummary" class="search-summary">Searches all lists.</div>
+      <div id="searchResults" class="search-results" aria-live="polite">
+        <div class="search-placeholder">Enter a keyword or date range to search.</div>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" id="closeSearch">Close</button>
     </div>
   </dialog>
 
