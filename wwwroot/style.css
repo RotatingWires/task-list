@@ -135,7 +135,23 @@ button { cursor: pointer; }
   color: #fff;
   outline: none;
 }
-.menu-check { text-align: center; font-weight: 700; }
+.menu-check {
+  width: 18px;
+  min-width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  line-height: 1;
+}
+.menu-dropdown button[aria-checked="true"] .menu-check::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  display: block;
+}
 
 .titlebar,
 .menubar,

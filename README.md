@@ -1,4 +1,4 @@
-# Task List v1.2.5
+# Task List v1.2.6
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.2.6
+
+- Enlarged the selected-item radio marker used by the File list menu, View menu, and Search list filter.
+- Replaced the tiny text bullet with a 10px solid CSS circle centered in the existing menu-check column for a closer Windows 95 look.
+- The marker uses the menu text color, so it automatically turns white when the selected row is highlighted blue.
+- Windows file/product/assembly version is `1.2.6`.
+- PWA cache is v1.2.6.
 
 ## v1.2.5
 
