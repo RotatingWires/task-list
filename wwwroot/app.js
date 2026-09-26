@@ -32,6 +32,8 @@ const cancelSubtask = document.querySelector('#cancelSubtask');
 const infoDialog = document.querySelector('#infoDialog');
 const closeInfo = document.querySelector('#closeInfo');
 const infoTaskId = document.querySelector('#infoTaskId');
+const infoParentTaskRow = document.querySelector('#infoParentTaskRow');
+const infoParentTask = document.querySelector('#infoParentTask');
 const infoUniversalId = document.querySelector('#infoUniversalId');
 const infoTitle = document.querySelector('#infoTitle');
 const infoDescription = document.querySelector('#infoDescription');
@@ -455,6 +457,18 @@ cancelSubtask.addEventListener('click', () => {
 
 function openInfo(item) {
   infoTaskId.textContent = `#${item.displayId}`;
+
+  if (item.parentDisplayId) {
+    const parent = findItemByDisplayId(tasks, item.parentDisplayId);
+    infoParentTask.textContent = parent
+      ? `#${parent.displayId} -- ${parent.title}`
+      : `#${item.parentDisplayId}`;
+    infoParentTaskRow.hidden = false;
+  } else {
+    infoParentTask.textContent = '';
+    infoParentTaskRow.hidden = true;
+  }
+
   infoUniversalId.textContent = String(item.universalId);
   infoTitle.textContent = item.title;
   infoDescription.textContent = item.description || '—';
@@ -1136,7 +1150,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.7'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.2.8'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});

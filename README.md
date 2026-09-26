@@ -1,4 +1,4 @@
-# Task List v1.2.7
+# Task List v1.2.8
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -77,6 +77,13 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+
+## v1.2.8
+
+- Task Information now shows the immediate parent task directly under the task ID when viewing a subtask.
+- Parent display includes both the parent task number and title, for example `#182 -- IST 210`.
+- Windows file/product/assembly version is `1.2.8`.
+- PWA cache is v1.2.8.
 
 ## v1.2.7
 
