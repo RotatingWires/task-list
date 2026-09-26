@@ -1,4 +1,4 @@
-# Task List v1.2.4
+# Task List v1.2.5
 
 A small self-hosted task-list application for a Windows NAS and web/PWA clients.
 
@@ -76,6 +76,13 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.2.5
+
+- Made the Search result List filter use a deeper Win95-style bevel with a dark outer outline, inner highlight/shadow, and stronger lower-right drop shadow so the top and left edges stay visible against the gray dialog background.
+- The opened/pressed state keeps the same stronger outer edge while reversing the inner bevel.
+- Windows file/product/assembly version is `1.2.5`.
+- PWA cache is v1.2.5.
 
 ## v1.2.4
 
