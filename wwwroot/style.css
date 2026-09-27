@@ -554,7 +554,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .search-tabs {
   flex: 0 0 auto;
@@ -605,6 +606,17 @@ button:disabled {
   display: flex;
   justify-content: flex-end;
   margin-top: 2px;
+}
+@media (min-width: 651px) {
+  #dateSearchForm {
+    grid-template-columns: max-content minmax(120px, 1fr) max-content minmax(120px, 1fr);
+    column-gap: 10px;
+    row-gap: 10px;
+    align-items: center;
+  }
+  #dateSearchForm .search-date-actions {
+    grid-column: 1 / -1;
+  }
 }
 .search-summary {
   flex: 0 0 auto;
@@ -681,9 +693,9 @@ button:disabled {
     2px 2px 0 #000;
 }
 .search-results {
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: none;
+  flex: 1 0 220px;
+  min-height: 220px;
+  max-height: min(48vh, 480px);
   overflow: auto;
   background: #fff;
   border-top: 2px solid #404040;

@@ -1,4 +1,4 @@
-# TaskList v1.3.14
+# TaskList v1.3.15
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,14 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.15
+
+- Keep the Search dialog itself fixed while allowing the Search content area to scroll when the Date/Time controls need more vertical room.
+- Reserve a real minimum viewport for search results so the Date/Time form can no longer squeeze the results pane down to a nearly invisible line.
+- Lay out Date/Time fields in two compact rows on laptop/desktop widths while preserving the stacked mobile layout.
+- Keep the Close button outside the scrolling Search content so it remains reachable at all times.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.15.
 
 ## v1.3.14
 
