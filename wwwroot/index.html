@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">TaskList v1.3.7</span>
+      <span class="title-app-name">TaskList v1.3.8</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -169,6 +169,15 @@
       <div id="searchResults" class="search-results" aria-live="polite"><div class="search-placeholder">Enter a keyword or date range to search.</div></div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeSearch">Close</button></div>
+  </dialog>
+
+  <dialog id="aboutDialog" class="retro-dialog">
+    <div class="dialog-title">About TaskList</div>
+    <div class="dialog-body">
+      <div>Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.</div>
+      <div>about.lehighradio.com<br>TaskList v1.3.8</div>
+    </div>
+    <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
 
   <script src="/app.js" defer></script>

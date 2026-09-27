@@ -13,6 +13,8 @@ const viewMenu = document.querySelector('#viewMenu');
 const viewDropdown = document.querySelector('#viewDropdown');
 const viewChoices = [...viewDropdown.querySelectorAll('[data-view]')];
 const aboutMenu = document.querySelector('#aboutMenu');
+const aboutDialog = document.querySelector('#aboutDialog');
+const closeAbout = document.querySelector('#closeAbout');
 const titleListName = document.querySelector('#titleListName');
 
 const editDialog = document.querySelector('#editDialog');
@@ -115,7 +117,6 @@ async function api(url, options = {}) {
   if (response.status === 204) return null;
   return response.json();
 }
-
 
 function clearDeepLink() {
   if (!/^\/task\/\d+\/?$/.test(location.pathname)) return;
@@ -266,7 +267,6 @@ function renderFileMenu() {
   fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut));
 }
 
-
 async function logOut() {
   closeFileMenu();
   try {
@@ -298,7 +298,6 @@ async function selectList(id) {
 }
 
 function tasksForCurrentView() {
-  // Parent status controls which view the parent and all of its subtasks appear in.
   if (currentView === 'open') return tasks.filter(task => task.status === 'Open');
   if (currentView === 'done') return tasks.filter(task => task.status === 'Done');
   return tasks;
@@ -787,7 +786,6 @@ async function deleteList(list) {
 
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 
-
 function closeSearchListFilterMenu() {
   searchListFilterDropdown.hidden = true;
   searchListFilterButton.setAttribute('aria-expanded', 'false');
@@ -889,10 +887,6 @@ function tokenSimilarity(term, word) {
   if (term === word) return 1;
   if (!term || !word) return 0;
 
-  // Short search terms should behave as literal substring searches rather than
-  // fuzzy matches. This makes queries like "e", "re", or "hom" match words
-  // that actually contain those characters, while typo tolerance stays reserved
-  // for longer terms where it is useful instead of noisy.
   if (word.includes(term)) {
     if (term.length <= 3) return 1;
     return 0.9;
@@ -1214,7 +1208,8 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTaskList v1.3.7'));
+aboutMenu.addEventListener('click', () => aboutDialog.showModal());
+closeAbout.addEventListener('click', () => aboutDialog.close());
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
