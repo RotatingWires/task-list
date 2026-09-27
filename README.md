@@ -1,4 +1,4 @@
-# TaskList v1.3.7
+# TaskList v1.3.8
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,12 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.8
+
+- Replaced the browser-alert Help window with a custom TaskList retro dialog.
+- Preserved the existing Help wording and `about.lehighradio.com` reference.
+- Removed the old alert handler instead of leaving it behind as hidden compatibility code.
 
 ## v1.3.7
 
