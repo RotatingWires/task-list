@@ -1,4 +1,4 @@
-# TaskList v1.3.5
+# TaskList v1.3.6
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -77,13 +77,13 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
-## v1.3.5
+## v1.3.6
 
 - Standardized the TaskList product name directly in source instead of relying on a runtime branding compatibility layer.
 - Removed legacy query-string deep links and the old open.html/open.js redirect path; deep links are now only `/task/<UniversalID>`.
 - Removed branding.js because the canonical source now contains the current TaskList name.
 - Preserved login return-to-task behavior through the authenticated `/task/<UniversalID>` route.
-- Bumped Windows file/product/assembly version and the PWA cache to v1.3.5.
+- Bumped Windows file/product/assembly version and the PWA cache to v1.3.6.
 
 ## v1.3.4
 
