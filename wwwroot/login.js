@@ -12,10 +12,15 @@ const loginIntro = document.querySelector('#loginIntro');
 let setupMode = false;
 
 function loginReturnUrl() {
-  const value = new URLSearchParams(location.search).get('returnUrl');
+  const params = new URLSearchParams(location.search);
+  const value = params.get('returnUrl') || params.get('ReturnUrl');
   if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
-  try { const url = new URL(value, location.origin); return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : '/'; }
-  catch { return '/'; }
+  try {
+    const url = new URL(value, location.origin);
+    return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : '/';
+  } catch {
+    return '/';
+  }
 }
 
 async function request(url, options = {}) {
