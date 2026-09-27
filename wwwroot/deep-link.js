@@ -1,38 +1,13 @@
 (() => {
   'use strict';
 
-  const params = new URLSearchParams(location.search);
-  const prettyMatch = /^\/task\/(\d+)\/?$/.exec(location.pathname);
-  const prettyUniversalId = prettyMatch ? Number(prettyMatch[1]) : null;
-  const legacyListId = Number(params.get('list'));
-  const legacyUniversalId = Number(params.get('task'));
-  const displayId = params.get('display') || null;
-  const universalId = Number.isSafeInteger(prettyUniversalId) && prettyUniversalId > 0
-    ? prettyUniversalId
-    : legacyUniversalId;
-  const hasPrettyLink = Number.isSafeInteger(prettyUniversalId) && prettyUniversalId > 0;
-  const hasLegacyLink = Number.isSafeInteger(legacyListId) && legacyListId > 0
-    && ((Number.isSafeInteger(legacyUniversalId) && legacyUniversalId > 0) || displayId);
-  const hasDeepLink = hasPrettyLink || hasLegacyLink;
+  const match = /^\/task\/(\d+)\/?$/.exec(location.pathname);
+  const universalId = match ? Number(match[1]) : null;
+  const hasDeepLink = Number.isSafeInteger(universalId) && universalId > 0;
 
   function clearDeepLink() {
-    const url = new URL(location.href);
-    let changed = false;
-
-    if (/^\/task\/\d+\/?$/.test(url.pathname)) {
-      url.pathname = '/';
-      changed = true;
-    }
-
-    for (const key of ['list', 'view', 'task', 'display']) {
-      if (url.searchParams.has(key)) {
-        url.searchParams.delete(key);
-        changed = true;
-      }
-    }
-
-    if (changed)
-      history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    if (!/^\/task\/\d+\/?$/.test(location.pathname)) return;
+    history.replaceState(null, '', '/');
   }
 
   function findUniversal(items, id) {
@@ -45,21 +20,18 @@
   }
 
   async function resolveUniversalLocation(id) {
-    if (!Number.isSafeInteger(id) || id <= 0) return null;
-
     for (const list of lists) {
       const listTasks = await api(`/api/lists/${list.id}/tasks`);
       const item = findUniversal(listTasks, id);
       if (item) return { listId: list.id, displayId: item.displayId };
     }
-
     return null;
   }
 
-  function scrollAndHighlight(display) {
+  function scrollAndHighlight(displayId) {
     requestAnimationFrame(() => {
       const row = [...taskList.querySelectorAll('tr[data-display-id]')]
-        .find(x => x.dataset.displayId === display);
+        .find(candidate => candidate.dataset.displayId === displayId);
       if (!row) {
         setStatus('Linked task was not found.');
         return;
@@ -84,45 +56,35 @@
 
   if (hasDeepLink) {
     const originalLoadTasks = loadTasks;
-    let intercepted = false;
-    let targetListId = hasLegacyLink ? legacyListId : null;
-    let targetDisplayId = displayId;
+    let handled = false;
 
     loadTasks = async function() {
-      if (!intercepted) {
-        if (hasPrettyLink) {
-          try {
-            const target = await resolveUniversalLocation(universalId);
-            if (target) {
-              targetListId = target.listId;
-              targetDisplayId = target.displayId;
-            }
-          } catch (error) {
-            setStatus(`Deep-link error: ${error.message}`);
+      if (!handled) {
+        try {
+          const target = await resolveUniversalLocation(universalId);
+          if (!target) {
+            handled = true;
+            setStatus(`Task with Universal ID ${universalId} was not found.`);
+            return originalLoadTasks();
           }
-        }
 
-        if (Number.isSafeInteger(targetListId) && lists.some(list => list.id === targetListId)) {
-          intercepted = true;
-          currentListId = targetListId;
-          localStorage.setItem('task-list-current-list', String(targetListId));
+          currentListId = target.listId;
+          localStorage.setItem('task-list-current-list', String(target.listId));
           currentView = 'all';
           updateViewMenu();
           renderFileMenu();
           updateListTitle();
+          handled = target.displayId;
+        } catch (error) {
+          handled = true;
+          setStatus(`Deep-link error: ${error.message}`);
         }
       }
 
       const result = await originalLoadTasks();
-      if (intercepted === true) {
-        const item = Number.isSafeInteger(universalId) && universalId > 0
-          ? findUniversal(tasks, universalId)
-          : null;
-        scrollAndHighlight(item?.displayId || targetDisplayId);
-        intercepted = 'done';
-      } else if (!intercepted && hasPrettyLink) {
-        setStatus(`Task with Universal ID ${universalId} was not found.`);
-        intercepted = 'done';
+      if (typeof handled === 'string') {
+        scrollAndHighlight(handled);
+        handled = true;
       }
       return result;
     };
@@ -139,14 +101,4 @@
     clearDeepLink();
     return originalSetView(view);
   };
-
-  const oldHelp = document.querySelector('#aboutMenu');
-  if (oldHelp) {
-    const help = oldHelp.cloneNode(true);
-    oldHelp.replaceWith(help);
-    help.addEventListener('click', () => alert(
-      'Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.\n\n' +
-      'about.lehighradio.com\nTaskList v1.3.4'
-    ));
-  }
 })();

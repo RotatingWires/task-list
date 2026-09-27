@@ -68,12 +68,12 @@ if (setupToken is not null)
 {
     Console.WriteLine();
     Console.WriteLine("============================================================");
-    Console.WriteLine("TASK LIST FIRST-RUN SETUP TOKEN");
+    Console.WriteLine("TASKLIST FIRST-RUN SETUP TOKEN");
     Console.WriteLine();
     Console.WriteLine($"  {setupToken}");
     Console.WriteLine();
     Console.WriteLine("Enter this token on the Create Password screen.");
-    Console.WriteLine("It changes each time Task List restarts until setup is complete.");
+    Console.WriteLine("It changes each time TaskList restarts until setup is complete.");
     Console.WriteLine("============================================================");
     Console.WriteLine();
 }
@@ -118,7 +118,7 @@ app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context)
         return Results.Conflict(new { error = "A password has already been configured." });
 
     if (setupToken is null)
-        return Results.Conflict(new { error = "No setup token is active. Restart Task List to generate a new one." });
+        return Results.Conflict(new { error = "No setup token is active. Restart TaskList to generate a new one." });
 
     if (!SetupTokenMatches(setupToken, request.SetupToken))
         return Results.Json(new { error = "Invalid setup token." }, statusCode: StatusCodes.Status401Unauthorized);
@@ -495,7 +495,7 @@ static void InitializeDatabase(string connectionString, string databasePath)
             Path.GetDirectoryName(databasePath)!,
             $"task-list-pre-v1.1.0-{DateTime.Now:yyyyMMdd-HHmmssfff}.db");
         File.Copy(databasePath, backupPath, overwrite: false);
-        Console.WriteLine($"Task List database backup created: {backupPath}");
+        Console.WriteLine($"TaskList database backup created: {backupPath}");
         connection.Open();
     }
 
@@ -625,7 +625,7 @@ static void MigrateLegacyTaskSchema(SqliteConnection connection)
         dropTasks.ExecuteNonQuery();
 
     transaction.Commit();
-    Console.WriteLine($"Task List database migrated to recursive items: {oldTaskCount} tasks + {oldSubtaskCount} subtasks = {expectedCount} items.");
+    Console.WriteLine($"TaskList database migrated to recursive items: {oldTaskCount} tasks + {oldSubtaskCount} subtasks = {expectedCount} items.");
 }
 
 static bool TableExists(SqliteConnection connection, string tableName, SqliteTransaction? transaction = null)
