@@ -1,4 +1,4 @@
-# TaskList v1.3.9
+# TaskList v1.3.10
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,13 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.10
+
+- Changed the TaskList service worker from cache-first to network-first for current same-origin app assets, reducing stale mixed-version UI after upgrades while retaining cached fallback behavior when the network is unavailable.
+- Kept API requests out of the service-worker cache and limited app-asset handling to same-origin GET requests.
+- Removed the unused `wwwroot/icons/icon.svg` source asset; the active favicon, Apple touch icon, and PWA PNG icons remain.
+- Bumped TaskList UI, assembly, About text, README, and PWA cache metadata to v1.3.10.
 
 ## v1.3.9
 
