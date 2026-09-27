@@ -66,7 +66,9 @@ const keywordSearchForm = document.querySelector('#keywordSearchForm');
 const dateSearchForm = document.querySelector('#dateSearchForm');
 const searchKeyword = document.querySelector('#searchKeyword');
 const searchStartDate = document.querySelector('#searchStartDate');
+const searchStartTime = document.querySelector('#searchStartTime');
 const searchEndDate = document.querySelector('#searchEndDate');
+const searchEndTime = document.querySelector('#searchEndTime');
 const searchSummary = document.querySelector('#searchSummary');
 const searchListFilterButton = document.querySelector('#searchListFilterButton');
 const searchListFilterLabel = document.querySelector('#searchListFilterLabel');
@@ -805,12 +807,14 @@ function openSearch() {
   setSearchTab('keyword');
   searchKeyword.value = '';
   searchStartDate.value = '';
+  searchStartTime.value = '';
   searchEndDate.value = '';
+  searchEndTime.value = '';
   searchSummary.textContent = 'Searches all lists.';
   resetSearchListFilter();
   searchResults.replaceChildren(Object.assign(document.createElement('div'), {
     className: 'search-placeholder',
-    textContent: 'Enter a keyword or date range to search.'
+    textContent: 'Enter a keyword or date/time range to search.'
   }));
   searchDialog.showModal();
   searchKeyword.focus();
@@ -973,6 +977,62 @@ function creationDateKey(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+
+function parseSearchTime(value) {
+  const text = value.trim().toLowerCase().replaceAll('.', '').replace(/\s+/g, '');
+  if (!text) return { specified: false, minutes: null };
+
+  const match = /^(\d{1,2})(?::(\d{1,2}))?(am|pm)?$/.exec(text);
+  if (!match) return null;
+
+  let hour = Number(match[1]);
+  const minute = match[2] === undefined ? 0 : Number(match[2]);
+  const meridiem = match[3] ?? null;
+  if (minute > 59) return null;
+
+  if (meridiem) {
+    if (hour < 1 || hour > 12) return null;
+    if (hour === 12) hour = 0;
+    if (meridiem === 'pm') hour += 12;
+  } else {
+    if (hour < 1 || hour > 12) return null;
+    if (hour === 12) hour = 0;
+  }
+
+  return { specified: true, minutes: hour * 60 + minute };
+}
+
+function creationDateTimeParts(value) {
+  if (!value || value === 'Unknown') return null;
+
+  const sourceDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (sourceDate) {
+    return {
+      dateKey: Number(sourceDate[1]) * 10000 + Number(sourceDate[2]) * 100 + Number(sourceDate[3]),
+      minutes: null
+    };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return {
+    dateKey: date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate(),
+    minutes: date.getHours() * 60 + date.getMinutes()
+  };
+}
+
+function matchesCreationRange(value, startDate, startTime, endDate, endTime) {
+  const created = creationDateTimeParts(value);
+  if (!created || created.dateKey < startDate || created.dateKey > endDate) return false;
+
+  const hasTimeFilter = startTime.specified || endTime.specified;
+  if (hasTimeFilter && created.minutes === null) return false;
+
+  if (startTime.specified && created.dateKey === startDate && created.minutes < startTime.minutes) return false;
+  if (endTime.specified && created.dateKey === endDate && created.minutes > endTime.minutes) return false;
+  return true;
 }
 
 function compareSearchCreatedNewest(a, b) {
@@ -1173,16 +1233,23 @@ keywordSearchForm.addEventListener('submit', async event => {
 dateSearchForm.addEventListener('submit', async event => {
   event.preventDefault();
 
-  const start = parseSearchDate(searchStartDate.value);
-  const end = parseSearchDate(searchEndDate.value);
+  const startDate = parseSearchDate(searchStartDate.value);
+  const endDate = parseSearchDate(searchEndDate.value);
+  const startTime = parseSearchTime(searchStartTime.value);
+  const endTime = parseSearchTime(searchEndTime.value);
 
-  if (start === null || end === null) {
-    searchSummary.textContent = 'Use m/d, m/d/yy, or m/d/yyyy.';
+  if (startDate === null || endDate === null) {
+    searchSummary.textContent = 'Use m/d, m/d/yy, or m/d/yyyy for dates.';
     return;
   }
 
-  if (start > end) {
-    searchSummary.textContent = 'Start date must be on or before End date.';
+  if (startTime === null || endTime === null) {
+    searchSummary.textContent = 'Use times like 9 PM, 9PM, 9:10 PM, or 9:10. Times without AM/PM are treated as AM.';
+    return;
+  }
+
+  if (startDate > endDate || (startDate === endDate && startTime.specified && endTime.specified && startTime.minutes > endTime.minutes)) {
+    searchSummary.textContent = 'Start date/time must be on or before End date/time.';
     return;
   }
 
@@ -1193,15 +1260,14 @@ dateSearchForm.addEventListener('submit', async event => {
   try {
     const allItems = await loadAllSearchItems();
     const matches = allItems
-      .filter(result => {
-        const created = creationDateKey(result.item.createdAt);
-        return created !== null && created >= start && created <= end;
-      })
+      .filter(result => matchesCreationRange(result.item.createdAt, startDate, startTime, endDate, endTime))
       .sort(compareSearchCreatedNewest);
 
+    const timeFiltered = startTime.specified || endTime.specified;
+    const listCount = new Set(matches.map(result => result.list.id)).size;
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in that range across ${new Set(matches.map(result => result.list.id)).size.toLocaleString('en-US')} list${new Set(matches.map(result => result.list.id)).size === 1 ? '' : 's'}.`
+      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in that ${timeFiltered ? 'date/time' : 'date'} range across ${listCount.toLocaleString('en-US')} list${listCount === 1 ? '' : 's'}.${timeFiltered ? ' Date-only imported creation records are excluded because their time is unknown.' : ''}`
     );
   } catch (error) {
     searchSummary.textContent = `Search error: ${error.message}`;
