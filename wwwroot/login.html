@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#000080">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Task List">
-  <title>Task List Login</title>
+  <meta name="apple-mobile-web-app-title" content="TaskList">
+  <title>TaskList Login</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
@@ -17,14 +17,13 @@
 <body class="login-page">
   <main class="window login-window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.3.2</span>
+      <span class="title-app-name">TaskList v1.3.4</span>
       <span class="title-list-name" id="loginWindowTitle">Log In</span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
 
     <form id="authForm" class="login-form" autocomplete="on">
-      <div class="login-intro" id="loginIntro">Enter your password to open Task List.</div>
-
+      <div class="login-intro" id="loginIntro">Enter your password to open TaskList.</div>
       <input class="password-autofill-username" id="username" name="username" type="text" value="tasklist" autocomplete="username" tabindex="-1" aria-hidden="true">
 
       <div id="setupTokenGroup" class="login-confirm" hidden>
@@ -41,9 +40,7 @@
       </div>
 
       <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
-      <div class="login-actions">
-        <button id="loginButton" type="submit">Log In</button>
-      </div>
+      <div class="login-actions"><button id="loginButton" type="submit">Log In</button></div>
     </form>
   </main>
   <script src="/login.js" defer></script>

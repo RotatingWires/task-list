@@ -46,7 +46,7 @@ async function initialize() {
     setupMode = !status.configured;
     if (setupMode) {
       loginWindowTitle.textContent = 'Create Password';
-      loginIntro.textContent = 'First run: enter the setup token printed in the Task List server console, then create your password.';
+      loginIntro.textContent = 'First run: enter the setup token printed in the TaskList server console, then create your password.';
       setupTokenGroup.hidden = false;
       setupToken.required = true;
       confirmGroup.hidden = false;

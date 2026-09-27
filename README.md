@@ -1,4 +1,4 @@
-# Task List v1.3.2
+# TaskList v1.3.4
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -21,7 +21,7 @@ The database is stored at `data\task-list.db` and authentication settings are st
 
 ## Login and API authentication
 
-On first launch, Task List prints a random setup token in the server console. The setup screen requires that token plus a new password of at least 8 characters and password confirmation. The plaintext password is never stored; `auth.json` contains a random salt and a PBKDF2-SHA256 password hash.
+On first launch, TaskList prints a random setup token in the server console. The setup screen requires that token plus a new password of at least 8 characters and password confirmation. The plaintext password is never stored; `auth.json` contains a random salt and a PBKDF2-SHA256 password hash.
 
 After login, ASP.NET Core issues an HttpOnly, SameSite=Strict authentication cookie. Login and first-run setup are rate-limited per source IP to 5 attempts per minute.
 
@@ -77,10 +77,23 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+## v1.3.4
+
+- Standardized the product name to **TaskList** throughout the current browser/PWA UI, login flow, deep-link opening page, project product metadata, service-worker cache, and documentation.
+- Updated browser, Apple PWA, manifest, titlebar, login, and Help/About branding.
+- Windows file/product/assembly version and PWA cache are v1.3.4.
+
+## v1.3.3
+
+- Added clean `/task/<UniversalID>` routes for external task links while preserving the old query-string deep-link format for compatibility.
+- TaskList resolves the correct list and visible task ID from the Universal ID.
+- Deep-link scrolling matches Search → View and aligns the target task below the sticky header.
+- Deep links survive authentication redirects.
+- Windows file/product/assembly version and PWA cache are v1.3.3.
 
 ## v1.3.2
 
-- Added external task deep links: `/open.html?list=<list-id>&view=all&task=<universal-id>&display=<visible-id>`.
+- Added external task deep links using list/view/task targeting.
 - Deep links preserve themselves through login, select the requested list, switch to **All**, scroll to the task, and briefly highlight it.
 - Universal ID is the primary lookup key with visible ID as a fallback.
 - Normal list/view navigation clears stale deep-link parameters.
@@ -88,173 +101,110 @@ In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter*
 
 ## v1.3.1
 
-- Search results now use the list/task-number line as the clickable Task Information link, matching the main task table's clickable task-ID convention.
+- Search results use the list/task-number line as the clickable Task Information link, matching the main task table's clickable task-ID convention.
 - Search result task titles are plain text again.
-- **View** still switches to the result's list and **All** view, but now offsets the scroll position below the sticky table header so the row starts fully visible.
-- Windows file/product/assembly version is `1.3.1`.
-- PWA cache is v1.3.1.
+- **View** switches to the result's list and **All** view and offsets the scroll position below the sticky table header.
+- Windows file/product/assembly version and PWA cache are v1.3.1.
 
 ## v1.3
 
-- Search fields now use the same browser-native required-field validation as the main Add Task field.
+- Search fields use browser-native required-field validation.
 - Search result task titles open Task Information only and do not change the current list or view.
 - Restored the **View** button in search results. View switches to the result's list, changes the main view to **All**, and scrolls the matching task to the top without opening Task Information.
-- Windows file/product/assembly version is `1.3`.
-- PWA cache is v1.3.
+- Windows file/product/assembly version and PWA cache are v1.3.
 
 ## v1.2.10
 
-- Search results no longer use a separate View button. Clicking the task title performs the same action: switches to the result's list, opens the All view, and shows Task Information.
+- Search results no longer use a separate View button. Clicking the task title performs the same navigation/info action.
 - Search result titles use the same retro blue underlined clickable treatment as task IDs.
-- Windows file/product/assembly version is `1.2.10`.
-- PWA cache is v1.2.10.
 
 ## v1.2.9
 
 - Task Information status text is selectable without changing main task-table selection behavior.
-- Parent-task labels use an em dash (`—`) instead of two hyphens.
+- Parent-task labels use an em dash (`—`).
+- Task Information shows the immediate parent task directly under the task ID when viewing a subtask.
 
-- Task Information now shows the immediate parent task directly under the task ID when viewing a subtask.
-- Parent display includes both the parent task number and title, for example `#182 — IST 210`.
-- Windows file/product/assembly version is `1.2.9`.
-- PWA cache is v1.2.9.
+## v1.2.8
+
+- Added immediate-parent task number/title information for subtasks in Task Information.
 
 ## v1.2.7
 
-- Fixed Keyword Search for short terms: one-, two-, and three-character queries now use literal substring matching, so searches such as `e`, `re`, and `hom` work as expected.
-- Fuzzy typo matching remains for longer search terms.
+- Fixed one-, two-, and three-character Keyword Searches so literal substring matches work as expected.
+- Fuzzy typo matching remains for longer terms.
 - Menu selection dots use the preferred 8px size.
-- Windows file/product/assembly version is `1.2.7`.
-- PWA cache is v1.2.7.
 
 ## v1.2.6
 
-- Enlarged the selected-item radio marker used by the File list menu, View menu, and Search list filter.
-- Replaced the tiny text bullet with a 10px solid CSS circle centered in the existing menu-check column for a closer Windows 95 look.
-- The marker uses the menu text color, so it automatically turns white when the selected row is highlighted blue.
-- Windows file/product/assembly version is `1.2.6`.
-- PWA cache is v1.2.6.
+- Enlarged the selected-item radio marker used by File, View, and Search list menus.
+- Replaced the tiny text bullet with a CSS selection dot.
 
 ## v1.2.5
 
-- Made the Search result List filter use a deeper Win95-style bevel with a dark outer outline, inner highlight/shadow, and stronger lower-right drop shadow so the top and left edges stay visible against the gray dialog background.
-- The opened/pressed state keeps the same stronger outer edge while reversing the inner bevel.
-- Windows file/product/assembly version is `1.2.5`.
-- PWA cache is v1.2.5.
+- Deepened the Win95-style bevel and pressed state on the Search list dropdown.
 
 ## v1.2.4
 
-- Replaced Search's native List selector with a custom Win95-style dropdown matching the app's View/File menus. It still filters only the already-loaded cross-list search results.
-- Date Search now accepts `m/d` or `mm/dd` with no year; those forms automatically use the current year from the browser/device. Existing `m/d/yy`, `mm/dd/yy`, and four-digit-year input still works.
-- Updated the date-field hint to show that the year is optional.
-- Windows file/product/assembly version is `1.2.4`.
-- PWA cache is v1.2.4.
+- Replaced Search's native List selector with a custom Win95-style dropdown matching the app's View/File menus.
+- Date Search accepts `m/d` or `mm/dd` without a year and uses the browser/device's current year.
 
 ## v1.2.3
 
-- Added a **List** filter directly below the Search summary. Search still runs across every list first; the dropdown only filters the displayed result set afterward.
-- The List dropdown contains **All lists** plus each list represented in the current results, with the number of matching items from that list.
-- Search summaries now count the lists that actually contain matches instead of always using the total number of lists.
-- Windows file/product/assembly version is `1.2.3`.
-- PWA cache is v1.2.3.
+- Added a **List** filter directly below the Search summary.
+- Search still runs across every list first; the dropdown filters the displayed result set afterward.
 
 ## v1.2.2
 
-- Date-search fields now use the normal text keyboard on iOS so `/` can be entered in dates such as `9/25/26`.
-- Search-result action button is now labeled **View** instead of **Open**.
-- Search behavior is otherwise unchanged and still runs across all lists.
-- Windows file/product/assembly version is `1.2.2`.
-- PWA cache is v1.2.2.
+- Date-search fields use the normal text keyboard on iOS so `/` can be entered.
+- Search-result action button is labeled **View** instead of **Open**.
 
 ## v1.2.1
 
-- Added **File → Search...** immediately after Manage Lists.
-- Search always runs across every task list, including nested subtasks and all statuses.
-- **Keyword** search checks task titles and descriptions and uses lightweight fuzzy matching for partial words and small typos. No search library or new dependency was added.
-- **Date** search filters the Created date inclusively between Start date and End date. It accepts `m/d/yy`, `mm/dd/yy`, and also four-digit years.
-- Search results show the list, visible task ID, title, description, status, and creation date. **Open** switches to that list in All view and opens Task Information.
-- Preserved the current 20px mobile top safe-zone adjustment and solid `#c8c8c8` task separators.
-- Windows file/product/assembly version is `1.2.1`.
-- PWA cache is v1.2.1.
+- Added **File → Search...**.
+- Search covers every list, nested subtasks, and all statuses.
+- Keyword search supports substring and lightweight fuzzy matching.
+- Date search filters Created dates inclusively.
 
 ## v1.1.9
 
-- On mobile, the main app window now starts below a minimum 20px top safe zone so newer iPhones do not blur the blue Task List titlebar into the system status-bar area.
-- Removed the old blue safe-area `::before` overlay; the reserved area above the app is now the normal gray window background.
-- Preserved the user's solid `#c8c8c8` base task separators instead of the older dotted separators.
-- Windows file/product/assembly version is `1.1.9`.
-- PWA cache is v1.1.9.
+- On mobile, the main app window starts below a minimum 20px top safe zone so newer iPhones do not blur the blue TaskList titlebar into the system status-bar area.
+- The reserved area above the app is the normal gray window background.
 
 ## v1.1.8
 
-- Mobile now uses a full-width divider when a subtask group ends and the next row is a root task.
-- The last subtask drops its inset bottom divider at that boundary, avoiding the left-side gap shown before the next root task.
-- Desktop behavior from v1.1.7 is unchanged.
-- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
-- Windows file/product/assembly version is `1.1.8`.
-- PWA cache is v1.1.8.
+- Mobile uses a full-width divider when a subtask group ends and the next row is a root task.
 
 ## v1.1.7
 
-- Desktop subtask dividers now stay inside the inset subtask block instead of extending left past the colored hierarchy/status line.
-- A full-width divider is kept only at the boundary between a root task and its first/last subtask group.
-- Mobile subtask styling is unchanged.
-- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
-- Windows file/product/assembly version is `1.1.7`.
-- PWA cache is v1.1.7.
+- Desktop subtask dividers stay inside the inset subtask block.
 
 ## v1.1.6
 
-- Desktop subtasks now use the same depth-based left inset treatment as mobile.
-- Desktop hierarchy/status lines move inward with the subtask block instead of staying at the outer table edge.
-- Subtask blocks now have a top divider as well as a bottom divider, making their boundaries clearer beside neighboring tasks.
-- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
-- Windows file/product/assembly version is `1.1.6`.
-- PWA cache is v1.1.6.
+- Desktop subtasks use the same depth-based left inset treatment as mobile.
 
 ## v1.1.5
 
-- Based on v1.1.3; does not include the abandoned parent-ID enlargement experiment.
-- Subtasks now use a slightly darker inset background and tighter vertical spacing so they read as children of the parent task.
-- Nested subtasks are increasingly indented by depth on both desktop and mobile.
-- Mobile subtask rows are inset as attached blocks instead of occupying the full top-level row width.
-- Preserved hierarchy/status colors: Open `#e02d04`; Done/Cancelled `#02bd34`.
-- Windows file/product/assembly version is `1.1.5`.
-- PWA cache is v1.1.5.
+- Subtasks use a slightly darker inset background and tighter vertical spacing.
+- Nested subtasks are increasingly indented by depth.
 
 ## v1.1.3
 
-- Normal login no longer applies the 8-character browser `minlength` validation.
-- The 8-character minimum is applied only while creating the first-run password.
-- Server-side first-run password validation remains unchanged.
-- Windows file/product/assembly version is `1.1.3`.
-- PWA cache is v1.1.3.
+- Normal login no longer applies the 8-character browser `minlength` validation; that minimum is only applied while creating the first-run password.
 
 ## v1.1.2
 
-- Subtask hierarchy/status line now appears on desktop as well as mobile.
-- Open subtasks use `#800e06`; Done and Cancelled subtasks use `#06801b`.
-- Desktop applies the line to the first table cell so it renders reliably with the existing table layout.
-- Windows file/product/assembly version is `1.1.2`.
-- PWA cache is v1.1.2.
+- Subtask hierarchy/status line appears on desktop as well as mobile.
 
 ## v1.1.1
 
-- Subtask hierarchy line is now `#800e06` for Open subtasks.
-- Subtask hierarchy line is now `#06801b` for Done and Cancelled subtasks.
-- Windows file/product/assembly version is `1.1.1`.
-- PWA cache is v1.1.1.
+- Updated subtask hierarchy colors for Open vs Done/Cancelled states.
 
 ## v1.1.0
 
 - Added unlimited nested subtasks.
 - Replaced separate `tasks` and `subtasks` tables with one recursive `items` table.
-- Visible task IDs are now stored directly in SQLite as `display_id`.
+- Visible task IDs are stored directly in SQLite as `display_id`.
 - Added automatic one-time migration and timestamped pre-migration database backup for v1.0.x databases.
 - Added **Add Subtask** to every task level.
-- Add Subtask dialog now shows `Parent Task #ID - task name`.
-- Markdown import now preserves arbitrary nesting.
+- Markdown import preserves arbitrary nesting.
 - Recursive delete removes all descendants and warns with the descendant count.
-- Preserved login rate limiting, first-run setup token, list-count title, comma-formatted lifetime UID counter, and existing UI behavior.
-- Windows file/product/assembly version is `1.1.0`.
-- PWA cache is v1.1.0.

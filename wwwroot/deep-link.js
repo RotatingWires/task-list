@@ -146,7 +146,7 @@
     oldHelp.replaceWith(help);
     help.addEventListener('click', () => alert(
       'Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.\n\n' +
-      'about.lehighradio.com\nTask List v1.3.3'
+      'about.lehighradio.com\nTaskList v1.3.4'
     ));
   }
 })();

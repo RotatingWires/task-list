@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Task List",
-  "short_name": "Task List",
+  "name": "TaskList",
+  "short_name": "TaskList",
   "description": "A tiny self-hosted task list app.",
   "start_url": "/",
   "scope": "/",
