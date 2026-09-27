@@ -1,4 +1,4 @@
-# TaskList v1.3.13
+# TaskList v1.3.14
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,14 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.14
+
+- Add **File → Refresh** to reload the TaskList PWA/page without closing it from the app switcher; the current network-first service worker then checks the server for the latest app shell.
+- Give the Search dialog a fixed viewport-aware height so adding results no longer grows the outer dialog beyond the screen.
+- Keep the Search title, tabs, filters, and Close button fixed while only the results pane scrolls internally.
+- Remove the old desktop/mobile result-height caps that allowed the dialog itself to become the scrolling container.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.14.
 
 ## v1.3.13
 
