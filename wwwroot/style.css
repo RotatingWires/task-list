@@ -536,12 +536,28 @@ button:disabled {
 /* v1.2.1: all-list keyword/date search. */
 .search-dialog {
   width: min(760px, calc(100vw - 24px));
+  height: min(720px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+.search-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.search-dialog > .dialog-title,
+.search-dialog > .dialog-buttons {
+  flex: 0 0 auto;
 }
 .search-body {
-  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 10px;
+  overflow: hidden;
 }
 .search-tabs {
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-end;
   gap: 2px;
@@ -565,6 +581,7 @@ button:disabled {
   z-index: 2;
 }
 .search-tab-panel {
+  flex: 0 0 auto;
   padding: 12px;
   background: var(--face);
   border-top: 2px solid #fff;
@@ -590,11 +607,13 @@ button:disabled {
   margin-top: 2px;
 }
 .search-summary {
+  flex: 0 0 auto;
   min-height: 22px;
   padding: 8px 3px 5px;
   font-size: 12px;
 }
 .search-list-filter {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -662,7 +681,9 @@ button:disabled {
     2px 2px 0 #000;
 }
 .search-results {
-  max-height: min(48vh, 480px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   background: #fff;
   border-top: 2px solid #404040;
@@ -730,9 +751,6 @@ button:disabled {
   }
   .search-result-actions {
     justify-self: start;
-  }
-  .search-results {
-    max-height: 43vh;
   }
 }
 

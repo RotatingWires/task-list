@@ -258,6 +258,7 @@ function renderFileMenu() {
   fileDropdown.append(separator);
 
   fileDropdown.append(
+    menuCommand('Refresh', refreshApp),
     menuCommand('Create a List...', openCreateList),
     menuCommand('Manage Lists...', openManageLists),
     menuCommand('Search...', openSearch)
@@ -267,6 +268,11 @@ function renderFileMenu() {
   accountSeparator.className = 'menu-separator';
   accountSeparator.setAttribute('role', 'separator');
   fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut));
+}
+
+function refreshApp() {
+  closeFileMenu();
+  window.location.reload();
 }
 
 async function logOut() {
