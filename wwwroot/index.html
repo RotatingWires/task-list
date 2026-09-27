@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#000080">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Task List">
-  <title>Task List</title>
+  <meta name="apple-mobile-web-app-title" content="TaskList">
+  <title>TaskList</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">Task List v1.3.2</span>
+      <span class="title-app-name">TaskList v1.3.4</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -123,9 +123,7 @@
         <dt>Reopened</dt><dd id="infoReopened"></dd>
       </dl>
     </div>
-    <div class="dialog-buttons">
-      <button type="button" id="closeInfo">OK</button>
-    </div>
+    <div class="dialog-buttons"><button type="button" id="closeInfo">OK</button></div>
   </dialog>
 
   <dialog id="listDialog" class="retro-dialog">
@@ -137,19 +135,14 @@
         <label for="listDescription">Description</label>
         <textarea id="listDescription" maxlength="1000" rows="5" placeholder="Optional"></textarea>
       </div>
-      <div class="dialog-buttons">
-        <button value="cancel" type="button" id="cancelListEdit">Cancel</button>
-        <button value="default" type="submit">Save</button>
-      </div>
+      <div class="dialog-buttons"><button value="cancel" type="button" id="cancelListEdit">Cancel</button><button value="default" type="submit">Save</button></div>
     </form>
   </dialog>
 
   <dialog id="manageListsDialog" class="retro-dialog manage-lists-dialog">
     <div class="dialog-title manage-lists-title"><span id="manageListsTitleText">Manage Lists</span><span id="manageListsUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
     <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
-    <div class="dialog-buttons">
-      <button type="button" id="closeManageLists">Close</button>
-    </div>
+    <div class="dialog-buttons"><button type="button" id="closeManageLists">Close</button></div>
   </dialog>
 
   <dialog id="searchDialog" class="retro-dialog search-dialog">
@@ -159,50 +152,27 @@
         <button type="button" id="keywordSearchTab" class="search-tab" role="tab" aria-selected="true" aria-controls="keywordSearchPanel">Keyword</button>
         <button type="button" id="dateSearchTab" class="search-tab" role="tab" aria-selected="false" aria-controls="dateSearchPanel">Date</button>
       </div>
-
       <section id="keywordSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="keywordSearchTab">
         <form id="keywordSearchForm" class="search-form">
-          <label for="searchKeyword">Keyword</label>
-          <div class="search-inline-row">
-            <input type="text" id="searchKeyword" autocomplete="off" maxlength="500" required>
-            <button type="submit">Search</button>
-          </div>
+          <label for="searchKeyword">Keyword</label><div class="search-inline-row"><input type="text" id="searchKeyword" autocomplete="off" maxlength="500" required><button type="submit">Search</button></div>
         </form>
       </section>
-
       <section id="dateSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="dateSearchTab" hidden>
         <form id="dateSearchForm" class="search-form">
-          <label for="searchStartDate">Start date</label>
-          <input type="text" id="searchStartDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
-          <label for="searchEndDate">End date</label>
-          <input type="text" id="searchEndDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
-          <div class="search-date-actions">
-            <button type="submit">Search</button>
-          </div>
+          <label for="searchStartDate">Start date</label><input type="text" id="searchStartDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
+          <label for="searchEndDate">End date</label><input type="text" id="searchEndDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
+          <div class="search-date-actions"><button type="submit">Search</button></div>
         </form>
       </section>
-
       <div id="searchSummary" class="search-summary">Searches all lists.</div>
-      <div class="search-list-filter">
-        <span class="search-list-filter-label">List:</span>
-        <div class="menu-wrap search-list-menu">
-          <button type="button" id="searchListFilterButton" class="search-list-filter-button" aria-haspopup="menu" aria-expanded="false" disabled>
-            <span id="searchListFilterLabel">All lists</span>
-            <span class="search-list-filter-arrow" aria-hidden="true">▼</span>
-          </button>
-          <div id="searchListFilterDropdown" class="menu-dropdown search-list-filter-dropdown" role="menu" hidden></div>
-        </div>
-      </div>
-      <div id="searchResults" class="search-results" aria-live="polite">
-        <div class="search-placeholder">Enter a keyword or date range to search.</div>
-      </div>
+      <div class="search-list-filter"><span class="search-list-filter-label">List:</span><div class="menu-wrap search-list-menu"><button type="button" id="searchListFilterButton" class="search-list-filter-button" aria-haspopup="menu" aria-expanded="false" disabled><span id="searchListFilterLabel">All lists</span><span class="search-list-filter-arrow" aria-hidden="true">▼</span></button><div id="searchListFilterDropdown" class="menu-dropdown search-list-filter-dropdown" role="menu" hidden></div></div></div>
+      <div id="searchResults" class="search-results" aria-live="polite"><div class="search-placeholder">Enter a keyword or date range to search.</div></div>
     </div>
-    <div class="dialog-buttons">
-      <button type="button" id="closeSearch">Close</button>
-    </div>
+    <div class="dialog-buttons"><button type="button" id="closeSearch">Close</button></div>
   </dialog>
 
   <script src="/app.js" defer></script>
   <script src="/deep-link.js" defer></script>
+  <script src="/branding.js" defer></script>
 </body>
 </html>
