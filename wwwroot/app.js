@@ -83,6 +83,11 @@ let highestUniversalId = 0;
 let searchResultSet = [];
 let searchListFilterValue = 'all';
 
+const deepLinkMatch = /^\/task\/(\d+)\/?$/.exec(location.pathname);
+const deepLinkUniversalId = deepLinkMatch ? Number(deepLinkMatch[1]) : null;
+const hasDeepLink = Number.isSafeInteger(deepLinkUniversalId) && deepLinkUniversalId > 0;
+let pendingDeepLinkDisplayId = null;
+
 const STATUS_ACTIONS = {
   Open: [['Complete', 'Done'], ['Cancel', 'Cancelled']],
   Done: [['Reopen', 'Open'], ['Cancel', 'Cancelled']],
@@ -109,6 +114,57 @@ async function api(url, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+
+function clearDeepLink() {
+  if (!/^\/task\/\d+\/?$/.test(location.pathname)) return;
+  history.replaceState(null, '', '/');
+}
+
+function findUniversal(items, universalId) {
+  for (const item of items) {
+    if (item.universalId === universalId) return item;
+    const nested = findUniversal(item.subtasks ?? [], universalId);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+async function resolveUniversalLocation(universalId) {
+  for (const list of lists) {
+    const listTasks = await api(`/api/lists/${list.id}/tasks`);
+    const item = findUniversal(listTasks, universalId);
+    if (item) return { listId: list.id, displayId: item.displayId };
+  }
+  return null;
+}
+
+function scrollAndHighlightTask(displayId, highlight = true) {
+  requestAnimationFrame(() => {
+    const row = [...taskList.querySelectorAll('tr[data-display-id]')]
+      .find(candidate => candidate.dataset.displayId === displayId);
+    if (!row) {
+      setStatus('Linked task was not found.');
+      return;
+    }
+
+    row.scrollIntoView({ block: 'start', inline: 'nearest' });
+    const taskPanel = row.closest('.task-panel');
+    const tableHead = taskPanel?.querySelector('thead');
+    const headerVisible = tableHead && getComputedStyle(tableHead).display !== 'none';
+    const headerHeight = headerVisible ? tableHead.getBoundingClientRect().height : 0;
+    if (taskPanel && headerHeight > 0)
+      taskPanel.scrollTop = Math.max(0, taskPanel.scrollTop - headerHeight - 2);
+
+    if (!highlight) return;
+    row.style.background = '#fff4a8';
+    [...row.cells].forEach(cell => { cell.style.background = '#fff4a8'; });
+    setTimeout(() => {
+      row.style.background = '';
+      [...row.cells].forEach(cell => { cell.style.background = ''; });
+    }, 3200);
+  });
 }
 
 function jsonApi(url, method, body) {
@@ -153,6 +209,11 @@ async function loadTasks() {
     tasks = await api(`/api/lists/${currentListId}/tasks`);
     renderTasks();
     setStatus('Ready');
+    if (pendingDeepLinkDisplayId) {
+      const displayId = pendingDeepLinkDisplayId;
+      pendingDeepLinkDisplayId = null;
+      scrollAndHighlightTask(displayId, true);
+    }
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
@@ -225,6 +286,7 @@ function menuCommand(label, handler) {
 }
 
 async function selectList(id) {
+  clearDeepLink();
   currentListId = id;
   localStorage.setItem('task-list-current-list', String(id));
   currentView = 'open';
@@ -541,6 +603,7 @@ markdownFile.addEventListener('change', async () => {
 });
 
 function setView(view) {
+  clearDeepLink();
   currentView = view;
   updateViewMenu();
   renderTasks();
@@ -1066,6 +1129,7 @@ document.addEventListener('keydown', event => {
 });
 
 async function viewSearchResult(result) {
+  clearDeepLink();
   searchDialog.close();
   currentListId = result.list.id;
   localStorage.setItem('task-list-current-list', String(currentListId));
@@ -1076,22 +1140,7 @@ async function viewSearchResult(result) {
 
   await loadTasks();
 
-  requestAnimationFrame(() => {
-    const targetRow = [...taskList.querySelectorAll('tr[data-display-id]')]
-      .find(row => row.dataset.displayId === result.item.displayId);
-    if (!targetRow) return;
-
-    targetRow.scrollIntoView({ block: 'start', inline: 'nearest' });
-
-    // Keep the target row below the sticky desktop table header instead of
-    // letting the header cover the row's top edge/actions.
-    const taskPanel = targetRow.closest('.task-panel');
-    const tableHead = taskPanel?.querySelector('thead');
-    const headerVisible = tableHead && getComputedStyle(tableHead).display !== 'none';
-    const headerHeight = headerVisible ? tableHead.getBoundingClientRect().height : 0;
-    if (taskPanel && headerHeight > 0)
-      taskPanel.scrollTop = Math.max(0, taskPanel.scrollTop - headerHeight - 2);
-  });
+  scrollAndHighlightTask(result.item.displayId, false);
 }
 
 function findItemByDisplayId(items, displayId) {
@@ -1165,7 +1214,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTaskList v1.3.6'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTaskList v1.3.7'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -1175,7 +1224,25 @@ async function start() {
   updateViewMenu();
   try {
     await loadLists();
+
+    let deepLinkError = null;
+    if (hasDeepLink) {
+      const target = await resolveUniversalLocation(deepLinkUniversalId);
+      if (target) {
+        currentListId = target.listId;
+        localStorage.setItem('task-list-current-list', String(target.listId));
+        currentView = 'all';
+        updateViewMenu();
+        renderFileMenu();
+        updateListTitle();
+        pendingDeepLinkDisplayId = target.displayId;
+      } else {
+        deepLinkError = `Task with Universal ID ${deepLinkUniversalId} was not found.`;
+      }
+    }
+
     await loadTasks();
+    if (deepLinkError) setStatus(deepLinkError);
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
