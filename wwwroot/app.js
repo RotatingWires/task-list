@@ -161,7 +161,7 @@ async function loadTasks() {
 function updateListTitle() {
   const list = currentList();
   titleListName.textContent = list ? list.name : '';
-  document.title = list ? `Task List — ${list.name}` : 'Task List';
+  document.title = list ? `TaskList — ${list.name}` : 'TaskList';
 }
 
 function renderFileMenu() {
@@ -1165,7 +1165,7 @@ dateSearchForm.addEventListener('submit', async event => {
   }
 });
 
-aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTask List v1.3.1'));
+aboutMenu.addEventListener('click', () => alert('Tasks with dates of \"Unknown\" were imported from a third party application, and have no data regarding those dates.\n\nabout.lehighradio.com\nTaskList v1.3.5'));
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
