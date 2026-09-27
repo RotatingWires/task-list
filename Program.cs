@@ -61,7 +61,7 @@ Directory.CreateDirectory(dataDir);
 var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
-InitializeDatabase(connectionString, databasePath);
+InitializeDatabase(connectionString);
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -480,26 +480,12 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
 app.MapFallbackToFile("index.html").RequireAuthorization();
 app.Run();
 
-static void InitializeDatabase(string connectionString, string databasePath)
+static void InitializeDatabase(string connectionString)
 {
     using var connection = new SqliteConnection(connectionString);
     connection.Open();
 
-    var hasLegacyTasks = TableExists(connection, "tasks");
-    var hasItems = TableExists(connection, "items");
-
-    if (hasLegacyTasks && !hasItems && File.Exists(databasePath))
-    {
-        connection.Close();
-        var backupPath = Path.Combine(
-            Path.GetDirectoryName(databasePath)!,
-            $"task-list-pre-v1.1.0-{DateTime.Now:yyyyMMdd-HHmmssfff}.db");
-        File.Copy(databasePath, backupPath, overwrite: false);
-        Console.WriteLine($"TaskList database backup created: {backupPath}");
-        connection.Open();
-    }
-
-    using (var command = Sql(connection, """
+    using var command = Sql(connection, """
         CREATE TABLE IF NOT EXISTS lists (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             name             TEXT NOT NULL COLLATE NOCASE UNIQUE,
@@ -511,30 +497,7 @@ static void InitializeDatabase(string connectionString, string databasePath)
         CREATE TABLE IF NOT EXISTS universal_ids (
             id INTEGER PRIMARY KEY AUTOINCREMENT
         );
-        """))
-    {
-        command.ExecuteNonQuery();
-    }
 
-    hasItems = TableExists(connection, "items");
-    hasLegacyTasks = TableExists(connection, "tasks");
-
-    if (!hasItems && hasLegacyTasks)
-        MigrateLegacyTaskSchema(connection);
-    else if (!hasItems)
-        CreateItemsSchema(connection);
-
-    using var ensureDefault = Sql(connection, """
-        INSERT INTO lists (name, description, next_task_number, created_at)
-        SELECT 'Tasks', '', 1, $createdAt
-        WHERE NOT EXISTS (SELECT 1 FROM lists);
-        """, ("$createdAt", DateTimeOffset.UtcNow.ToString("O")));
-    ensureDefault.ExecuteNonQuery();
-}
-
-static void CreateItemsSchema(SqliteConnection connection, SqliteTransaction? transaction = null)
-{
-    const string schemaSql = """
         CREATE TABLE IF NOT EXISTS items (
             universal_id       INTEGER NOT NULL UNIQUE,
             list_id            INTEGER NOT NULL,
@@ -556,92 +519,15 @@ static void CreateItemsSchema(SqliteConnection connection, SqliteTransaction? tr
 
         CREATE INDEX IF NOT EXISTS idx_items_list_parent
             ON items(list_id, parent_display_id, display_id);
-        """;
-
-    using var command = transaction is null
-        ? Sql(connection, schemaSql)
-        : SqlTx(connection, transaction, schemaSql);
+        """);
     command.ExecuteNonQuery();
-}
 
-static void MigrateLegacyTaskSchema(SqliteConnection connection)
-{
-    using var transaction = connection.BeginTransaction();
-
-    var oldTaskCount = Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM tasks;") ?? 0L);
-    var oldSubtaskCount = TableExists(connection, "subtasks", transaction)
-        ? Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM subtasks;") ?? 0L)
-        : 0L;
-    var expectedCount = oldTaskCount + oldSubtaskCount;
-
-    CreateItemsSchema(connection, transaction);
-
-    using (var copyTasks = SqlTx(connection, transaction, """
-        INSERT INTO items
-            (universal_id, list_id, display_id, parent_display_id, title, description, status,
-             created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
-        SELECT universal_id, list_id, CAST(task_number AS TEXT), NULL, title, description, status,
-               created_at, updated_at, completed_at, cancelled_at, reopened_at, next_subtask_number
-        FROM tasks;
-        """))
-    {
-        copyTasks.ExecuteNonQuery();
-    }
-
-    if (oldSubtaskCount > 0)
-    {
-        using var copySubtasks = SqlTx(connection, transaction, """
-            INSERT INTO items
-                (universal_id, list_id, display_id, parent_display_id, title, description, status,
-                 created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
-            SELECT s.universal_id,
-                   t.list_id,
-                   CAST(t.task_number AS TEXT) || '.' || CAST(s.subtask_number AS TEXT),
-                   CAST(t.task_number AS TEXT),
-                   s.title, s.description, s.status,
-                   s.created_at, s.updated_at, s.completed_at, s.cancelled_at, s.reopened_at,
-                   1
-            FROM subtasks s
-            JOIN tasks t ON t.id = s.parent_task_id;
-            """);
-        copySubtasks.ExecuteNonQuery();
-    }
-
-    var migratedCount = Convert.ToInt64(ScalarTxSync(connection, transaction, "SELECT COUNT(*) FROM items;") ?? 0L);
-    var uniqueUidCount = Convert.ToInt64(ScalarTxSync(connection, transaction,
-        "SELECT COUNT(DISTINCT universal_id) FROM items;") ?? 0L);
-
-    if (migratedCount != expectedCount || uniqueUidCount != expectedCount)
-        throw new InvalidOperationException(
-            $"Task database migration failed verification. Expected {expectedCount} items, found {migratedCount}.");
-
-    if (TableExists(connection, "subtasks", transaction))
-    {
-        using var dropSubtasks = SqlTx(connection, transaction, "DROP TABLE subtasks;");
-        dropSubtasks.ExecuteNonQuery();
-    }
-
-    using (var dropTasks = SqlTx(connection, transaction, "DROP TABLE tasks;"))
-        dropTasks.ExecuteNonQuery();
-
-    transaction.Commit();
-    Console.WriteLine($"TaskList database migrated to recursive items: {oldTaskCount} tasks + {oldSubtaskCount} subtasks = {expectedCount} items.");
-}
-
-static bool TableExists(SqliteConnection connection, string tableName, SqliteTransaction? transaction = null)
-{
-    using var command = connection.CreateCommand();
-    command.Transaction = transaction;
-    command.CommandText = "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name);";
-    command.Parameters.AddWithValue("$name", tableName);
-    return Convert.ToInt64(command.ExecuteScalar()) != 0;
-}
-
-static object? ScalarTxSync(SqliteConnection connection, SqliteTransaction transaction, string text,
-    params (string Name, object? Value)[] parameters)
-{
-    using var command = SqlTx(connection, transaction, text, parameters);
-    return command.ExecuteScalar();
+    using var ensureDefault = Sql(connection, """
+        INSERT INTO lists (name, description, next_task_number, created_at)
+        SELECT 'Tasks', '', 1, $createdAt
+        WHERE NOT EXISTS (SELECT 1 FROM lists);
+        """, ("$createdAt", DateTimeOffset.UtcNow.ToString("O")));
+    ensureDefault.ExecuteNonQuery();
 }
 
 static async Task<SqliteConnection> OpenConnection(string connectionString)
