@@ -1,4 +1,4 @@
-# TaskList v1.3.12
+# TaskList v1.3.13
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,15 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.13
+
+- Make date-plus-time searches treat the date range and clock-time range as separate filters applied to every matching day.
+- A search such as `9/1` through `9/27` with `10 AM` through `12 PM` now returns only tasks created between 10:00 AM and 12:00 PM on dates inside that range.
+- Preserve overnight clock windows such as `9 PM` through `2 AM` for both time-only and date-plus-time searches.
+- When only Start time is supplied with dates, treat it as a daily lower bound; when only End time is supplied, treat it as a daily upper bound.
+- Remove the extra search-results sentence explaining that date-only imported records are excluded when a time filter is active.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.13.
 
 ## v1.3.12
 

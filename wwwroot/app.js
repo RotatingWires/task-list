@@ -1042,19 +1042,20 @@ function matchesCreationRange(value, startDate, startTime, endDate, endTime) {
   if (!created) return false;
 
   const hasDateRange = startDate.specified && endDate.specified;
-  if (!hasDateRange) {
-    if (created.minutes === null) return false;
+  if (hasDateRange && (created.dateKey < startDate.key || created.dateKey > endDate.key))
+    return false;
+
+  const hasStartTime = startTime.specified;
+  const hasEndTime = endTime.specified;
+  const hasTimeFilter = hasStartTime || hasEndTime;
+  if (!hasTimeFilter) return hasDateRange;
+  if (created.minutes === null) return false;
+
+  if (hasStartTime && hasEndTime)
     return matchesClockRange(created.minutes, startTime.minutes, endTime.minutes);
-  }
-
-  if (created.dateKey < startDate.key || created.dateKey > endDate.key) return false;
-
-  const hasTimeFilter = startTime.specified || endTime.specified;
-  if (hasTimeFilter && created.minutes === null) return false;
-
-  if (startTime.specified && created.dateKey === startDate.key && created.minutes < startTime.minutes) return false;
-  if (endTime.specified && created.dateKey === endDate.key && created.minutes > endTime.minutes) return false;
-  return true;
+  if (hasStartTime)
+    return created.minutes >= startTime.minutes;
+  return created.minutes <= endTime.minutes;
 }
 
 function compareSearchCreatedNewest(a, b) {
@@ -1286,17 +1287,6 @@ dateSearchForm.addEventListener('submit', async event => {
     return;
   }
 
-  if (
-    hasDateRange &&
-    startDate.key === endDate.key &&
-    startTime.specified &&
-    endTime.specified &&
-    startTime.minutes > endTime.minutes
-  ) {
-    searchSummary.textContent = 'On the same date, Start time must be on or before End time.';
-    return;
-  }
-
   searchSummary.textContent = 'Searching all lists...';
   resetSearchListFilter();
   searchResults.replaceChildren();
@@ -1318,7 +1308,7 @@ dateSearchForm.addEventListener('submit', async event => {
 
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in ${rangeDescription} across ${listCount.toLocaleString('en-US')} list${listCount === 1 ? '' : 's'}.${timeFiltered ? ' Date-only imported creation records are excluded because their time is unknown.' : ''}`
+      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in ${rangeDescription} across ${listCount.toLocaleString('en-US')} list${listCount === 1 ? '' : 's'}.`
     );
   } catch (error) {
     searchSummary.textContent = `Search error: ${error.message}`;
