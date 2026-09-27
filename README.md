@@ -1,4 +1,4 @@
-# TaskList v1.3.10
+# TaskList v1.3.11
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,14 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.11
+
+- Renamed the Search date tab to **Date/Time** and added optional Start time and End time fields while preserving date-only searches.
+- Accept common 12-hour inputs such as `9 PM`, `9PM`, `9:10 PM`, `9:10`, and case-insensitive AM/PM; a time without AM/PM is interpreted as AM.
+- Treat an omitted Start time as the beginning of the start date and an omitted End time as the end of the end date.
+- Exclude imported date-only creation records only when a time filter is actually used, because their clock time is unknown; date-only searches continue to include them.
+- Keep Date/Time search scoped to the task creation timestamp, matching the existing Date search behavior.
 
 ## v1.3.10
 

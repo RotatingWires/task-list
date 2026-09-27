@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">TaskList v1.3.10</span>
+      <span class="title-app-name">TaskList v1.3.11</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -150,7 +150,7 @@
     <div class="dialog-body search-body">
       <div class="search-tabs" role="tablist" aria-label="Search type">
         <button type="button" id="keywordSearchTab" class="search-tab" role="tab" aria-selected="true" aria-controls="keywordSearchPanel">Keyword</button>
-        <button type="button" id="dateSearchTab" class="search-tab" role="tab" aria-selected="false" aria-controls="dateSearchPanel">Date</button>
+        <button type="button" id="dateSearchTab" class="search-tab" role="tab" aria-selected="false" aria-controls="dateSearchPanel">Date/Time</button>
       </div>
       <section id="keywordSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="keywordSearchTab">
         <form id="keywordSearchForm" class="search-form">
@@ -160,13 +160,15 @@
       <section id="dateSearchPanel" class="search-tab-panel" role="tabpanel" aria-labelledby="dateSearchTab" hidden>
         <form id="dateSearchForm" class="search-form">
           <label for="searchStartDate">Start date</label><input type="text" id="searchStartDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
+          <label for="searchStartTime">Start time (optional)</label><input type="text" id="searchStartTime" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="9 PM or 9:10 PM">
           <label for="searchEndDate">End date</label><input type="text" id="searchEndDate" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="m/d or m/d/yy" required>
+          <label for="searchEndTime">End time (optional)</label><input type="text" id="searchEndTime" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="9 PM or 9:10 PM">
           <div class="search-date-actions"><button type="submit">Search</button></div>
         </form>
       </section>
       <div id="searchSummary" class="search-summary">Searches all lists.</div>
       <div class="search-list-filter"><span class="search-list-filter-label">List:</span><div class="menu-wrap search-list-menu"><button type="button" id="searchListFilterButton" class="search-list-filter-button" aria-haspopup="menu" aria-expanded="false" disabled><span id="searchListFilterLabel">All lists</span><span class="search-list-filter-arrow" aria-hidden="true">▼</span></button><div id="searchListFilterDropdown" class="menu-dropdown search-list-filter-dropdown" role="menu" hidden></div></div></div>
-      <div id="searchResults" class="search-results" aria-live="polite"><div class="search-placeholder">Enter a keyword or date range to search.</div></div>
+      <div id="searchResults" class="search-results" aria-live="polite"><div class="search-placeholder">Enter a keyword or date/time range to search.</div></div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeSearch">Close</button></div>
   </dialog>
@@ -175,7 +177,7 @@
     <div class="dialog-title">About TaskList</div>
     <div class="dialog-body">
       <div>Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.</div>
-      <div>about.lehighradio.com<br>TaskList v1.3.10</div>
+      <div>about.lehighradio.com<br>TaskList v1.3.11</div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
