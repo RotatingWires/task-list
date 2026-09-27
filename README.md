@@ -1,4 +1,4 @@
-# Task List v1.3.1
+# Task List v1.3.2
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -77,6 +77,14 @@ Import preserves arbitrary checklist nesting instead of flattening levels deeper
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
 
+
+## v1.3.2
+
+- Added external task deep links: `/open.html?list=<list-id>&view=all&task=<universal-id>&display=<visible-id>`.
+- Deep links preserve themselves through login, select the requested list, switch to **All**, scroll to the task, and briefly highlight it.
+- Universal ID is the primary lookup key with visible ID as a fallback.
+- Normal list/view navigation clears stale deep-link parameters.
+- Windows file/product/assembly version and the PWA cache are v1.3.2.
 
 ## v1.3.1
 

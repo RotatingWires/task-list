@@ -11,6 +11,13 @@ const loginIntro = document.querySelector('#loginIntro');
 
 let setupMode = false;
 
+function loginReturnUrl() {
+  const value = new URLSearchParams(location.search).get('returnUrl');
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  try { const url = new URL(value, location.origin); return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : '/'; }
+  catch { return '/'; }
+}
+
 async function request(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
   if (response.ok) return response.status === 204 ? null : response.json();
@@ -27,7 +34,7 @@ async function initialize() {
   try {
     const status = await request('/api/auth/status');
     if (status.authenticated) {
-      window.location.replace('/');
+      window.location.replace(loginReturnUrl());
       return;
     }
 
@@ -64,7 +71,7 @@ authForm.addEventListener('submit', async event => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    window.location.replace('/');
+    window.location.replace(loginReturnUrl());
   } catch (error) {
     loginError.textContent = error.message;
     const target = setupMode && error.message.toLowerCase().includes('setup token') ? setupToken : password;
