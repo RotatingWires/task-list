@@ -1,4 +1,4 @@
-const CACHE = 'task-list-shell-v1-3-9';
+const CACHE = 'task-list-shell-v1-3-10';
 const SHELL = ['/login.html', '/login.js', '/style.css', '/app.js', '/manifest.webmanifest', '/favicon.ico', '/icons/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-180.png'];
 
 self.addEventListener('install', event => {
@@ -8,7 +8,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
   );
   self.clients.claim();
 });
@@ -16,6 +16,15 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
+
   if (url.pathname.startsWith('/api/')) return;
-  event.respondWith(caches.match(request).then(cached => cached || fetch(request)));
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    fetch(request).then(response => {
+      const copy = response.clone();
+      caches.open(CACHE).then(cache => cache.put(request, copy));
+      return response;
+    }).catch(() => caches.match(request).then(hit => hit || caches.match(url.pathname)))
+  );
 });
