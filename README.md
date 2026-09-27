@@ -1,4 +1,4 @@
-# TaskList v1.3.8
+# TaskList v1.3.9
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,12 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.9
+
+- Made the TaskList application window fill the full browser viewport on desktop and mobile.
+- Removed the outer page gutter/background so the TaskList window itself reaches every edge of the viewport.
+- Kept task scrolling inside the existing task panel and preserved the current mobile task-card layout.
 
 ## v1.3.8
 
