@@ -159,8 +159,31 @@ api.MapGet("/lists", async () =>
     using var command = Sql(connection, """
         SELECT l.id, l.name, l.description, l.created_at,
                (SELECT COUNT(*) FROM items i
-                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count
+                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
+               l.archived
         FROM lists l
+        WHERE l.archived = 0
+        ORDER BY l.id;
+        """);
+
+    await using var reader = await command.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+        lists.Add(ReadList(reader));
+
+    return Results.Ok(lists);
+});
+
+api.MapGet("/lists/archives", async () =>
+{
+    var lists = new List<TaskListInfo>();
+    await using var connection = await OpenConnection(connectionString);
+    using var command = Sql(connection, """
+        SELECT l.id, l.name, l.description, l.created_at,
+               (SELECT COUNT(*) FROM items i
+                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
+               l.archived
+        FROM lists l
+        WHERE l.archived = 1
         ORDER BY l.id;
         """);
 
@@ -197,7 +220,7 @@ api.MapPost("/lists", async (CreateListRequest request) =>
         SELECT last_insert_rowid();
         """, ("$name", name), ("$description", description), ("$createdAt", now));
 
-    return Results.Created($"/api/lists/{id}", new TaskListInfo(id, name, description, now, 0));
+    return Results.Created($"/api/lists/{id}", new TaskListInfo(id, name, description, now, 0, false));
 });
 
 api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
@@ -221,12 +244,43 @@ api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
     return Results.Ok(existing with { Name = name, Description = description });
 });
 
+
+api.MapPost("/lists/{id:long}/archive", async (long id) =>
+{
+    await using var connection = await OpenConnection(connectionString);
+    var existing = await GetList(connection, id);
+    if (existing is null) return Results.NotFound();
+    if (existing.Archived) return Results.Ok(existing);
+
+    if (await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1)
+        return Results.BadRequest(new { error = "You cannot archive the only active list." });
+
+    await ExecuteAsync(connection,
+        "UPDATE lists SET archived = 1 WHERE id = $id;", ("$id", id));
+    return Results.Ok(existing with { Archived = true });
+});
+
+api.MapPost("/lists/{id:long}/restore", async (long id) =>
+{
+    await using var connection = await OpenConnection(connectionString);
+    var existing = await GetList(connection, id);
+    if (existing is null) return Results.NotFound();
+    if (!existing.Archived) return Results.Ok(existing);
+
+    await ExecuteAsync(connection,
+        "UPDATE lists SET archived = 0 WHERE id = $id;", ("$id", id));
+    return Results.Ok(existing with { Archived = false });
+});
+
 api.MapDelete("/lists/{id:long}", async (long id) =>
 {
     await using var connection = await OpenConnection(connectionString);
-    if (await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists;") <= 1)
-        return Results.BadRequest(new { error = "You cannot delete the only remaining list." });
-    if (await GetList(connection, id) is null) return Results.NotFound();
+    var existing = await GetList(connection, id);
+    if (existing is null) return Results.NotFound();
+
+    if (!existing.Archived &&
+        await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1)
+        return Results.BadRequest(new { error = "You cannot delete the only active list." });
 
     await ExecuteAsync(connection, "DELETE FROM lists WHERE id = $id;", ("$id", id));
     return Results.NoContent();
@@ -427,7 +481,7 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/move", async (
         return Results.NotFound(new { error = "Task was not found." });
 
     var targetNextValue = await ScalarTxAsync(connection, transaction,
-        "SELECT next_task_number FROM lists WHERE id = $targetListId;",
+        "SELECT next_task_number FROM lists WHERE id = $targetListId AND archived = 0;",
         ("$targetListId", request.TargetListId));
     if (targetNextValue is null)
         return Results.NotFound(new { error = "Destination list was not found." });
@@ -582,7 +636,8 @@ static void InitializeDatabase(string connectionString)
             name             TEXT NOT NULL COLLATE NOCASE UNIQUE,
             description      TEXT NOT NULL DEFAULT '',
             next_task_number INTEGER NOT NULL DEFAULT 1,
-            created_at       TEXT NOT NULL
+            created_at       TEXT NOT NULL,
+            archived         INTEGER NOT NULL DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS universal_ids (
@@ -612,6 +667,27 @@ static void InitializeDatabase(string connectionString)
             ON items(list_id, parent_display_id, display_id);
         """);
     command.ExecuteNonQuery();
+
+    var hasArchivedColumn = false;
+    using (var columnCommand = Sql(connection, "PRAGMA table_info(lists);"))
+    using (var reader = columnCommand.ExecuteReader())
+    {
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), "archived", StringComparison.OrdinalIgnoreCase))
+            {
+                hasArchivedColumn = true;
+                break;
+            }
+        }
+    }
+
+    if (!hasArchivedColumn)
+    {
+        using var addArchived = Sql(connection,
+            "ALTER TABLE lists ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;");
+        addArchived.ExecuteNonQuery();
+    }
 
     using var ensureDefault = Sql(connection, """
         INSERT INTO lists (name, description, next_task_number, created_at)
@@ -694,7 +770,8 @@ static async Task<TaskListInfo?> GetList(SqliteConnection connection, long id)
     using var command = Sql(connection, """
         SELECT l.id, l.name, l.description, l.created_at,
                (SELECT COUNT(*) FROM items i
-                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count
+                WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
+               l.archived
         FROM lists l
         WHERE l.id = $id;
         """, ("$id", id));
@@ -705,7 +782,7 @@ static async Task<TaskListInfo?> GetList(SqliteConnection connection, long id)
 static TaskListInfo ReadList(SqliteDataReader reader) => new(
     reader.GetInt64(0), reader.GetString(1),
     reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
-    reader.GetString(3), reader.GetInt64(4));
+    reader.GetString(3), reader.GetInt64(4), reader.GetInt64(5) != 0);
 
 static async Task<bool> ListNameExists(SqliteConnection connection, string name, long? excludingId)
 {
@@ -936,7 +1013,7 @@ static async Task SignInOwner(HttpContext context)
 
 record ImportItem(string Title, string Status, string CreatedAt, object? CompletedAt, int Indent);
 record ImportNode(ImportItem Item, List<ImportNode> Children);
-record TaskListInfo(long Id, string Name, string Description, string CreatedAt, long TaskCount);
+record TaskListInfo(long Id, string Name, string Description, string CreatedAt, long TaskCount, bool Archived);
 record CreateListRequest(string? Name, string? Description);
 record UpdateListRequest(string? Name, string? Description);
 record LoginRequest(string? Password);

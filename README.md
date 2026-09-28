@@ -1,4 +1,4 @@
-# TaskList v1.3.17
+# TaskList v1.3.18
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,17 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.18
+
+- Add list archiving with an **Archive** action beside Edit in Manage Lists.
+- Hide archived lists from the File list picker, normal Manage Lists view, search scope, and move destinations while preserving every task and subtask.
+- Add **Archives...** at the lower-left of Manage Lists with a dedicated archived-list browser.
+- Allow archived lists to be opened in the normal task view and restored to the active list set without changing their IDs or task data.
+- Prevent archiving or deleting the only active list, while allowing archived lists to remain safely outside the normal list picker.
+- Add a schema migration for the `lists.archived` flag so existing databases upgrade in place on startup.
+- Keep Universal-ID deep links able to resolve tasks inside archived lists.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.18.
 
 ## v1.3.17
 
