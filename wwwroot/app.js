@@ -66,6 +66,12 @@ const manageListsBody = document.querySelector('#manageListsBody');
 const manageListsTitleText = document.querySelector('#manageListsTitleText');
 const manageListsUidTotal = document.querySelector('#manageListsUidTotal');
 const closeManageLists = document.querySelector('#closeManageLists');
+const openArchivesButton = document.querySelector('#openArchives');
+const archivesDialog = document.querySelector('#archivesDialog');
+const archivesBody = document.querySelector('#archivesBody');
+const archivesTitleText = document.querySelector('#archivesTitleText');
+const archivesUidTotal = document.querySelector('#archivesUidTotal');
+const closeArchives = document.querySelector('#closeArchives');
 const searchDialog = document.querySelector('#searchDialog');
 const keywordSearchTab = document.querySelector('#keywordSearchTab');
 const dateSearchTab = document.querySelector('#dateSearchTab');
@@ -86,6 +92,7 @@ const searchResults = document.querySelector('#searchResults');
 const closeSearch = document.querySelector('#closeSearch');
 
 let lists = [];
+let archivedLists = [];
 let tasks = [];
 let editingItem = null;
 let subtaskParent = null;
@@ -146,7 +153,7 @@ function findUniversal(items, universalId) {
 }
 
 async function resolveUniversalLocation(universalId) {
-  for (const list of lists) {
+  for (const list of [...lists, ...archivedLists]) {
     const listTasks = await api(`/api/lists/${list.id}/tasks`);
     const item = findUniversal(listTasks, universalId);
     if (item) return { listId: list.id, displayId: item.displayId };
@@ -194,15 +201,19 @@ async function loadStats() {
 }
 
 function currentList() {
-  return lists.find(list => list.id === currentListId) ?? null;
+  return [...lists, ...archivedLists].find(list => list.id === currentListId) ?? null;
 }
 
 async function loadLists(preferredId = null) {
-  lists = await api('/api/lists');
-  if (!lists.length) throw new Error('No task lists exist.');
+  [lists, archivedLists] = await Promise.all([
+    api('/api/lists'),
+    api('/api/lists/archives')
+  ]);
+  if (!lists.length) throw new Error('No active task lists exist.');
 
   const candidate = preferredId ?? currentListId;
-  if (!lists.some(list => list.id === candidate))
+  const knownLists = [...lists, ...archivedLists];
+  if (!knownLists.some(list => list.id === candidate))
     currentListId = lists[0].id;
   else
     currentListId = candidate;
@@ -211,6 +222,7 @@ async function loadLists(preferredId = null) {
   renderFileMenu();
   updateListTitle();
   if (manageListsDialog.open) renderManageLists();
+  if (archivesDialog.open) renderArchives();
 }
 
 async function loadTasks() {
@@ -887,6 +899,7 @@ function renderManageLists() {
     actions.className = 'manage-list-actions';
     appendActions(actions, [
       ['Edit', () => openEditList(list)],
+      ['Archive', () => archiveList(list), lists.length === 1],
       ['Delete', () => deleteList(list), lists.length === 1]
     ]);
 
@@ -895,8 +908,102 @@ function renderManageLists() {
   }
 }
 
-async function deleteList(list) {
+
+
+async function archiveList(list) {
   if (lists.length === 1) return;
+  if (!confirm(`Archive list "${list.name}"?\n\nIt will be hidden from File and Manage Lists, but its tasks will be preserved.`)) return;
+
+  try {
+    await api(`/api/lists/${list.id}/archive`, { method: 'POST' });
+    if (currentListId === list.id) currentListId = null;
+    await loadLists(currentListId);
+    await loadTasks();
+    renderManageLists();
+    setStatus('List archived.');
+  } catch (error) {
+    setStatus(`Error: ${error.message}`);
+  }
+}
+
+function renderArchives() {
+  archivesTitleText.textContent = `Archives (${archivedLists.length.toLocaleString('en-US')})`;
+  archivesUidTotal.textContent = manageListsUidTotal.textContent;
+  archivesBody.replaceChildren();
+
+  if (!archivedLists.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No archived lists.';
+    archivesBody.append(empty);
+    return;
+  }
+
+  for (const list of archivedLists) {
+    const row = document.createElement('div');
+    row.className = 'manage-list-row';
+
+    const details = document.createElement('div');
+    details.className = 'manage-list-details';
+    const heading = document.createElement('strong');
+    heading.textContent = list.name;
+    if (list.id === currentListId) heading.append(' (current)');
+    const description = document.createElement('div');
+    description.className = 'manage-list-description';
+    description.textContent = list.description || 'No description';
+    const count = document.createElement('div');
+    count.className = 'manage-list-count';
+    count.textContent = `${list.taskCount} task${list.taskCount === 1 ? '' : 's'}`;
+    details.append(heading, description, count);
+
+    const actions = document.createElement('div');
+    actions.className = 'manage-list-actions';
+    appendActions(actions, [
+      ['View', () => viewArchivedList(list)],
+      ['Restore', () => restoreList(list)]
+    ]);
+
+    row.append(details, actions);
+    archivesBody.append(row);
+  }
+}
+
+async function openArchives() {
+  try {
+    await loadStats();
+  } catch {}
+  renderArchives();
+  manageListsDialog.close();
+  archivesDialog.showModal();
+}
+
+async function viewArchivedList(list) {
+  archivesDialog.close();
+  manageListsDialog.close();
+  clearDeepLink();
+  currentListId = list.id;
+  localStorage.setItem('task-list-current-list', String(currentListId));
+  currentView = 'open';
+  updateViewMenu();
+  renderFileMenu();
+  updateListTitle();
+  await loadTasks();
+  setStatus(`Viewing archived list ${list.name}.`);
+}
+
+async function restoreList(list) {
+  try {
+    await api(`/api/lists/${list.id}/restore`, { method: 'POST' });
+    await loadLists(currentListId);
+    renderArchives();
+    setStatus('List restored.');
+  } catch (error) {
+    setStatus(`Error: ${error.message}`);
+  }
+}
+
+async function deleteList(list) {
+  if (!list.archived && lists.length === 1) return;
   const warning = list.taskCount > 0
     ? `\n\nThis also deletes all ${list.taskCount} task${list.taskCount === 1 ? '' : 's'} and their subtasks in this list.`
     : '';
@@ -908,14 +1015,17 @@ async function deleteList(list) {
     if (currentListId === list.id) currentListId = null;
     await loadLists();
     await loadTasks();
-    renderManageLists();
+    if (manageListsDialog.open) renderManageLists();
+    if (archivesDialog.open) renderArchives();
     setStatus('List deleted.');
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
 }
 
+openArchivesButton.addEventListener('click', openArchives);
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
+closeArchives.addEventListener('click', () => archivesDialog.close());
 
 function closeSearchListFilterMenu() {
   searchListFilterDropdown.hidden = true;

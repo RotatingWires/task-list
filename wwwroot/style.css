@@ -1027,3 +1027,9 @@ input[type="password"] {
     background: transparent !important;
   }
 }
+
+
+/* v1.3.18: archived-list management. */
+.manage-lists-footer {
+  justify-content: space-between;
+}

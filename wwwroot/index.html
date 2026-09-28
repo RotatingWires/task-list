@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">TaskList v1.3.17</span>
+      <span class="title-app-name">TaskList v1.3.18</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -163,7 +163,13 @@
   <dialog id="manageListsDialog" class="retro-dialog manage-lists-dialog">
     <div class="dialog-title manage-lists-title"><span id="manageListsTitleText">Manage Lists</span><span id="manageListsUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
     <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
-    <div class="dialog-buttons"><button type="button" id="closeManageLists">Close</button></div>
+    <div class="dialog-buttons manage-lists-footer"><button type="button" id="openArchives">Archives...</button><button type="button" id="closeManageLists">Close</button></div>
+  </dialog>
+
+  <dialog id="archivesDialog" class="retro-dialog manage-lists-dialog">
+    <div class="dialog-title manage-lists-title"><span id="archivesTitleText">Archives</span><span id="archivesUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
+    <div class="dialog-body manage-lists-body" id="archivesBody"></div>
+    <div class="dialog-buttons"><button type="button" id="closeArchives">Close</button></div>
   </dialog>
 
   <dialog id="searchDialog" class="retro-dialog search-dialog">
@@ -198,7 +204,7 @@
     <div class="dialog-title">About TaskList</div>
     <div class="dialog-body">
       <div>Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.</div>
-      <div>about.lehighradio.com<br>TaskList v1.3.17</div>
+      <div>about.lehighradio.com<br>TaskList v1.3.18</div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
