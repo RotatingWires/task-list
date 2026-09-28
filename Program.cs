@@ -388,6 +388,97 @@ api.MapPatch("/lists/{listId:long}/items/{displayId}", async (
     });
 });
 
+api.MapPost("/lists/{listId:long}/items/{displayId}/move", async (
+    long listId, string displayId, MoveTaskRequest request) =>
+{
+    if (!IsValidDisplayId(displayId))
+        return Results.BadRequest(new { error = "Invalid task ID." });
+    if (request.TargetListId == listId)
+        return Results.BadRequest(new { error = "Choose a different destination list." });
+
+    await using var connection = await OpenConnection(connectionString);
+    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+
+    var movingRows = new List<MoveItemRow>();
+    using (var command = SqlTx(connection, transaction, """
+        SELECT universal_id, display_id, parent_display_id, title, description, status,
+               created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number
+        FROM items
+        WHERE list_id = $listId
+          AND (display_id = $displayId OR display_id LIKE $descendantPattern)
+        ORDER BY LENGTH(display_id), display_id;
+        """,
+        ("$listId", listId), ("$displayId", displayId),
+        ("$descendantPattern", $"{displayId}.%")))
+    await using (var reader = await command.ExecuteReaderAsync())
+    {
+        while (await reader.ReadAsync())
+        {
+            movingRows.Add(new MoveItemRow(
+                reader.GetInt64(0), reader.GetString(1), NullableString(reader, 2),
+                reader.GetString(3), reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                reader.GetString(5), reader.GetString(6), NullableString(reader, 7),
+                NullableString(reader, 8), NullableString(reader, 9), NullableString(reader, 10),
+                reader.GetInt64(11)));
+        }
+    }
+
+    if (movingRows.Count == 0)
+        return Results.NotFound(new { error = "Task was not found." });
+
+    var targetNextValue = await ScalarTxAsync(connection, transaction,
+        "SELECT next_task_number FROM lists WHERE id = $targetListId;",
+        ("$targetListId", request.TargetListId));
+    if (targetNextValue is null)
+        return Results.NotFound(new { error = "Destination list was not found." });
+
+    var targetTaskNumber = Convert.ToInt64(targetNextValue);
+    var targetRootDisplayId = targetTaskNumber.ToString(CultureInfo.InvariantCulture);
+
+    // Deleting the selected root removes its descendants through the existing
+    // foreign-key cascade. We immediately reinsert the captured subtree with
+    // the same Universal IDs and metadata under the destination list's next ID.
+    await ExecuteTxAsync(connection, transaction,
+        "DELETE FROM items WHERE list_id = $listId AND display_id = $displayId;",
+        ("$listId", listId), ("$displayId", displayId));
+
+    foreach (var row in movingRows)
+    {
+        var newDisplayId = RemapMovedDisplayId(displayId, targetRootDisplayId, row.DisplayId);
+        var newParentDisplayId = row.DisplayId == displayId
+            ? null
+            : RemapMovedDisplayId(displayId, targetRootDisplayId, row.ParentDisplayId!);
+
+        await ExecuteTxAsync(connection, transaction, """
+            INSERT INTO items
+                (universal_id, list_id, display_id, parent_display_id, title, description, status,
+                 created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
+            VALUES
+                ($uid, $targetListId, $displayId, $parentDisplayId, $title, $description, $status,
+                 $createdAt, $updatedAt, $completedAt, $cancelledAt, $reopenedAt, $nextChildNumber);
+            """,
+            ("$uid", row.UniversalId), ("$targetListId", request.TargetListId),
+            ("$displayId", newDisplayId), ("$parentDisplayId", newParentDisplayId),
+            ("$title", row.Title), ("$description", row.Description), ("$status", row.Status),
+            ("$createdAt", row.CreatedAt), ("$updatedAt", row.UpdatedAt),
+            ("$completedAt", row.CompletedAt), ("$cancelledAt", row.CancelledAt),
+            ("$reopenedAt", row.ReopenedAt), ("$nextChildNumber", row.NextChildNumber));
+    }
+
+    await ExecuteTxAsync(connection, transaction,
+        "UPDATE lists SET next_task_number = $nextNumber WHERE id = $targetListId;",
+        ("$nextNumber", targetTaskNumber + 1), ("$targetListId", request.TargetListId));
+
+    await transaction.CommitAsync();
+    return Results.Ok(new
+    {
+        targetListId = request.TargetListId,
+        displayId = targetRootDisplayId,
+        universalId = movingRows[0].UniversalId,
+        movedCount = movingRows.Count
+    });
+});
+
 api.MapDelete("/lists/{listId:long}/items/{displayId}", async (long listId, string displayId) =>
 {
     if (!IsValidDisplayId(displayId))
@@ -707,6 +798,13 @@ static async Task<TaskItem?> GetItem(SqliteConnection connection, long listId, s
     return await reader.ReadAsync() ? ReadItem(reader) : null;
 }
 
+static string RemapMovedDisplayId(string oldRootDisplayId, string newRootDisplayId, string oldDisplayId)
+{
+    if (oldDisplayId == oldRootDisplayId) return newRootDisplayId;
+    var suffix = oldDisplayId[(oldRootDisplayId.Length + 1)..];
+    return $"{newRootDisplayId}.{suffix}";
+}
+
 static long DisplaySegmentNumber(string displayId)
 {
     var separator = displayId.LastIndexOf('.');
@@ -846,6 +944,12 @@ record SetupRequest(string? SetupToken, string? Password, string? ConfirmPasswor
 record PasswordFile(int Version, int Iterations, string Salt, string Hash);
 record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);
+record MoveTaskRequest(long TargetListId);
+record MoveItemRow(
+    long UniversalId, string DisplayId, string? ParentDisplayId,
+    string Title, string Description, string Status, string CreatedAt,
+    string? UpdatedAt, string? CompletedAt, string? CancelledAt, string? ReopenedAt,
+    long NextChildNumber);
 
 record TaskItem(
     long UniversalId, long ListId, string DisplayId, string? ParentDisplayId, bool IsSubtask,

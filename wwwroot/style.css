@@ -41,7 +41,7 @@ body {
   overflow: hidden;
 }
 
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 
 .window {
@@ -169,7 +169,7 @@ button { cursor: pointer; }
 
 #newTaskForm { display: flex; flex: 1 1 420px; gap: 6px; }
 
-input[type="text"], input:not([type]), #newTaskTitle, #editTitle, textarea {
+input[type="text"], input:not([type]), #newTaskTitle, #editTitle, textarea, select {
   min-width: 0;
   padding: 6px 7px;
   background: #fff;
@@ -283,6 +283,7 @@ button:active {
 .dialog-body { display: grid; gap: 7px; padding: 12px; }
 .dialog-buttons { display: flex; justify-content: flex-end; gap: 7px; padding: 0 12px 12px; }
 .dialog-id { margin-bottom: 4px; }
+.move-note { color: #333; font-size: 12px; line-height: 1.4; }
 
 .info-dialog { width: min(660px, calc(100vw - 24px)); }
 .info-grid {

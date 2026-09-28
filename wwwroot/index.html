@@ -17,7 +17,7 @@
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">TaskList v1.3.15</span>
+      <span class="title-app-name">TaskList v1.3.16</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -106,6 +106,22 @@
     </form>
   </dialog>
 
+  <dialog id="moveDialog" class="retro-dialog">
+    <form method="dialog" id="moveForm">
+      <div class="dialog-title">Move Task</div>
+      <div class="dialog-body">
+        <div class="dialog-id">Task <strong id="moveTaskId"></strong></div>
+        <label for="moveListSelect">Destination list</label>
+        <select id="moveListSelect" required></select>
+        <div id="moveNote" class="move-note"></div>
+      </div>
+      <div class="dialog-buttons">
+        <button value="cancel" type="button" id="cancelMove">Cancel</button>
+        <button value="default" type="submit">Move</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="infoDialog" class="retro-dialog info-dialog">
     <div class="dialog-title">Task Information</div>
     <div class="dialog-body info-body">
@@ -177,7 +193,7 @@
     <div class="dialog-title">About TaskList</div>
     <div class="dialog-body">
       <div>Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.</div>
-      <div>about.lehighradio.com<br>TaskList v1.3.15</div>
+      <div>about.lehighradio.com<br>TaskList v1.3.16</div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
