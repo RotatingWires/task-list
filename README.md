@@ -1,4 +1,4 @@
-# TaskList v1.4
+# TaskList v1.4.1
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,13 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.4.1
+
+- Vertically align the standalone Edit button with the split Complete/Reopen control.
+- Give Complete and Reopen the same fixed primary-button width so status changes do not shift the action layout.
+- Preserve the v1.4 split-action behavior and all existing task actions.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.4.1.
 
 ## v1.4
 

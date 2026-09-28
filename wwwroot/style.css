@@ -233,7 +233,12 @@ button:active {
 .id-col { width: 80px; }
 .status-col { width: 100px; }
 .actions-col { width: 190px; }
-.task-actions { white-space: normal; }
+.task-actions {
+  white-space: normal;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
 .task-actions button { padding: 3px 7px; margin: 2px 3px 2px 0; }
 
 .task-id-link {
@@ -1046,6 +1051,9 @@ input[type="password"] {
 }
 .task-actions .task-primary-action {
   border-right-width: 1px;
+  width: 88px;
+  min-width: 88px;
+  justify-content: center;
 }
 .task-actions .task-action-arrow {
   min-width: 25px;
