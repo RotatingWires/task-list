@@ -232,7 +232,7 @@ button:active {
 .task-table tr.status-cancelled .task-title { text-decoration: line-through; color: #777; font-style: italic; }
 .id-col { width: 80px; }
 .status-col { width: 100px; }
-.actions-col { width: 270px; }
+.actions-col { width: 190px; }
 .task-actions { white-space: normal; }
 .task-actions button { padding: 3px 7px; margin: 2px 3px 2px 0; }
 
@@ -1032,4 +1032,43 @@ input[type="password"] {
 /* v1.3.18: archived-list management. */
 .manage-lists-footer {
   justify-content: space-between;
+}
+
+/* v1.4: compact one-click primary task actions with an attached More menu. */
+.task-split-group {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin: 2px 3px 2px 0;
+}
+.task-actions .task-split-group > button {
+  margin: 0;
+}
+.task-actions .task-primary-action {
+  border-right-width: 1px;
+}
+.task-actions .task-action-arrow {
+  min-width: 25px;
+  padding: 3px 5px;
+  border-left-width: 1px;
+  font-size: 9px;
+}
+.task-action-dropdown {
+  left: 0;
+  right: auto;
+  min-width: 145px;
+  z-index: 40;
+}
+.task-actions .task-action-dropdown button {
+  margin: 0;
+  padding: 4px 8px 4px 4px;
+}
+.task-action-dropdown button:disabled {
+  color: #808080;
+  cursor: default;
+}
+.task-action-dropdown button:disabled:hover,
+.task-action-dropdown button:disabled:focus {
+  background: transparent;
+  color: #808080;
 }
