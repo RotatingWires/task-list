@@ -1,4 +1,4 @@
-# TaskList v1.3.15
+# TaskList v1.3.16
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,16 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.16
+
+- Make **Search → View** use the same scroll-and-highlight behavior as Universal-ID deep links, so the selected result visibly flashes after TaskList switches to its list.
+- Add **Move...** to task and subtask actions, with a destination-list dialog.
+- Moving an item assigns the destination list's next top-level task ID while preserving its Universal ID, title, description, status, timestamps, and child-number counters.
+- Move an item's entire descendant subtree atomically; descendant visible IDs are remapped under the new root while keeping the same hierarchy and Universal IDs.
+- Moving a subtask to another list makes it a top-level task there, because each list has its own independent visible-ID namespace.
+- Perform moves inside one SQLite transaction so a failed destination insert cannot leave a task half-moved.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.16.
 
 ## v1.3.15
 

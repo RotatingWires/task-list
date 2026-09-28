@@ -31,6 +31,13 @@ const subtaskTitle = document.querySelector('#subtaskTitle');
 const subtaskDescription = document.querySelector('#subtaskDescription');
 const cancelSubtask = document.querySelector('#cancelSubtask');
 
+const moveDialog = document.querySelector('#moveDialog');
+const moveForm = document.querySelector('#moveForm');
+const moveTaskId = document.querySelector('#moveTaskId');
+const moveListSelect = document.querySelector('#moveListSelect');
+const moveNote = document.querySelector('#moveNote');
+const cancelMove = document.querySelector('#cancelMove');
+
 const infoDialog = document.querySelector('#infoDialog');
 const closeInfo = document.querySelector('#closeInfo');
 const infoTaskId = document.querySelector('#infoTaskId');
@@ -80,6 +87,7 @@ let lists = [];
 let tasks = [];
 let editingItem = null;
 let subtaskParent = null;
+let movingItem = null;
 let editingList = null;
 let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
@@ -390,6 +398,7 @@ function createTaskRow(item, depth) {
   const actions = (STATUS_ACTIONS[item.status] ?? [])
     .map(([label, status]) => [label, () => updateItem(item, { status })]);
   actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
+  actions.push(['Move...', () => openMove(item), lists.length <= 1]);
   actions.push(['Edit', () => openEdit(item)], ['Delete', () => deleteItem(item)]);
   appendActions(actionsCell, actions);
 
@@ -523,6 +532,61 @@ subtaskForm.addEventListener('submit', async event => {
 cancelSubtask.addEventListener('click', () => {
   subtaskDialog.close();
   subtaskParent = null;
+});
+
+function openMove(item) {
+  const destinations = lists.filter(list => list.id !== item.listId);
+  if (!destinations.length) {
+    setStatus('Create another list before moving tasks.');
+    return;
+  }
+
+  movingItem = item;
+  moveTaskId.textContent = `#${item.displayId} — ${item.title}`;
+  moveListSelect.replaceChildren(...destinations.map(list => {
+    const option = document.createElement('option');
+    option.value = String(list.id);
+    option.textContent = list.name;
+    return option;
+  }));
+
+  const descendants = countDescendants(item);
+  const subtreeText = descendants > 0
+    ? ` This will also move ${descendants} descendant subtask${descendants === 1 ? '' : 's'} with it.`
+    : '';
+  const rootText = item.isSubtask
+    ? ' It will become a top-level task in the destination list.'
+    : '';
+  moveNote.textContent = `The moved task will receive the destination list's next task ID. Its Universal ID, status, dates, title, description, and child numbering are preserved.${rootText}${subtreeText}`;
+
+  moveDialog.showModal();
+  moveListSelect.focus();
+}
+
+moveForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!movingItem) return;
+
+  const targetListId = Number(moveListSelect.value);
+  const targetList = lists.find(list => list.id === targetListId);
+  if (!targetList || targetListId === movingItem.listId) return;
+
+  const item = movingItem;
+  setStatus(`Moving #${item.displayId} to ${targetList.name}...`);
+  try {
+    const result = await jsonApi(`${itemEndpoint(item)}/move`, 'POST', { targetListId });
+    moveDialog.close();
+    movingItem = null;
+    await Promise.all([loadTasks(), refreshListCounts()]);
+    setStatus(`Moved Universal ID ${result.universalId} to ${targetList.name} as #${result.displayId}.`);
+  } catch (error) {
+    setStatus(`Error: ${error.message}`);
+  }
+});
+
+cancelMove.addEventListener('click', () => {
+  moveDialog.close();
+  movingItem = null;
 });
 
 function openInfo(item, sourceItems = tasks) {
@@ -1223,7 +1287,7 @@ async function viewSearchResult(result) {
 
   await loadTasks();
 
-  scrollAndHighlightTask(result.item.displayId, false);
+  scrollAndHighlightTask(result.item.displayId, true);
 }
 
 function findItemByDisplayId(items, displayId) {
