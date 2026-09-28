@@ -1,4 +1,4 @@
-# TaskList v1.3.16
+# TaskList v1.3.17
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,15 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.3.17
+
+- Replace the Move Task dialog's browser-native list selector with the same Windows 95-style custom menu used elsewhere in TaskList.
+- Use the existing radio-dot indicator for single-choice dropdown menus.
+- Move the **Move...** action after **Edit** in task and subtask action rows.
+- Change task-visit highlighting to a CSS class so nested-task flashes stop at the red/green hierarchy line instead of painting to the absolute left edge.
+- Keep Search → View and Universal-ID deep-link highlighting behavior otherwise unchanged.
+- Bump TaskList UI, assembly, README, About text, and PWA shell-cache metadata to v1.3.17.
 
 ## v1.3.16
 
