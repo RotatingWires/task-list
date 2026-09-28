@@ -1,4 +1,4 @@
-# TaskList v1.3.18
+# TaskList v1.4
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -78,6 +78,17 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.4
+
+- Replace the crowded per-task action row with a Windows 95-style split action: the current primary status action remains one click, with an attached arrow for less-common commands.
+- Show **Complete** as the one-click primary action for Open tasks and **Reopen** for Done or Cancelled tasks.
+- Keep **Edit** as a separate one-click button.
+- Move **Add Subtask**, **Cancel** (when applicable), **Move...**, and **Delete** into the attached More-actions menu.
+- Keep disabled Move behavior when no other active destination list exists.
+- Reduce the desktop Actions column width now that each row only needs the split action plus Edit.
+- Preserve all existing task status, edit, move, delete, archive, hierarchy, and Universal-ID behavior.
+- Bump TaskList UI to v1.4, .NET package metadata to 1.4.0, and the PWA shell cache to v1.4.
 
 ## v1.3.18
 

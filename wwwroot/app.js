@@ -110,10 +110,10 @@ const deepLinkUniversalId = deepLinkMatch ? Number(deepLinkMatch[1]) : null;
 const hasDeepLink = Number.isSafeInteger(deepLinkUniversalId) && deepLinkUniversalId > 0;
 let pendingDeepLinkDisplayId = null;
 
-const STATUS_ACTIONS = {
-  Open: [['Complete', 'Done'], ['Cancel', 'Cancelled']],
-  Done: [['Reopen', 'Open'], ['Cancel', 'Cancelled']],
-  Cancelled: [['Reopen', 'Open']]
+const PRIMARY_STATUS_ACTION = {
+  Open: ['Complete', 'Done'],
+  Done: ['Reopen', 'Open'],
+  Cancelled: ['Reopen', 'Open']
 };
 
 function setStatus(message) {
@@ -408,13 +408,10 @@ function createTaskRow(item, depth) {
   actionsCell.dataset.label = 'Actions';
   actionsCell.className = 'task-actions';
 
-  const actions = (STATUS_ACTIONS[item.status] ?? [])
-    .map(([label, status]) => [label, () => updateItem(item, { status })]);
-  actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
-  actions.push(['Edit', () => openEdit(item)]);
-  actions.push(['Move...', () => openMove(item), lists.length <= 1]);
-  actions.push(['Delete', () => deleteItem(item)]);
-  appendActions(actionsCell, actions);
+  actionsCell.append(
+    createTaskSplitAction(item),
+    actionButton('Edit', () => openEdit(item))
+  );
 
   row.append(idCell, titleCell, statusCell, actionsCell);
   return row;
@@ -432,6 +429,91 @@ function actionButton(label, handler, disabled = false) {
 function appendActions(container, actions) {
   container.append(...actions.map(([label, handler, disabled]) => actionButton(label, handler, disabled)));
 }
+
+function closeTaskActionMenus(except = null) {
+  for (const menu of document.querySelectorAll('.task-action-dropdown:not([hidden])')) {
+    if (menu === except) continue;
+    menu.hidden = true;
+    menu.closest('.task-split-group')?.querySelector('.task-action-arrow')
+      ?.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function taskActionMenuButton(label, handler, disabled = false) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.disabled = disabled;
+  button.setAttribute('role', 'menuitem');
+
+  const spacer = document.createElement('span');
+  spacer.className = 'menu-check';
+  const text = document.createElement('span');
+  text.className = 'menu-label';
+  text.textContent = label;
+  button.append(spacer, text);
+
+  button.addEventListener('click', event => {
+    event.stopPropagation();
+    if (button.disabled) return;
+    closeTaskActionMenus();
+    handler();
+  });
+  return button;
+}
+
+function createTaskSplitAction(item) {
+  const [primaryLabel, primaryStatus] = PRIMARY_STATUS_ACTION[item.status] ?? ['Edit', null];
+
+  const group = document.createElement('div');
+  group.className = 'task-split-group';
+
+  const primary = actionButton(primaryLabel, () => {
+    closeTaskActionMenus();
+    if (primaryStatus) updateItem(item, { status: primaryStatus });
+    else openEdit(item);
+  });
+  primary.classList.add('task-primary-action');
+
+  const arrow = document.createElement('button');
+  arrow.type = 'button';
+  arrow.className = 'task-action-arrow';
+  arrow.textContent = '▼';
+  arrow.title = 'More actions';
+  arrow.setAttribute('aria-label', `More actions for task #${item.displayId}`);
+  arrow.setAttribute('aria-haspopup', 'menu');
+  arrow.setAttribute('aria-expanded', 'false');
+
+  const menu = document.createElement('div');
+  menu.className = 'menu-dropdown task-action-dropdown';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+
+  menu.append(taskActionMenuButton('Add Subtask', () => openSubtaskDialog(item)));
+  if (item.status !== 'Cancelled')
+    menu.append(taskActionMenuButton('Cancel', () => updateItem(item, { status: 'Cancelled' })));
+  menu.append(
+    taskActionMenuButton('Move...', () => openMove(item), lists.length <= 1),
+    taskActionMenuButton('Delete', () => deleteItem(item))
+  );
+
+  arrow.addEventListener('click', event => {
+    event.stopPropagation();
+    const opening = menu.hidden;
+    closeTaskActionMenus(menu);
+    menu.hidden = !opening;
+    arrow.setAttribute('aria-expanded', opening ? 'true' : 'false');
+  });
+
+  group.append(primary, arrow, menu);
+  return group;
+}
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('.task-split-group')) closeTaskActionMenus();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeTaskActionMenus();
+});
 
 newTaskForm.addEventListener('submit', async event => {
   event.preventDefault();
