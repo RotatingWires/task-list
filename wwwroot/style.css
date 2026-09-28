@@ -1080,3 +1080,10 @@ input[type="password"] {
   background: transparent;
   color: #808080;
 }
+
+/* v1.4.2: keep Complete fixed-width while letting Reopen return to its natural size. */
+.task-table tr.status-done .task-primary-action,
+.task-table tr.status-cancelled .task-primary-action {
+  width: auto;
+  min-width: 0;
+}
