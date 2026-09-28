@@ -965,3 +965,65 @@ input[type="password"] {
     min-height: 0;
   }
 }
+
+
+/* v1.3.17: custom single-select dropdown and visit highlight. */
+.retro-select {
+  width: 100%;
+  min-width: 190px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+  background: var(--face);
+  color: #000;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  box-shadow: 1px 1px 0 #000;
+}
+.retro-select:active,
+.retro-select[aria-expanded="true"] {
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #fff;
+  border-bottom-color: #fff;
+}
+.select-arrow { flex: 0 0 auto; font-size: 9px; }
+.move-list-menu { width: 100%; }
+.move-list-button { min-width: 0; }
+.move-list-dropdown {
+  min-width: 100%;
+  max-width: 100%;
+  max-height: min(45vh, 320px);
+  overflow-y: auto;
+}
+
+/* Highlight only the task content. For nested rows the colored hierarchy/status
+   line stays visible and the flash begins immediately to its right. */
+.task-table tr.task-visit-highlight:not(.subtask-row) > td {
+  background: #fff4a8 !important;
+}
+@media (min-width: 651px) {
+  .task-table tr.subtask-row.task-visit-highlight > td {
+    background: #fff4a8 !important;
+  }
+  .task-table tr.subtask-row.task-visit-highlight > td:first-child {
+    background: linear-gradient(
+      to right,
+      transparent 0 calc(var(--row-indent) + 3px),
+      #fff4a8 calc(var(--row-indent) + 3px) 100%
+    ) !important;
+  }
+}
+@media (max-width: 650px) {
+  .task-table tr.subtask-row.task-visit-highlight {
+    background: linear-gradient(to right, transparent 0 3px, #fff4a8 3px 100%) !important;
+  }
+  .task-table tr.subtask-row.task-visit-highlight > td {
+    background: transparent !important;
+  }
+}

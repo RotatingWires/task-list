@@ -34,7 +34,9 @@ const cancelSubtask = document.querySelector('#cancelSubtask');
 const moveDialog = document.querySelector('#moveDialog');
 const moveForm = document.querySelector('#moveForm');
 const moveTaskId = document.querySelector('#moveTaskId');
-const moveListSelect = document.querySelector('#moveListSelect');
+const moveListButton = document.querySelector('#moveListButton');
+const moveListLabel = document.querySelector('#moveListLabel');
+const moveListDropdown = document.querySelector('#moveListDropdown');
 const moveNote = document.querySelector('#moveNote');
 const cancelMove = document.querySelector('#cancelMove');
 
@@ -88,6 +90,7 @@ let tasks = [];
 let editingItem = null;
 let subtaskParent = null;
 let movingItem = null;
+let moveTargetListId = null;
 let editingList = null;
 let currentView = 'open';
 let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
@@ -169,12 +172,10 @@ function scrollAndHighlightTask(displayId, highlight = true) {
       taskPanel.scrollTop = Math.max(0, taskPanel.scrollTop - headerHeight - 2);
 
     if (!highlight) return;
-    row.style.background = '#fff4a8';
-    [...row.cells].forEach(cell => { cell.style.background = '#fff4a8'; });
-    setTimeout(() => {
-      row.style.background = '';
-      [...row.cells].forEach(cell => { cell.style.background = ''; });
-    }, 3200);
+    row.classList.remove('task-visit-highlight');
+    void row.offsetWidth;
+    row.classList.add('task-visit-highlight');
+    setTimeout(() => row.classList.remove('task-visit-highlight'), 3200);
   });
 }
 
@@ -398,8 +399,9 @@ function createTaskRow(item, depth) {
   const actions = (STATUS_ACTIONS[item.status] ?? [])
     .map(([label, status]) => [label, () => updateItem(item, { status })]);
   actions.push(['Add Subtask', () => openSubtaskDialog(item)]);
+  actions.push(['Edit', () => openEdit(item)]);
   actions.push(['Move...', () => openMove(item), lists.length <= 1]);
-  actions.push(['Edit', () => openEdit(item)], ['Delete', () => deleteItem(item)]);
+  actions.push(['Delete', () => deleteItem(item)]);
   appendActions(actionsCell, actions);
 
   row.append(idCell, titleCell, statusCell, actionsCell);
@@ -534,6 +536,49 @@ cancelSubtask.addEventListener('click', () => {
   subtaskParent = null;
 });
 
+function closeMoveListMenu() {
+  moveListDropdown.hidden = true;
+  moveListButton.setAttribute('aria-expanded', 'false');
+}
+
+function setMoveTargetList(listId) {
+  moveTargetListId = Number(listId);
+  const selectedList = lists.find(list => list.id === moveTargetListId);
+  moveListLabel.textContent = selectedList?.name ?? 'Choose a list';
+
+  for (const option of moveListDropdown.querySelectorAll('[data-list-id]')) {
+    const selected = Number(option.dataset.listId) === moveTargetListId;
+    option.setAttribute('aria-checked', selected ? 'true' : 'false');
+  }
+}
+
+function renderMoveListChoices(destinations) {
+  moveListDropdown.replaceChildren();
+  for (const list of destinations) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.setAttribute('role', 'menuitemradio');
+    option.dataset.listId = String(list.id);
+
+    const check = document.createElement('span');
+    check.className = 'menu-check';
+    const label = document.createElement('span');
+    label.className = 'menu-label';
+    label.textContent = list.name;
+    label.title = list.description || list.name;
+    option.append(check, label);
+    option.addEventListener('click', event => {
+      event.stopPropagation();
+      setMoveTargetList(list.id);
+      closeMoveListMenu();
+      moveListButton.focus();
+    });
+    moveListDropdown.append(option);
+  }
+
+  setMoveTargetList(destinations[0]?.id ?? null);
+}
+
 function openMove(item) {
   const destinations = lists.filter(list => list.id !== item.listId);
   if (!destinations.length) {
@@ -543,12 +588,7 @@ function openMove(item) {
 
   movingItem = item;
   moveTaskId.textContent = `#${item.displayId} — ${item.title}`;
-  moveListSelect.replaceChildren(...destinations.map(list => {
-    const option = document.createElement('option');
-    option.value = String(list.id);
-    option.textContent = list.name;
-    return option;
-  }));
+  renderMoveListChoices(destinations);
 
   const descendants = countDescendants(item);
   const subtreeText = descendants > 0
@@ -560,14 +600,22 @@ function openMove(item) {
   moveNote.textContent = `The moved task will receive the destination list's next task ID. Its Universal ID, status, dates, title, description, and child numbering are preserved.${rootText}${subtreeText}`;
 
   moveDialog.showModal();
-  moveListSelect.focus();
+  moveListButton.focus();
 }
+
+moveListButton.addEventListener('click', event => {
+  event.stopPropagation();
+  const willOpen = moveListDropdown.hidden;
+  closeMoveListMenu();
+  moveListDropdown.hidden = !willOpen;
+  moveListButton.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+});
 
 moveForm.addEventListener('submit', async event => {
   event.preventDefault();
   if (!movingItem) return;
 
-  const targetListId = Number(moveListSelect.value);
+  const targetListId = Number(moveTargetListId);
   const targetList = lists.find(list => list.id === targetListId);
   if (!targetList || targetListId === movingItem.listId) return;
 
@@ -577,6 +625,7 @@ moveForm.addEventListener('submit', async event => {
     const result = await jsonApi(`${itemEndpoint(item)}/move`, 'POST', { targetListId });
     moveDialog.close();
     movingItem = null;
+    moveTargetListId = null;
     await Promise.all([loadTasks(), refreshListCounts()]);
     setStatus(`Moved Universal ID ${result.universalId} to ${targetList.name} as #${result.displayId}.`);
   } catch (error) {
@@ -585,8 +634,18 @@ moveForm.addEventListener('submit', async event => {
 });
 
 cancelMove.addEventListener('click', () => {
+  closeMoveListMenu();
   moveDialog.close();
   movingItem = null;
+  moveTargetListId = null;
+});
+
+moveDialog.addEventListener('close', closeMoveListMenu);
+document.addEventListener('click', event => {
+  if (!event.target.closest('.move-list-menu')) closeMoveListMenu();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeMoveListMenu();
 });
 
 function openInfo(item, sourceItems = tasks) {
