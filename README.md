@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.4.2
+# TaskList v1.4.4
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
 
@@ -81,6 +81,22 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 ## Keyboard behavior
 
 In task, subtask, and list description boxes, **Enter** saves and **Shift+Enter** inserts a new line.
+
+## v1.4.4
+
+- Keep desktop task-row divider lines continuous through the Actions column.
+- Preserve the existing split Complete/Reopen control, More menu, Edit alignment, and mobile task-card layout.
+- Retain the selected Search list when another keyword or Date/Time search is run while the Search dialog remains open.
+- Reset Search to **All lists** after the Search dialog is closed and opened again.
+- Fall back to **All lists** if the previous list is not available in the new result set.
+- Bump TaskList UI, assembly metadata, About text, and PWA shell-cache metadata to v1.4.4.
+
+## v1.4.3
+
+- Give the Move Task destination selector a stronger raised bevel so it stands apart from the surrounding dialog background.
+- Add an inner highlight/shadow and harder outer shadow to give the selector more depth.
+- Strengthen the opened destination menu shadow while preserving existing Move behavior and sizing.
+- Bump TaskList UI, assembly metadata, About text, and PWA shell-cache metadata to v1.4.3.
 
 ## v1.4.2
 
