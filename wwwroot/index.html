@@ -33,12 +33,23 @@
     #moveDialog .move-list-dropdown {
       box-shadow: 2px 2px 0 #000;
     }
+
+    /* v1.4.4: keep the Actions cell as a table cell so its row divider is continuous. */
+    @media (min-width: 651px) {
+      .task-table td.task-actions {
+        display: table-cell;
+      }
+      .task-table td.task-actions > .task-split-group,
+      .task-table td.task-actions > button {
+        vertical-align: middle;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="window">
     <header class="titlebar">
-      <span class="title-app-name">TaskList v1.4.3</span>
+      <span class="title-app-name">TaskList v1.4.4</span>
       <span id="titleListName" class="title-list-name"></span>
       <span class="title-buttons" aria-hidden="true">_ □ ×</span>
     </header>
@@ -225,11 +236,12 @@
     <div class="dialog-title">About TaskList</div>
     <div class="dialog-body">
       <div>Tasks with dates of "Unknown" were imported from a third party application, and have no data regarding those dates.</div>
-      <div>about.lehighradio.com<br>TaskList v1.4.3</div>
+      <div>about.lehighradio.com<br>TaskList v1.4.4</div>
     </div>
     <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
 
   <script src="/app.js" defer></script>
+  <script src="/search-retain-v1-4-4.js" defer></script>
 </body>
 </html>
