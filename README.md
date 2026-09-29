@@ -1,3 +1,6 @@
+> [!WARNING]
+> This project is fully vibecoded, probably inefficient, but it does what I wanted lol
+
 # TaskList v1.4.2
 
 A small self-hosted task-list application that runs on Windows, Linux, and macOS, with web/PWA clients.
@@ -71,7 +74,7 @@ The old query-string deep-link format is no longer supported.
 
 ## Markdown import
 
-Import preserves arbitrary checklist nesting. Root groups are imported bottom-up so older roots receive lower visible IDs and Universal IDs, while descendants keep their source order.
+Import preserves arbitrary checklist nesting. Root groups are imported bottom-up so older roots receive lower visible IDs and Universal IDs, while descendants keep their source order. (https://community.obsidian.md/plugins/obsidian-tasks-plugin)
 
 `➕ YYYY-MM-DD` becomes Created and `✅ YYYY-MM-DD` becomes Completed. Missing source dates are stored as `Unknown` where applicable. Imported items use `Unknown` for Last updated when the source has no update timestamp.
 
