@@ -401,6 +401,67 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeMoveListMenu();
 });
 
+function flattenInfoItems(items, output = []) {
+  for (const item of items) {
+    output.push(item);
+    flattenInfoItems(item.subtasks ?? [], output);
+  }
+  return output;
+}
+
+function taskInfoHierarchy(item, sourceItems) {
+  const all = flattenInfoItems(sourceItems);
+  const prefix = `${item.displayId}.`;
+  const rootDisplayId = String(item.displayId).split('.')[0];
+  return {
+    directChildren: all.filter(candidate => candidate.parentDisplayId === item.displayId).length,
+    descendants: all.filter(candidate => candidate.displayId.startsWith(prefix)).length,
+    siblings: all.filter(candidate => candidate.parentDisplayId === item.parentDisplayId && candidate.universalId !== item.universalId).length,
+    rootTreeSize: all.filter(candidate => candidate.displayId === rootDisplayId || candidate.displayId.startsWith(`${rootDisplayId}.`)).length
+  };
+}
+
+function parseInfoDate(value) {
+  if (!value || value === 'Unknown') return null;
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function hasInfoClockTime(value) {
+  return typeof value === 'string' && /T\d{2}:\d{2}/.test(value);
+}
+
+function formatInfoDuration(ms) {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '—';
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (ms < hour) return `${Math.max(1, Math.round(ms / minute))} min`;
+  if (ms < day) return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(ms / hour)} hr`;
+  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(ms / day)} days`;
+}
+
+function taskInfoTerminalDuration(item) {
+  if (!hasInfoClockTime(item.createdAt)) return null;
+  const created = parseInfoDate(item.createdAt);
+  const terminalRaw = item.status === 'Done'
+    ? item.completedAt
+    : item.status === 'Cancelled'
+      ? item.cancelledAt
+      : null;
+  if (!created || !hasInfoClockTime(terminalRaw)) return null;
+  const terminal = parseInfoDate(terminalRaw);
+  if (!terminal) return null;
+  const ms = terminal - created;
+  return ms >= 0 ? ms : null;
+}
+
 function openInfo(item, sourceItems = tasks) {
   infoTaskId.textContent = `#${item.displayId}`;
 
@@ -415,11 +476,24 @@ function openInfo(item, sourceItems = tasks) {
     infoParentTaskRow.hidden = true;
   }
 
+  const hierarchy = taskInfoHierarchy(item, sourceItems);
+  const createdDate = parseInfoDate(item.createdAt);
+
   infoUniversalId.textContent = String(item.universalId);
   infoTitle.textContent = item.title;
   infoDescription.textContent = item.description || '—';
   infoStatus.textContent = item.status;
+  document.querySelector('#infoType').textContent = item.parentDisplayId ? 'Subtask' : 'Root task';
+  document.querySelector('#infoNestingDepth').textContent = String(Math.max(0, String(item.displayId).split('.').length - 1));
+  document.querySelector('#infoDirectChildren').textContent = hierarchy.directChildren.toLocaleString();
+  document.querySelector('#infoDescendants').textContent = hierarchy.descendants.toLocaleString();
+  document.querySelector('#infoSiblings').textContent = hierarchy.siblings.toLocaleString();
+  document.querySelector('#infoRootTreeSize').textContent = hierarchy.rootTreeSize.toLocaleString();
   infoCreated.textContent = formatDate(item.createdAt);
+  document.querySelector('#infoCurrentAge').textContent = item.status === 'Open' && createdDate
+    ? formatInfoDuration(Date.now() - createdDate.getTime())
+    : '—';
+  document.querySelector('#infoTerminalTime').textContent = formatInfoDuration(taskInfoTerminalDuration(item));
   infoUpdated.textContent = formatDate(item.updatedAt);
   infoCompleted.textContent = formatDate(item.completedAt);
   infoCancelled.textContent = formatDate(item.cancelledAt);
