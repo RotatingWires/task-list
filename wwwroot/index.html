@@ -134,11 +134,19 @@
       <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>
       <div id="infoParentTaskRow" class="dialog-id" hidden>Parent Task <strong id="infoParentTask"></strong></div>
       <dl class="info-grid">
-        <dt>Universal ID</dt><dd id="infoUniversalId"></dd>
+        <dt class="has-tooltip" tabindex="0" title="The permanent global ID assigned across every TaskList list. Universal IDs are never reused, even after deletion.">Universal ID</dt><dd id="infoUniversalId"></dd>
         <dt>Title</dt><dd id="infoTitle"></dd>
         <dt>Description</dt><dd id="infoDescription" class="description-value"></dd>
         <dt>Status</dt><dd id="infoStatus"></dd>
+        <dt class="has-tooltip" tabindex="0" title="Whether this item is a top-level root task or a subtask nested under another item.">Type</dt><dd id="infoType"></dd>
+        <dt class="has-tooltip" tabindex="0" title="How many levels below a root task this item sits. Root tasks are depth 0, their direct subtasks are depth 1, and so on.">Nesting depth</dt><dd id="infoNestingDepth"></dd>
+        <dt class="has-tooltip" tabindex="0" title="The number of immediate subtasks directly under this item. Deeper nested subtasks are not included.">Direct children</dt><dd id="infoDirectChildren"></dd>
+        <dt class="has-tooltip" tabindex="0" title="The total number of subtasks nested anywhere below this item, across every deeper level.">Descendants</dt><dd id="infoDescendants"></dd>
+        <dt class="has-tooltip" tabindex="0" title="Other items with the same immediate parent. For a root task, this means the other root tasks in the same list.">Siblings</dt><dd id="infoSiblings"></dd>
+        <dt class="has-tooltip" tabindex="0" title="The total size of this item's top-level task tree: the root task plus every descendant beneath that root.">Root tree size</dt><dd id="infoRootTreeSize"></dd>
         <dt>Created</dt><dd id="infoCreated"></dd>
+        <dt class="has-tooltip" tabindex="0" title="For an Open item, the elapsed time since it was created. Closed items show a dash.">Current age</dt><dd id="infoCurrentAge"></dd>
+        <dt class="has-tooltip" tabindex="0" title="For a currently Done or Cancelled item, the elapsed time from creation to its current terminal event. This requires confirmed clock times; date-only imports show a dash.">Terminal time</dt><dd id="infoTerminalTime"></dd>
         <dt>Last updated</dt><dd id="infoUpdated"></dd>
         <dt>Completed</dt><dd id="infoCompleted"></dd>
         <dt>Cancelled</dt><dd id="infoCancelled"></dd>

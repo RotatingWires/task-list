@@ -21,6 +21,18 @@
   box-shadow: 2px 2px 0 #000;
 }
 
+/* Task Information metric explanations use the browser tooltip on hover/focus. */
+#infoDialog .has-tooltip {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+#infoDialog {
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+
 @media (min-width: 651px) {
   .task-table td.task-actions {
     display: table-cell;

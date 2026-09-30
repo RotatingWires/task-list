@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.4.5
+# TaskList v1.4.6
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, a Windows 95-style interface, authentication, and PWA support.
 
@@ -36,7 +36,7 @@ wwwroot/
   login.html           login / first-run password setup
   version.js           generated from TaskList.csproj during build
   app.js               shared DOM/state/API/helpers
-  tasks.js             task rendering, actions, edit/subtask/move/import behavior
+  tasks.js             task rendering, actions, edit/subtask/move/import and Task Information metrics
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
@@ -190,6 +190,15 @@ TaskList is a single-user application.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
 ## Release history
+
+### v1.4.6
+
+- Expanded **Task Information** with the Stats Roulette hierarchy/time metrics that were not already shown: Type, Nesting depth, Direct children, Descendants, Siblings, Root tree size, Current age, and Terminal time.
+- Calculate hierarchy metrics against the task's actual source list/tree, including when Task Information is opened from Search results.
+- Keep Current age limited to currently Open tasks and make Terminal time follow the current Done/Cancelled status with confirmed clock timestamps, matching TaskList Stats semantics.
+- Added explanatory hover/focus tooltips for the non-obvious Task Information metrics while leaving obvious date/title/status fields uncluttered.
+- Kept the expanded Task Information dialog viewport-safe on smaller screens.
+- Preserve all existing task, list, Search, Move, archive, import, deep-link, authentication, and PWA behavior.
 
 ### v1.4.5
 
