@@ -51,9 +51,64 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+function initializeTaskInfoTouchHelp() {
+  const popup = document.createElement('div');
+  popup.className = 'tap-help-tooltip';
+  popup.hidden = true;
+  document.body.append(popup);
+
+  function hide() {
+    popup.hidden = true;
+  }
+
+  function showFor(element) {
+    const text = element.getAttribute('title');
+    if (!text) return;
+
+    popup.textContent = text;
+    popup.hidden = false;
+
+    const rect = element.getBoundingClientRect();
+    const margin = 10;
+    const width = popup.offsetWidth || 260;
+    const height = popup.offsetHeight || 60;
+    const center = rect.left + rect.width / 2;
+    const left = Math.max(margin, Math.min(window.innerWidth - width - margin, center - width / 2));
+    let top = rect.bottom + 12;
+    if (top + height + margin > window.innerHeight)
+      top = Math.max(margin, rect.top - height - 12);
+
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+  }
+
+  document.addEventListener('click', event => {
+    const target = event.target.closest?.('#infoDialog .has-tooltip[title]');
+    if (target) {
+      showFor(target);
+      return;
+    }
+    hide();
+  }, true);
+
+  document.addEventListener('keydown', event => {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('#infoDialog .has-tooltip[title]')) {
+      event.preventDefault();
+      showFor(event.target);
+    } else if (event.key === 'Escape') {
+      hide();
+    }
+  });
+
+  infoDialog.addEventListener('scroll', hide, { passive: true });
+  infoDialog.addEventListener('close', hide);
+  window.addEventListener('resize', hide);
+}
+
 async function start() {
   updateViewMenu();
   loadAppVersion();
+  initializeTaskInfoTouchHelp();
 
   try {
     await loadLists();
