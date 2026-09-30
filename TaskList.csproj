@@ -5,10 +5,10 @@
     <RootNamespace>TaskList</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.4.4</Version>
-    <AssemblyVersion>1.4.4.0</AssemblyVersion>
-    <FileVersion>1.4.4.0</FileVersion>
-    <InformationalVersion>1.4.4</InformationalVersion>
+    <Version>1.4.5</Version>
+    <AssemblyVersion>1.4.5.0</AssemblyVersion>
+    <FileVersion>1.4.5.0</FileVersion>
+    <InformationalVersion>1.4.5</InformationalVersion>
     <Product>TaskList</Product>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
@@ -16,4 +16,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
   </ItemGroup>
+  <Target Name="GenerateWebVersion" BeforeTargets="Build">
+    <WriteLinesToFile
+      File="$(MSBuildProjectDirectory)/wwwroot/version.js"
+      Lines="window.TASKLIST_VERSION = '$(Version)';"
+      Overwrite="true"
+      Encoding="UTF-8" />
+  </Target>
 </Project>

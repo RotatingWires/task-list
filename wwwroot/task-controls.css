@@ -1,0 +1,33 @@
+/* Task-specific control refinements kept separate from the general Win95 shell. */
+
+#moveDialog .move-list-button {
+  background: #d4d0c8;
+  outline: 1px solid #404040;
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 #808080,
+    2px 2px 0 #000;
+}
+
+#moveDialog .move-list-button:active,
+#moveDialog .move-list-button[aria-expanded="true"] {
+  box-shadow:
+    inset 1px 1px 0 #808080,
+    inset -1px -1px 0 #fff,
+    1px 1px 0 #000;
+}
+
+#moveDialog .move-list-dropdown {
+  box-shadow: 2px 2px 0 #000;
+}
+
+@media (min-width: 651px) {
+  .task-table td.task-actions {
+    display: table-cell;
+  }
+
+  .task-table td.task-actions > .task-split-group,
+  .task-table td.task-actions > button {
+    vertical-align: middle;
+  }
+}

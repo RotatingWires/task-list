@@ -1,3 +1,5 @@
+'use strict';
+
 const authForm = document.querySelector('#authForm');
 const password = document.querySelector('#password');
 const setupTokenGroup = document.querySelector('#setupTokenGroup');
@@ -8,6 +10,7 @@ const loginButton = document.querySelector('#loginButton');
 const loginError = document.querySelector('#loginError');
 const loginWindowTitle = document.querySelector('#loginWindowTitle');
 const loginIntro = document.querySelector('#loginIntro');
+const titleAppName = document.querySelector('.title-app-name');
 
 let setupMode = false;
 
@@ -27,7 +30,11 @@ async function request(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
   if (response.ok) return response.status === 204 ? null : response.json();
 
-  let message = response.status === 401 ? 'Incorrect password.' : response.status === 429 ? 'Too many attempts. Try again in one minute.' : `${response.status} ${response.statusText}`;
+  let message = response.status === 401
+    ? 'Incorrect password.'
+    : response.status === 429
+      ? 'Too many attempts. Try again in one minute.'
+      : `${response.status} ${response.statusText}`;
   try {
     const body = await response.json();
     if (body.error) message = body.error;
@@ -36,6 +43,9 @@ async function request(url, options = {}) {
 }
 
 async function initialize() {
+  if (window.TASKLIST_VERSION)
+    titleAppName.textContent = `TaskList v${window.TASKLIST_VERSION}`;
+
   try {
     const status = await request('/api/auth/status');
     if (status.authenticated) {
