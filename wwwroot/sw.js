@@ -1,5 +1,22 @@
-const CACHE = 'task-list-shell-v1-4-4';
-const SHELL = ['/login.html', '/login.js', '/style.css', '/app.js', '/search-retain-v1-4-4.js', '/manifest.webmanifest', '/favicon.ico', '/icons/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-180.png'];
+const CACHE = 'task-list-shell';
+const SHELL = [
+  '/login.html',
+  '/login.js',
+  '/version.js',
+  '/style.css',
+  '/task-controls.css',
+  '/app.js',
+  '/tasks.js',
+  '/lists.js',
+  '/search.js',
+  '/ui.js',
+  '/manifest.webmanifest',
+  '/favicon.ico',
+  '/icons/favicon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-180.png'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
