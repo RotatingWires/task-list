@@ -55,7 +55,7 @@ function initializeTaskInfoTouchHelp() {
   const popup = document.createElement('div');
   popup.className = 'tap-help-tooltip';
   popup.hidden = true;
-  document.body.append(popup);
+  infoDialog.append(popup);
 
   function hide() {
     popup.hidden = true;
