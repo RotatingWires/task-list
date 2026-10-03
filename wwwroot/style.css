@@ -613,7 +613,7 @@ button:disabled {
 }
 @media (min-width: 651px) {
   #dateSearchForm {
-    grid-template-columns: max-content minmax(120px, 1fr) max-content minmax(120px, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr);
     column-gap: 10px;
     row-gap: 10px;
     align-items: center;
@@ -765,15 +765,6 @@ button:disabled {
   .search-result-row {
     grid-template-columns: 1fr;
   }
-  #dateSearchForm label[for="searchStartDate"] { order: 1; }
-  #searchStartDate { order: 2; }
-  #dateSearchForm label[for="searchEndDate"] { order: 3; }
-  #searchEndDate { order: 4; }
-  #dateSearchForm label[for="searchStartTime"] { order: 5; }
-  #searchStartTime { order: 6; }
-  #dateSearchForm label[for="searchEndTime"] { order: 7; }
-  #searchEndTime { order: 8; }
-  #dateSearchForm .search-date-actions { order: 9; }
   .search-result-actions {
     justify-self: start;
   }
