@@ -30,10 +30,8 @@ function openSearch() {
   closeFileMenu();
   setSearchTab('keyword');
   searchKeyword.value = '';
-  searchStartDate.value = '';
-  searchStartTime.value = '';
-  searchEndDate.value = '';
-  searchEndTime.value = '';
+  searchDateRange.value = '';
+  searchTimeRange.value = '';
   searchSummary.textContent = 'Searches all lists.';
   resetSearchListFilter();
   searchResults.replaceChildren(Object.assign(document.createElement('div'), {
@@ -53,7 +51,7 @@ function setSearchTab(tab) {
 
   if (searchDialog.open) {
     if (keyword) searchKeyword.focus();
-    else searchStartDate.focus();
+    else searchDateRange.focus();
   }
 }
 
@@ -190,11 +188,24 @@ function parseSearchDate(value) {
   return year * 10000 + month * 100 + day;
 }
 
-function parseOptionalSearchDate(value) {
+function splitSearchRange(value) {
   const text = value.trim();
-  if (!text) return { specified: false, key: null };
-  const key = parseSearchDate(text);
-  return key === null ? null : { specified: true, key };
+  if (!text) return null;
+  const match = /^(.+?)\s*[-–—]\s*(.+)$/.exec(text);
+  if (!match) return null;
+  return [match[1].trim(), match[2].trim()];
+}
+
+function readSearchDateRange(value) {
+  const text = value.trim();
+  if (!text) return { specified: false, start: null, end: null };
+
+  const parts = splitSearchRange(text);
+  if (!parts) return null;
+  const start = parseSearchDate(parts[0]);
+  const end = parseSearchDate(parts[1]);
+  if (start === null || end === null) return null;
+  return { specified: true, start, end };
 }
 
 function creationDateKey(value) {
@@ -234,6 +245,18 @@ function parseSearchTime(value) {
   return { specified: true, minutes: hour * 60 + minute };
 }
 
+function readSearchTimeRange(value) {
+  const text = value.trim();
+  if (!text) return { specified: false, start: null, end: null };
+
+  const parts = splitSearchRange(text);
+  if (!parts) return null;
+  const start = parseSearchTime(parts[0]);
+  const end = parseSearchTime(parts[1]);
+  if (!start?.specified || !end?.specified) return null;
+  return { specified: true, start: start.minutes, end: end.minutes };
+}
+
 function creationDateTimeParts(value) {
   if (!value || value === 'Unknown') return null;
 
@@ -259,25 +282,16 @@ function matchesClockRange(minutes, startMinutes, endMinutes) {
   return minutes >= startMinutes || minutes <= endMinutes;
 }
 
-function matchesCreationRange(value, startDate, startTime, endDate, endTime) {
+function matchesCreationRange(value, dateRange, timeRange) {
   const created = creationDateTimeParts(value);
   if (!created) return false;
 
-  const hasDateRange = startDate.specified && endDate.specified;
-  if (hasDateRange && (created.dateKey < startDate.key || created.dateKey > endDate.key))
+  if (dateRange.specified && (created.dateKey < dateRange.start || created.dateKey > dateRange.end))
     return false;
 
-  const hasStartTime = startTime.specified;
-  const hasEndTime = endTime.specified;
-  const hasTimeFilter = hasStartTime || hasEndTime;
-  if (!hasTimeFilter) return hasDateRange;
+  if (!timeRange.specified) return dateRange.specified;
   if (created.minutes === null) return false;
-
-  if (hasStartTime && hasEndTime)
-    return matchesClockRange(created.minutes, startTime.minutes, endTime.minutes);
-  if (hasStartTime)
-    return created.minutes >= startTime.minutes;
-  return created.minutes <= endTime.minutes;
+  return matchesClockRange(created.minutes, timeRange.start, timeRange.end);
 }
 
 function compareSearchCreatedNewest(a, b) {
@@ -484,34 +498,26 @@ keywordSearchForm.addEventListener('submit', async event => {
 dateSearchForm.addEventListener('submit', async event => {
   event.preventDefault();
 
-  const startDate = parseOptionalSearchDate(searchStartDate.value);
-  const endDate = parseOptionalSearchDate(searchEndDate.value);
-  const startTime = parseSearchTime(searchStartTime.value);
-  const endTime = parseSearchTime(searchEndTime.value);
+  const dateRange = readSearchDateRange(searchDateRange.value);
+  const timeRange = readSearchTimeRange(searchTimeRange.value);
 
-  if (startDate === null || endDate === null) {
-    searchSummary.textContent = 'Use m/d, m/d/yy, or m/d/yyyy for dates.';
+  if (dateRange === null) {
+    searchSummary.textContent = 'Use a date range like 10/3 - 10/8. Each date can be m/d, m/d/yy, or m/d/yyyy.';
     return;
   }
 
-  if (startTime === null || endTime === null) {
-    searchSummary.textContent = 'Use times like 9 PM, 9PM, 9:10 PM, or 9:10. Times without AM/PM are treated as AM.';
+  if (timeRange === null) {
+    searchSummary.textContent = 'Use a time range like 9 AM - 9 PM or 9:10 AM - 5:30 PM. Times without AM/PM are treated as AM.';
     return;
   }
 
-  if (startDate.specified !== endDate.specified) {
-    searchSummary.textContent = 'Enter both dates, or leave both dates blank for a time-only search.';
-    return;
-  }
-
-  const hasDateRange = startDate.specified && endDate.specified;
-  if (!hasDateRange && (!startTime.specified || !endTime.specified)) {
-    searchSummary.textContent = 'For a time-only search, enter both Start time and End time.';
-    return;
-  }
-
-  if (hasDateRange && startDate.key > endDate.key) {
+  if (dateRange.specified && dateRange.start > dateRange.end) {
     searchSummary.textContent = 'Start date must be on or before End date.';
+    return;
+  }
+
+  if (!dateRange.specified && !timeRange.specified) {
+    searchSummary.textContent = 'Enter a date range, a time range, or both.';
     return;
   }
 
@@ -521,15 +527,14 @@ dateSearchForm.addEventListener('submit', async event => {
   try {
     const allItems = await loadAllSearchItems();
     const matches = allItems
-      .filter(result => matchesCreationRange(result.item.createdAt, startDate, startTime, endDate, endTime))
+      .filter(result => matchesCreationRange(result.item.createdAt, dateRange, timeRange))
       .sort(compareSearchCreatedNewest);
 
-    const timeOnly = !hasDateRange;
-    const timeFiltered = timeOnly || startTime.specified || endTime.specified;
+    const timeOnly = !dateRange.specified && timeRange.specified;
     const listCount = new Set(matches.map(result => result.list.id)).size;
     const rangeDescription = timeOnly
       ? 'that time range across all dates'
-      : timeFiltered
+      : timeRange.specified
         ? 'that date/time range'
         : 'that date range';
 

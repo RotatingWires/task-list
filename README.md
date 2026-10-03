@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.1
+# TaskList v1.5.2
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, a Windows 95-style interface, authentication, PWA support, and an append-only task-state event log.
 
@@ -137,8 +137,8 @@ Moving a task preserves its Universal ID, title, description, status, timestamps
 **File → Search...** supports:
 
 - fuzzy keyword/title/description search across active lists
-- creation-date ranges
-- optional creation-time ranges
+- compact creation-date ranges typed into one field
+- compact creation-time ranges typed into one field
 - time-only searches across all dates
 - overnight time windows
 - task and subtask results
@@ -147,9 +147,9 @@ Moving a task preserves its Universal ID, title, description, status, timestamps
 
 The Search list filter is intentionally scoped to one open Search window. It is retained when another search is run while the dialog remains open, but resets to **All lists** after Search is closed and reopened. If the previously selected list has no matches in the next result set, the filter falls back to **All lists**.
 
-Dates accept `m/d`, `m/d/yy`, or `m/d/yyyy`. Dates without a year use the current year.
+Date ranges are typed like `10/3 - 10/8`. Each side accepts `m/d`, `m/d/yy`, or `m/d/yyyy`; dates without a year use the current year. Time ranges are typed like `9am - 9pm` and keep the same flexible 12-hour parsing as before. A normal hyphen, en dash, or em dash can separate the two values.
 
-On desktop the Date/Time form keeps its compact paired layout. On mobile the same controls stack as Start date, End date, Start time, End time so the range reads naturally without changing desktop order or search semantics.
+The compact Date/Time form uses the same two fields on desktop and mobile, leaving more room for results while keeping date-only, time-only, date/time, and overnight-time searches.
 
 ## Deep links
 
@@ -196,6 +196,16 @@ TaskList is a single-user application.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
 ## Release history
+
+### v1.5.2
+
+- Replace the four Date/Time Search inputs with two compact fields: **Date range** and **Time range**.
+- Accept date ranges such as `10/3 - 10/8`, with either side using `m/d`, `m/d/yy`, or `m/d/yyyy`.
+- Accept time ranges such as `9am - 9pm` while preserving flexible 12-hour parsing and overnight windows.
+- Accept hyphen, en dash, or em dash range separators.
+- Preserve date-only, time-only, and combined date/time search behavior while removing the old separate Start/End field parsing and mobile-order CSS.
+- Keep the Search Close-button position, result list/filter behavior, deep-link View action, and desktop/mobile dialog scrolling unchanged.
+- Bump project, assembly, file, informational, and checked-in frontend version metadata to v1.5.2.
 
 ### v1.5.1
 
