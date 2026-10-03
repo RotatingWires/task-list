@@ -1,9 +1,9 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.4.6
+# TaskList v1.5.1
 
-TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, a Windows 95-style interface, authentication, and PWA support.
+TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, a Windows 95-style interface, authentication, PWA support, and an append-only task-state event log.
 
 It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. There is no Node.js build step or frontend framework.
 
@@ -23,7 +23,7 @@ TaskList intentionally keeps a small source tree. Frontend code is split by resp
 
 ```text
 TaskList.csproj        .NET project, dependencies, and authoritative release version
-Program.cs             server, authentication, SQLite schema, and API
+Program.cs             server, authentication, SQLite schema, event-log triggers, and API
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
@@ -34,27 +34,27 @@ data/                  runtime/private data
 wwwroot/
   index.html           main application shell and dialogs
   login.html           login / first-run password setup
-  version.js           generated from TaskList.csproj during build
+  version.js           frontend release version, regenerated from TaskList.csproj during build
   app.js               shared DOM/state/API/helpers
   tasks.js             task rendering, actions, edit/subtask/move/import and Task Information metrics
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
   login.js             login/setup behavior
-  style.css            general Win95-style application/login layout
+  style.css            general Win95-style application/login/search layout
   task-controls.css    task-specific Move/action control styling
   sw.js                network-first service worker
   manifest.webmanifest PWA metadata
   icons/                PWA/favicon assets
 ```
 
-There are no release-specific JavaScript override files. New behavior should be implemented in the module that owns it rather than by reassigning/wrapping existing functions.
+There are no release-specific JavaScript override files. New behavior belongs in the normal module or stylesheet that owns it rather than in runtime wrappers, monkey patches, or release-specific shim files.
 
 ## Version handling
 
 `TaskList.csproj` is the authoritative application version.
 
-The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build. Both the main app and login screen read that generated value, so their visible version labels do not have to be updated independently.
+The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build. The checked-in `wwwroot/version.js` is also updated on every release so the browser can display the current frontend version after a normal Git pull even when an existing executable has not been rebuilt yet.
 
 The service worker uses a stable shell-cache name and network-first asset requests, so it does not need another duplicated release number.
 
@@ -89,6 +89,10 @@ Tasks and subtasks live in one recursive `items` table. The visible task ID is s
 `parent_display_id` points to the immediate parent in the same list. The composite primary key `(list_id, display_id)` lets separate lists each have their own `#1`, `#1.1`, and so on.
 
 Every item also has a global Universal ID. Universal IDs increment across all lists and are never reused. Each item has its own `next_child_number`, so nesting is not limited to one subtask level.
+
+TaskList also keeps an append-only `task_events` table for state history. SQLite triggers record Created, Completed, Cancelled, and Reopened events with the Universal ID, event timestamp, old/new status, list/display hierarchy location, and title snapshot. The current `items` row remains the fast current-state model while `task_events` preserves repeated state transitions for historical analysis.
+
+When a pre-v1.5 database first runs under v1.5+, TaskList backfills the older Created/Completed/Cancelled/Reopened timestamps it can recover into the event log. Repeated old state cycles that were never stored cannot be reconstructed exactly; transitions recorded after the event log exists are retained individually.
 
 TaskList expects the current recursive `items` schema. The old pre-v1.1 `tasks`/`subtasks` migration path has been removed.
 
@@ -145,6 +149,8 @@ The Search list filter is intentionally scoped to one open Search window. It is 
 
 Dates accept `m/d`, `m/d/yy`, or `m/d/yyyy`. Dates without a year use the current year.
 
+On desktop the Date/Time form keeps its compact paired layout. On mobile the same controls stack as Start date, End date, Start time, End time so the range reads naturally without changing desktop order or search semantics.
+
 ## Deep links
 
 Canonical task links use the task's Universal ID:
@@ -190,6 +196,38 @@ TaskList is a single-user application.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
 ## Release history
+
+### v1.5.1
+
+- Move only the Search dialog **Close** button 6px lower without changing footer spacing, dialog height, or the scrollable Search body.
+- On mobile only, reorder Date/Time Search to Start date → End date → Start time → End time while leaving the desktop grid unchanged.
+- Consolidate duplicate password/text input styling into one shared Win95 input rule.
+- Remove redundant mobile shell declarations already provided by the global app layout.
+- Merge the two overlapping mobile login-window media blocks into one effective safe-area rule.
+- Refresh the README to document the v1.5 event log, checked-in frontend version behavior, current Search layout, and current release.
+- Keep Search behavior, list-filter retention, task/list actions, event logging, authentication, deep links, archives, imports, and PWA behavior unchanged.
+
+### v1.5
+
+- Add the append-only `task_events` table for complete future task-state history.
+- Record Created, Completed, Cancelled, and Reopened transitions with Universal ID, timestamps, old/new status, list/display hierarchy location, title snapshot, and provenance.
+- Use SQLite triggers so normal task/subtask creation and status changes are logged without duplicating event-writing logic across API endpoints.
+- Preserve repeated future state cycles instead of overwriting older transitions in the per-task timestamp columns.
+- Backfill recoverable pre-v1.5 Created/Completed/Cancelled/Reopened timestamps on first startup while acknowledging that older repeated cycles cannot be reconstructed if they were never stored.
+- Keep event rows independent of later task/list deletion and avoid duplicate event history during Move operations.
+- Preserve the existing `items` table and timestamp columns as the current-state model.
+
+### v1.4.8
+
+- Keep Task Information tap-help tooltips inside the dialog top layer so they render above the modal on mobile.
+- Preserve native desktop hover/focus tooltip behavior.
+- Keep the checked-in frontend version metadata synchronized with the release.
+
+### v1.4.7
+
+- Add mobile tap/keyboard help for Task Information tooltip labels.
+- Keep tooltip positioning viewport-safe and dismiss help on Escape/scroll.
+- Keep the checked-in frontend version metadata synchronized so static frontend updates show the current release without requiring an immediate executable rebuild.
 
 ### v1.4.6
 

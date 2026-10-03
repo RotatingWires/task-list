@@ -169,7 +169,11 @@ button { cursor: pointer; }
 
 #newTaskForm { display: flex; flex: 1 1 420px; gap: 6px; }
 
-input[type="text"], input:not([type]), #newTaskTitle, #editTitle, textarea, select {
+input[type="text"],
+input[type="password"],
+input:not([type]),
+textarea,
+select {
   min-width: 0;
   padding: 6px 7px;
   background: #fff;
@@ -313,16 +317,10 @@ button:active {
 
 @media (max-width: 650px) {
   body {
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0;
-    padding-bottom: 0;
     background: var(--face);
     overflow: hidden;
   }
   .window {
-    height: 100dvh;
-    min-height: 0;
     border: 0;
     box-shadow: none;
     overflow: hidden;
@@ -353,7 +351,6 @@ button:active {
   .info-grid { grid-template-columns: 95px minmax(0, 1fr); font-size: 13px; }
 }
 
-/* v0.4: keep long task names inside their row instead of widening the table. */
 .task-table {
   table-layout: fixed;
 }
@@ -470,7 +467,6 @@ button:active {
   word-break: break-word;
 }
 
-/* v0.5: multi-list File menu and list management. */
 .file-dropdown {
   min-width: 220px;
   max-width: min(340px, calc(100vw - 20px));
@@ -538,8 +534,7 @@ button:disabled {
   justify-content: flex-end;
 }
 
-
-/* v1.2.1: all-list keyword/date search. */
+/* Search dialog. */
 .search-dialog {
   width: min(760px, calc(100vw - 24px));
   height: min(720px, calc(100dvh - 24px));
@@ -553,6 +548,9 @@ button:disabled {
 .search-dialog > .dialog-title,
 .search-dialog > .dialog-buttons {
   flex: 0 0 auto;
+}
+.search-dialog > .dialog-buttons #closeSearch {
+  transform: translateY(6px);
 }
 .search-body {
   flex: 1 1 auto;
@@ -767,6 +765,15 @@ button:disabled {
   .search-result-row {
     grid-template-columns: 1fr;
   }
+  #dateSearchForm label[for="searchStartDate"] { order: 1; }
+  #searchStartDate { order: 2; }
+  #dateSearchForm label[for="searchEndDate"] { order: 3; }
+  #searchEndDate { order: 4; }
+  #dateSearchForm label[for="searchStartTime"] { order: 5; }
+  #searchStartTime { order: 6; }
+  #dateSearchForm label[for="searchEndTime"] { order: 7; }
+  #searchEndTime { order: 8; }
+  #dateSearchForm .search-date-actions { order: 9; }
   .search-result-actions {
     justify-self: start;
   }
@@ -837,7 +844,6 @@ button:disabled {
   }
 }
 
-/* v0.8: Manage Lists UID total in the title bar. */
 .manage-lists-title {
   display: flex;
   align-items: center;
@@ -850,18 +856,7 @@ button:disabled {
   white-space: nowrap;
 }
 
-/* v0.8.5: single-user login/setup screen. */
-input[type="password"] {
-  min-width: 0;
-  padding: 6px 7px;
-  background: #fff;
-  border-top: 2px solid #404040;
-  border-left: 2px solid #404040;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  border-radius: 0;
-  outline: none;
-}
+/* Login/setup screen. */
 .login-page {
   display: grid;
   place-items: center;
@@ -904,8 +899,6 @@ input[type="password"] {
   min-width: 110px;
 }
 
-
-
 /* Keep a username field in the login form for iOS/password-manager heuristics
    without adding a visible username step to this single-user app. */
 .password-autofill-username {
@@ -921,29 +914,15 @@ input[type="password"] {
   white-space: nowrap !important;
 }
 
-/* v0.8.6: keep login/setup as a bordered window on mobile. */
+/* Keep the app chrome below iOS' translucent/blurred status-bar material.
+   Some installed Home Screen PWAs report too small a top safe-area inset, so
+   reserve a small minimum zone instead of drawing the blue titlebar beneath it. */
 @media (max-width: 650px) {
   body.login-page {
     padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
     background: #008080;
   }
-  .login-page .login-window {
-    width: min(470px, calc(100vw - 20px));
-    height: auto;
-    min-height: 0;
-    max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)));
-    border-top: 2px solid var(--light);
-    border-left: 2px solid var(--light);
-    border-right: 2px solid var(--dark);
-    border-bottom: 2px solid var(--dark);
-    box-shadow: 1px 1px 0 var(--shadow);
-  }
-}
 
-/* Keep the app chrome below iOS' translucent/blurred status-bar material.
-   Some installed Home Screen PWAs report too small a top safe-area inset, so
-   reserve a small minimum zone instead of drawing the blue titlebar beneath it. */
-@media (max-width: 650px) {
   body:not(.login-page) {
     background: var(--face);
     padding-top: max(env(safe-area-inset-top), 20px);
@@ -963,6 +942,11 @@ input[type="password"] {
     min-height: 0 !important;
     max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
     overflow: auto;
+    border-top: 2px solid var(--light);
+    border-left: 2px solid var(--light);
+    border-right: 2px solid var(--dark);
+    border-bottom: 2px solid var(--dark);
+    box-shadow: 1px 1px 0 var(--shadow);
   }
 
   .login-page .login-form {
@@ -971,8 +955,7 @@ input[type="password"] {
   }
 }
 
-
-/* v1.3.17: custom single-select dropdown and visit highlight. */
+/* Custom single-select dropdown and visit highlight. */
 .retro-select {
   width: 100%;
   min-width: 190px;
@@ -1033,13 +1016,11 @@ input[type="password"] {
   }
 }
 
-
-/* v1.3.18: archived-list management. */
 .manage-lists-footer {
   justify-content: space-between;
 }
 
-/* v1.4: compact one-click primary task actions with an attached More menu. */
+/* Compact one-click primary task actions with an attached More menu. */
 .task-split-group {
   position: relative;
   display: inline-flex;
@@ -1081,7 +1062,6 @@ input[type="password"] {
   color: #808080;
 }
 
-/* v1.4.2: keep Complete fixed-width while letting Reopen return to its natural size. */
 .task-table tr.status-done .task-primary-action,
 .task-table tr.status-cancelled .task-primary-action {
   width: auto;
