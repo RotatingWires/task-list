@@ -1,5 +1,7 @@
 'use strict';
 
+const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
+
 function closeFileMenu() {
   fileDropdown.hidden = true;
   fileMenu.setAttribute('aria-expanded', 'false');
@@ -8,6 +10,12 @@ function closeFileMenu() {
 function closeViewMenu() {
   viewDropdown.hidden = true;
   viewMenu.setAttribute('aria-expanded', 'false');
+}
+
+function updateThemeMenu() {
+  const selected = window.TaskTheme?.getPreference?.() ?? 'light';
+  for (const choice of themeChoices)
+    choice.setAttribute('aria-checked', choice.dataset.themeChoice === selected ? 'true' : 'false');
 }
 
 fileMenu.addEventListener('click', event => {
@@ -23,12 +31,24 @@ viewMenu.addEventListener('click', event => {
   event.stopPropagation();
   const willOpen = viewDropdown.hidden;
   closeFileMenu();
+  if (willOpen) updateThemeMenu();
   viewDropdown.hidden = !willOpen;
   viewMenu.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
 });
 
 for (const choice of viewChoices)
   choice.addEventListener('click', () => setView(choice.dataset.view));
+
+for (const choice of themeChoices) {
+  choice.addEventListener('click', event => {
+    event.stopPropagation();
+    window.TaskTheme?.setPreference?.(choice.dataset.themeChoice);
+    updateThemeMenu();
+    closeViewMenu();
+  });
+}
+
+window.addEventListener('task-theme-change', updateThemeMenu);
 
 document.addEventListener('click', event => {
   if (!event.target.closest('.menu-wrap')) {
@@ -107,6 +127,7 @@ function initializeTaskInfoTouchHelp() {
 
 async function start() {
   updateViewMenu();
+  updateThemeMenu();
   loadAppVersion();
   initializeTaskInfoTouchHelp();
 
