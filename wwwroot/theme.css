@@ -15,6 +15,7 @@
   --theme-title-text: #fff;
   --theme-divider: #c8c8c8;
   --theme-subtask-divider: #d0d0d0;
+  --theme-info-divider: #808080;
   --theme-muted: #666;
   --theme-muted-strong: #444;
   --theme-placeholder: #777;
@@ -43,6 +44,7 @@
   --theme-title-text: #fff;
   --theme-divider: #3d3d3d;
   --theme-subtask-divider: #414141;
+  --theme-info-divider: #666;
   --theme-muted: #b8b8b8;
   --theme-muted-strong: #d0d0d0;
   --theme-placeholder: #a8a8a8;
@@ -94,8 +96,6 @@ body:not(.login-page) {
   color: var(--theme-text);
 }
 
-.menubar > button,
-.menu-wrap > button,
 button,
 .retro-select,
 .search-list-filter-button,
@@ -234,14 +234,14 @@ textarea::placeholder {
 }
 
 .info-grid {
-  border-top-color: var(--theme-shadow);
-  border-left-color: var(--theme-shadow);
+  border-top-color: var(--theme-info-divider);
+  border-left-color: var(--theme-info-divider);
 }
 
 .info-grid dt,
 .info-grid dd {
-  border-right-color: var(--theme-shadow);
-  border-bottom-color: var(--theme-shadow);
+  border-right-color: var(--theme-info-divider);
+  border-bottom-color: var(--theme-info-divider);
 }
 
 .info-grid dt {
