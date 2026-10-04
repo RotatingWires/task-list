@@ -2,8 +2,7 @@
 'use strict';
 
 const STORAGE_KEY = 'task-ui-theme';
-const VALID = new Set(['light', 'dark', 'system']);
-const media = window.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
+const VALID = new Set(['light', 'dark']);
 
 function readPreference() {
   try {
@@ -12,11 +11,6 @@ function readPreference() {
   } catch {
     return 'light';
   }
-}
-
-function effectiveTheme(preference) {
-  if (preference !== 'system') return preference;
-  return media?.matches ? 'dark' : 'light';
 }
 
 function applyTheme(preference, persist = false) {
@@ -28,20 +22,19 @@ function applyTheme(preference, persist = false) {
   const root = document.documentElement;
   const previousPreference = root.dataset.themePreference;
   const previousEffective = root.dataset.themeEffective;
-  const effective = effectiveTheme(selected);
   root.dataset.themePreference = selected;
-  root.dataset.themeEffective = effective;
-  root.style.colorScheme = effective;
+  root.dataset.themeEffective = selected;
+  root.style.colorScheme = selected;
 
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', effective === 'dark' ? '#111858' : '#000080');
+  if (meta) meta.setAttribute('content', selected === 'dark' ? '#111858' : '#000080');
 
-  if (previousPreference !== undefined && (previousPreference !== selected || previousEffective !== effective)) {
+  if (previousPreference !== undefined && (previousPreference !== selected || previousEffective !== selected)) {
     window.dispatchEvent(new CustomEvent('task-theme-change', {
-      detail: { preference: selected, effective }
+      detail: { preference: selected, effective: selected }
     }));
   }
-  return effective;
+  return selected;
 }
 
 function getPreference() {
@@ -49,19 +42,12 @@ function getPreference() {
 }
 
 function getEffective() {
-  return document.documentElement.dataset.themeEffective || effectiveTheme(getPreference());
+  return document.documentElement.dataset.themeEffective || getPreference();
 }
 
 function setPreference(preference) {
   return applyTheme(preference, true);
 }
-
-function handleSystemThemeChange() {
-  if (getPreference() === 'system') applyTheme('system', false);
-}
-
-if (media?.addEventListener) media.addEventListener('change', handleSystemThemeChange);
-else media?.addListener?.(handleSystemThemeChange);
 
 window.addEventListener('storage', event => {
   if (event.key === STORAGE_KEY) applyTheme(readPreference(), false);
@@ -72,6 +58,6 @@ window.TaskTheme = {
   getPreference,
   getEffective,
   setPreference,
-  options: ['light', 'dark', 'system']
+  options: ['light', 'dark']
 };
 })();
