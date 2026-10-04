@@ -1,0 +1,377 @@
+/* Shared light/dark theme tokens for TaskList. */
+:root {
+  --theme-text: #000;
+  --theme-desktop: #008080;
+  --theme-face: #c0c0c0;
+  --theme-surface: #fff;
+  --theme-surface-alt: #f4f4f4;
+  --theme-label-surface: #d4d0c8;
+  --theme-light-edge: #fff;
+  --theme-mid-edge: #dfdfdf;
+  --theme-shadow: #808080;
+  --theme-dark-edge: #404040;
+  --theme-black: #000;
+  --theme-title: #000080;
+  --theme-title-text: #fff;
+  --theme-divider: #c8c8c8;
+  --theme-subtask-divider: #d0d0d0;
+  --theme-muted: #666;
+  --theme-muted-strong: #444;
+  --theme-placeholder: #777;
+  --theme-link: #000080;
+  --theme-link-hover: #0000d0;
+  --theme-note: #ffffe1;
+  --theme-highlight: #fff4a8;
+  --theme-error: #800000;
+  --theme-open: #e02d04;
+  --theme-closed: #02bd34;
+}
+
+:root[data-theme-effective="dark"] {
+  --theme-text: #f1f1f1;
+  --theme-desktop: #002f2f;
+  --theme-face: #303030;
+  --theme-surface: #191919;
+  --theme-surface-alt: #242424;
+  --theme-label-surface: #393939;
+  --theme-light-edge: #666;
+  --theme-mid-edge: #494949;
+  --theme-shadow: #181818;
+  --theme-dark-edge: #0e0e0e;
+  --theme-black: #000;
+  --theme-title: #111858;
+  --theme-title-text: #fff;
+  --theme-divider: #3d3d3d;
+  --theme-subtask-divider: #414141;
+  --theme-muted: #b8b8b8;
+  --theme-muted-strong: #d0d0d0;
+  --theme-placeholder: #a8a8a8;
+  --theme-link: #91adff;
+  --theme-link-hover: #c0ceff;
+  --theme-note: #3b3825;
+  --theme-highlight: #5c4c00;
+  --theme-error: #ff9c9c;
+  --theme-open: #ff6b4a;
+  --theme-closed: #56dc78;
+}
+
+html,
+body {
+  color: var(--theme-text);
+}
+
+:root,
+body.login-page {
+  background: var(--theme-desktop);
+}
+
+body:not(.login-page) {
+  background: var(--theme-face);
+}
+
+.window,
+.retro-dialog {
+  color: var(--theme-text);
+  background: var(--theme-face);
+  border-top-color: var(--theme-light-edge);
+  border-left-color: var(--theme-light-edge);
+  border-right-color: var(--theme-black);
+  border-bottom-color: var(--theme-black);
+  box-shadow: 1px 1px 0 var(--theme-shadow);
+}
+
+.titlebar,
+.dialog-title {
+  background: var(--theme-title);
+  color: var(--theme-title-text);
+}
+
+.menubar,
+.toolbar,
+.statusbar,
+.dialog-body,
+.dialog-buttons {
+  color: var(--theme-text);
+}
+
+.menubar > button,
+.menu-wrap > button,
+button,
+.retro-select,
+.search-list-filter-button,
+.search-tab {
+  color: var(--theme-text);
+  background: var(--theme-face);
+  border-top-color: var(--theme-light-edge);
+  border-left-color: var(--theme-light-edge);
+  border-right-color: var(--theme-dark-edge);
+  border-bottom-color: var(--theme-dark-edge);
+}
+
+button:active,
+.retro-select:active,
+.retro-select[aria-expanded="true"],
+.search-list-filter-button:active,
+.search-list-filter-button[aria-expanded="true"] {
+  border-top-color: var(--theme-dark-edge);
+  border-left-color: var(--theme-dark-edge);
+  border-right-color: var(--theme-light-edge);
+  border-bottom-color: var(--theme-light-edge);
+}
+
+.menu-dropdown,
+.search-tab-panel {
+  color: var(--theme-text);
+  background: var(--theme-face);
+  border-top-color: var(--theme-light-edge);
+  border-left-color: var(--theme-light-edge);
+  border-right-color: var(--theme-dark-edge);
+  border-bottom-color: var(--theme-dark-edge);
+  box-shadow: 1px 1px 0 var(--theme-black);
+}
+
+.menu-dropdown button {
+  color: var(--theme-text);
+  background: transparent;
+}
+
+.menu-dropdown button:hover,
+.menu-dropdown button:focus {
+  background: var(--theme-title);
+  color: var(--theme-title-text);
+}
+
+.menu-separator {
+  border-top-color: var(--theme-shadow);
+  border-bottom-color: var(--theme-light-edge);
+}
+
+.menu-heading {
+  padding: 4px 8px 2px 24px;
+  color: var(--theme-muted);
+  font-size: 11px;
+  font-weight: 700;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input[type="text"],
+input[type="password"],
+input:not([type]),
+textarea,
+select {
+  color: var(--theme-text);
+  background: var(--theme-surface);
+  border-top-color: var(--theme-dark-edge);
+  border-left-color: var(--theme-dark-edge);
+  border-right-color: var(--theme-light-edge);
+  border-bottom-color: var(--theme-light-edge);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--theme-placeholder);
+  opacity: 1;
+}
+
+.toolbar {
+  border-bottom-color: var(--theme-light-edge);
+}
+
+.panel,
+.search-results,
+.info-grid dd,
+.manage-list-row {
+  color: var(--theme-text);
+  background: var(--theme-surface);
+  border-color: var(--theme-dark-edge) var(--theme-light-edge) var(--theme-light-edge) var(--theme-dark-edge);
+}
+
+.task-table th {
+  color: var(--theme-text);
+  background: var(--theme-face);
+  border-right-color: var(--theme-shadow);
+  border-bottom-color: var(--theme-dark-edge);
+}
+
+.task-table td,
+.search-result-row,
+.manage-list-row {
+  border-bottom-color: var(--theme-divider);
+}
+
+.task-table tr.status-done .task-title,
+.task-table tr.status-cancelled .task-title,
+.empty-state,
+.search-placeholder,
+.search-result-kind,
+.search-result-meta,
+.manage-list-count {
+  color: var(--theme-muted);
+}
+
+.move-note,
+.search-result-description,
+.manage-list-description,
+.task-tree-marker {
+  color: var(--theme-muted-strong);
+}
+
+.task-id-link,
+.task-table td[data-label="ID"] {
+  color: var(--theme-link);
+}
+
+.task-id-link:hover {
+  color: var(--theme-link-hover);
+}
+
+.statusbar span {
+  border-top-color: var(--theme-shadow);
+  border-left-color: var(--theme-shadow);
+  border-right-color: var(--theme-light-edge);
+  border-bottom-color: var(--theme-light-edge);
+}
+
+.info-grid {
+  border-top-color: var(--theme-shadow);
+  border-left-color: var(--theme-shadow);
+}
+
+.info-grid dt,
+.info-grid dd {
+  border-right-color: var(--theme-shadow);
+  border-bottom-color: var(--theme-shadow);
+}
+
+.info-grid dt {
+  background: var(--theme-label-surface);
+}
+
+#moveDialog .move-list-button,
+.search-list-filter-button {
+  background: var(--theme-label-surface);
+  outline-color: var(--theme-dark-edge);
+  box-shadow:
+    inset 1px 1px 0 var(--theme-light-edge),
+    inset -1px -1px 0 var(--theme-shadow),
+    2px 2px 0 var(--theme-black);
+}
+
+#moveDialog .move-list-button:active,
+#moveDialog .move-list-button[aria-expanded="true"],
+.search-list-filter-button:active,
+.search-list-filter-button[aria-expanded="true"] {
+  box-shadow:
+    inset 1px 1px 0 var(--theme-shadow),
+    inset -1px -1px 0 var(--theme-mid-edge);
+}
+
+.tap-help-tooltip {
+  color: var(--theme-text);
+  background: var(--theme-note);
+  border-top-color: var(--theme-light-edge);
+  border-left-color: var(--theme-light-edge);
+  border-right-color: var(--theme-dark-edge);
+  border-bottom-color: var(--theme-dark-edge);
+  box-shadow: 1px 1px 0 var(--theme-black);
+}
+
+button:disabled,
+.task-action-dropdown button:disabled,
+.task-action-dropdown button:disabled:hover,
+.task-action-dropdown button:disabled:focus,
+.search-list-filter-button:disabled {
+  color: var(--theme-muted);
+  text-shadow: none;
+}
+
+.login-error {
+  color: var(--theme-error);
+}
+
+.task-table tr.task-visit-highlight:not(.subtask-row) > td,
+.task-table tr.subtask-row.task-visit-highlight > td {
+  background: var(--theme-highlight) !important;
+}
+
+@media (min-width: 651px) {
+  .task-table tr.subtask-row {
+    background:
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-subtask-divider) var(--row-indent) 100%) top left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-subtask-divider) var(--row-indent) 100%) bottom left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
+  }
+
+  .task-table tr:not(.subtask-row) + tr.subtask-row {
+    background:
+      linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) top left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-subtask-divider) var(--row-indent) 100%) bottom left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
+  }
+
+  .task-table tr.subtask-row:has(+ tr:not(.subtask-row)) {
+    background:
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-subtask-divider) var(--row-indent) 100%) top left / 100% 1px no-repeat,
+      linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) bottom left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
+  }
+
+  .task-table tr:not(.subtask-row) + tr.subtask-row:has(+ tr:not(.subtask-row)) {
+    background:
+      linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) top left / 100% 1px no-repeat,
+      linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) bottom left / 100% 1px no-repeat,
+      linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
+  }
+
+  .task-table tr.subtask-row.task-visit-highlight > td:first-child {
+    background: linear-gradient(
+      to right,
+      transparent 0 calc(var(--row-indent) + 3px),
+      var(--theme-highlight) calc(var(--row-indent) + 3px) 100%
+    ) !important;
+  }
+}
+
+@media (max-width: 650px) {
+  body.login-page {
+    background: var(--theme-desktop);
+  }
+
+  body:not(.login-page),
+  .statusbar {
+    background: var(--theme-face);
+  }
+
+  .task-table tr {
+    border-bottom-color: var(--theme-face);
+  }
+
+  .task-table tr.subtask-row {
+    background: var(--theme-surface-alt);
+    border-top-color: var(--theme-subtask-divider);
+    border-bottom-color: var(--theme-subtask-divider);
+  }
+
+  .task-table tr.subtask-row + tr:not(.subtask-row) {
+    border-top-color: var(--theme-face);
+  }
+
+  .task-table tr.subtask-row.task-visit-highlight {
+    background: linear-gradient(to right, transparent 0 3px, var(--theme-highlight) 3px 100%) !important;
+  }
+}
+
+.subtask-row.status-open > td:first-child::before {
+  background: var(--theme-open);
+}
+.subtask-row.status-done > td:first-child::before,
+.subtask-row.status-cancelled > td:first-child::before {
+  background: var(--theme-closed);
+}
+
+@media (max-width: 650px) {
+  .subtask-row.status-open { border-left-color: var(--theme-open); }
+  .subtask-row.status-done,
+  .subtask-row.status-cancelled { border-left-color: var(--theme-closed); }
+}
