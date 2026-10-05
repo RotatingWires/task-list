@@ -30,29 +30,44 @@ static class MilestoneNotifications
                     id INTEGER PRIMARY KEY CHECK(id = 1),
                     initialized_at TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS milestone_notification_counters (
+                    kind TEXT PRIMARY KEY CHECK(kind IN ('created', 'completed')),
+                    total INTEGER NOT NULL
+                );
                 """;
             command.ExecuteNonQuery();
         }
 
+        var initialized = false;
         using (var check = connection.CreateCommand())
         {
             check.CommandText = "SELECT EXISTS(SELECT 1 FROM milestone_notification_state WHERE id = 1);";
-            var initialized = Convert.ToInt64(check.ExecuteScalar()) != 0;
-            if (!initialized) SeedExistingMilestones(connection);
+            initialized = Convert.ToInt64(check.ExecuteScalar()) != 0;
         }
+
+        if (!initialized) SeedExistingMilestones(connection);
+        else EnsureCounters(connection);
 
         using var triggers = connection.CreateCommand();
         triggers.CommandText = """
-            CREATE TRIGGER IF NOT EXISTS trg_task_events_milestone_notification
+            DROP TRIGGER IF EXISTS trg_task_events_milestone_notification;
+            DROP TRIGGER IF EXISTS trg_universal_ids_milestone_notification;
+
+            CREATE TRIGGER trg_task_events_milestone_notification
             AFTER INSERT ON task_events
             WHEN NEW.event_type IN ('Created', 'Completed')
             BEGIN
+                UPDATE milestone_notification_counters
+                SET total = total + 1
+                WHERE kind = lower(NEW.event_type);
+
                 INSERT OR IGNORE INTO milestone_notifications
                     (key, kind, threshold, reached_at, historical, viewed_at, viewed_by)
                 SELECT
-                    lower(NEW.event_type) || ':' || totals.total,
-                    lower(NEW.event_type),
-                    totals.total,
+                    counters.kind || ':' || counters.total,
+                    counters.kind,
+                    counters.total,
                     CASE
                         WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
                             THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
@@ -61,15 +76,12 @@ static class MilestoneNotifications
                     0,
                     NULL,
                     NULL
-                FROM (
-                    SELECT COUNT(*) AS total
-                    FROM task_events
-                    WHERE event_type = NEW.event_type
-                ) totals
-                WHERE totals.total IN (100, 500, 1000, 2000, 3000, 5000, 10000);
+                FROM milestone_notification_counters counters
+                WHERE counters.kind = lower(NEW.event_type)
+                  AND counters.total IN (100, 500, 1000, 2000, 3000, 5000, 10000);
             END;
 
-            CREATE TRIGGER IF NOT EXISTS trg_universal_ids_milestone_notification
+            CREATE TRIGGER trg_universal_ids_milestone_notification
             AFTER INSERT ON universal_ids
             WHEN NEW.id IN (100, 500, 1000, 2000, 2500, 3000, 5000, 10000)
             BEGIN
@@ -107,6 +119,9 @@ static class MilestoneNotifications
         var completed = ScalarLong(connection, "SELECT COUNT(*) FROM task_events WHERE event_type = 'Completed';");
         var universal = ScalarLong(connection, "SELECT COALESCE(MAX(id), 0) FROM universal_ids;");
 
+        SetCounter(connection, "created", created);
+        SetCounter(connection, "completed", completed);
+
         foreach (var threshold in EventThresholds)
         {
             if (created >= threshold) InsertHistorical(connection, "created", threshold, now);
@@ -119,6 +134,32 @@ static class MilestoneNotifications
         state.CommandText = "INSERT INTO milestone_notification_state (id, initialized_at) VALUES (1, $now);";
         state.Parameters.AddWithValue("$now", now);
         state.ExecuteNonQuery();
+    }
+
+    private static void EnsureCounters(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT OR IGNORE INTO milestone_notification_counters (kind, total)
+            SELECT 'created', COUNT(*) FROM task_events WHERE event_type = 'Created';
+
+            INSERT OR IGNORE INTO milestone_notification_counters (kind, total)
+            SELECT 'completed', COUNT(*) FROM task_events WHERE event_type = 'Completed';
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    private static void SetCounter(SqliteConnection connection, string kind, long total)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO milestone_notification_counters (kind, total)
+            VALUES ($kind, $total)
+            ON CONFLICT(kind) DO UPDATE SET total = excluded.total;
+            """;
+        command.Parameters.AddWithValue("$kind", kind);
+        command.Parameters.AddWithValue("$total", total);
+        command.ExecuteNonQuery();
     }
 
     private static void InsertHistorical(SqliteConnection connection, string kind, int threshold, string now)
