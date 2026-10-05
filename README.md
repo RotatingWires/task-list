@@ -1,9 +1,9 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.4
+# TaskList v1.5.5
 
-TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
+TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
 It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. There is no Node.js build step or frontend framework.
 
@@ -24,6 +24,8 @@ TaskList intentionally keeps a small source tree. Frontend code is split by resp
 ```text
 TaskList.csproj        .NET project, dependencies, and authoritative release version
 Program.cs             server, authentication, SQLite schema, event-log triggers, and API
+MilestoneNotifications.cs
+                       milestone notification storage, triggers, baselining, and claim API
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
@@ -40,6 +42,8 @@ wwwroot/
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
+  milestones.js        milestone claim/dialog/confetti behavior
+  milestones.css       responsive Light/Dark milestone celebration styling
   theme.js             persistent Light/Dark theme selection and startup theme application
   login.js             login/setup behavior
   style.css            general Win95-style application/login/search layout
@@ -83,7 +87,7 @@ Use **View → Theme** to choose either **Light** or **Dark**. The choice is sto
 
 The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Theme styling is centralized in `wwwroot/theme.css`, and `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
 
-There is intentionally no automatic **System** theme mode in v1.5.4; theme selection is strictly Light or Dark.
+There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
 
 ## Data model
 
@@ -107,6 +111,16 @@ The current `items` row remains the fast current-state model while `task_events`
 When a pre-v1.5 database first runs under v1.5+, TaskList backfills the older Created/Completed/Cancelled/Reopened timestamps it can recover into the event log. Repeated old state cycles that were never stored cannot be reconstructed exactly; transitions recorded after the event log exists are retained individually.
 
 TaskList expects the current recursive `items` schema. The old pre-v1.1 `tasks`/`subtasks` migration path has been removed.
+
+## Milestone celebrations
+
+TaskList records a small set of major Created, Completed, and Universal-ID thresholds in the shared SQLite database. When a new threshold is reached, TaskList or TaskList Stats can claim the pending notification and show the same lightweight Win95-style celebration dialog.
+
+A real milestone is acknowledged globally: whichever app claims it first marks it viewed, so opening the other app does not repeat the same popup. TaskList checks after successful writes so milestones reached while creating or completing tasks can appear immediately; TaskList Stats provides a fallback when it is the first app opened afterward.
+
+Existing thresholds already attained before v1.5.5 are baselined as viewed on the first upgraded TaskList startup. This prevents old milestones from producing a stack of retroactive popups. The permanent analytical milestone history remains available in TaskList Stats.
+
+The celebration uses a short dependency-free confetti animation, adapts to Light and Dark themes and mobile layouts, and suppresses the animation when the browser requests reduced motion.
 
 ## Nested subtasks
 
@@ -143,6 +157,8 @@ The attached More menu contains actions such as:
 - Delete
 
 Moving a task preserves its Universal ID, title, description, status, timestamps, child numbering, and descendant hierarchy while assigning a new visible top-level ID in the destination list.
+
+Task rows highlight on pointer hover so the controls at the right side of a wide row remain visually tied to the correct task. The hover treatment has separate Light/Dark theme colors and preserves nested-subtask status/hierarchy markings.
 
 ## Task Information
 
@@ -209,7 +225,7 @@ In task, subtask, and list description boxes:
 
 TaskList uses a network-first service worker for same-origin application assets. API requests are never cached by the service worker.
 
-The shell cache contains the login/main frontend files, shared theme files, generated version file, manifest, and icons. Cached files are used only as an offline fallback when a network request fails.
+The shell cache contains the login/main frontend files, shared theme and milestone files, generated version file, manifest, and icons. Cached files are used only as an offline fallback when a network request fails.
 
 ## Security notes
 
@@ -222,7 +238,18 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.4
+## Current release: v1.5.5
+
+### v1.5.5
+
+- Add lightweight shared milestone-notification records for major Created, Completed, and Universal-ID thresholds.
+- Claim each real milestone notification atomically so it is celebrated only once across TaskList and TaskList Stats.
+- Baseline already-attained thresholds as viewed on first upgrade instead of replaying old achievements.
+- Add a responsive Win95-style Light/Dark celebration dialog with short dependency-free confetti and reduced-motion support.
+- Check for pending milestones after successful TaskList writes so newly reached thresholds can appear immediately.
+- Add the milestone frontend files to the existing network-first PWA shell.
+- Keep the permanent milestone-history view in TaskList Stats unchanged.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.4
 
