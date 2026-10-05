@@ -1,10 +1,8 @@
 (() => {
   'use strict';
 
-  const PREVIEW_PARAM = 'previewMilestone';
   const numberFormat = new Intl.NumberFormat();
   const confettiColors = ['#ff3b30', '#ffcc00', '#34c759', '#0a84ff', '#bf5af2', '#ff9f0a'];
-  const previewActive = new URLSearchParams(location.search).get(PREVIEW_PARAM) === '1';
   let checking = null;
 
   function ensureStyles() {
@@ -107,7 +105,7 @@
     return card;
   }
 
-  function showMilestones(notices, preview = false) {
+  function showMilestones(notices) {
     if (!Array.isArray(notices) || notices.length === 0) return;
 
     const dialog = document.createElement('dialog');
@@ -131,20 +129,13 @@
 
     const kicker = document.createElement('div');
     kicker.className = 'milestone-kicker';
-    kicker.textContent = preview ? 'Preview celebration' : 'Nice work.';
+    kicker.textContent = 'Nice work.';
 
     const list = document.createElement('div');
     list.className = 'milestone-notice-list';
     list.replaceChildren(...notices.map(buildNoticeCard));
 
     body.append(star, kicker, list);
-
-    if (preview) {
-      const note = document.createElement('div');
-      note.className = 'milestone-preview-note';
-      note.textContent = 'Preview only — nothing was written to milestone history.';
-      body.append(note);
-    }
 
     const buttons = document.createElement('div');
     buttons.className = 'dialog-buttons milestone-buttons';
@@ -188,7 +179,6 @@
   }
 
   async function check() {
-    if (previewActive) return;
     if (checking) return checking;
 
     checking = (async () => {
@@ -208,15 +198,6 @@
 
   async function start() {
     await ensureStyles();
-    if (previewActive) {
-      showMilestones([{
-        kind: 'completed',
-        threshold: 500,
-        reachedAt: new Date().toISOString(),
-        historical: false
-      }], true);
-      return;
-    }
     await check();
   }
 
