@@ -81,8 +81,7 @@
   line-height: 1.35;
 }
 
-.milestone-notice-when,
-.milestone-preview-note {
+.milestone-notice-when {
   margin-top: 6px;
   color: var(--theme-muted, #666);
   font-size: 12px;
