@@ -126,6 +126,7 @@ function setStatus(message) {
 }
 
 async function api(url, options = {}) {
+  const method = (options.method ?? 'GET').toUpperCase();
   const response = await fetch(url, { credentials: 'same-origin', ...options });
   if (response.status === 401) {
     window.location.replace('/login.html');
@@ -139,8 +140,9 @@ async function api(url, options = {}) {
     } catch {}
     throw new Error(message);
   }
-  if (response.status === 204) return null;
-  return response.json();
+  const result = response.status === 204 ? null : await response.json();
+  if (method !== 'GET') queueMicrotask(() => window.TaskMilestones?.check?.());
+  return result;
 }
 
 function jsonApi(url, method, body) {

@@ -56,6 +56,7 @@ var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
 InitializeDatabase(connectionString);
+MilestoneNotifications.Initialize(connectionString);
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -118,6 +119,7 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 }).RequireAuthorization();
 
 var api = app.MapGroup("/api").RequireAuthorization();
+MilestoneNotifications.MapEndpoints(api, connectionString, "tasklist");
 
 api.MapGet("/lists", async () =>
 {

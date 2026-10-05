@@ -155,6 +155,10 @@ async function start() {
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
+
+  try {
+    await import('/milestones.js');
+  } catch {}
 }
 
 start();

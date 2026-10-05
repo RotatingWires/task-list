@@ -1,0 +1,163 @@
+.milestone-dialog {
+  width: min(470px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.milestone-dialog::backdrop {
+  background: rgba(0, 0, 0, .32);
+}
+
+.milestone-shell {
+  overflow: hidden;
+  color: var(--theme-text, #000);
+  background: var(--theme-face, #c0c0c0);
+  border-top: 2px solid var(--theme-light-edge, #fff);
+  border-left: 2px solid var(--theme-light-edge, #fff);
+  border-right: 2px solid var(--theme-black, #000);
+  border-bottom: 2px solid var(--theme-black, #000);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, .38);
+}
+
+.milestone-dialog-title {
+  margin: 3px;
+  background: var(--theme-title, #000080);
+  color: var(--theme-title-text, #fff);
+}
+
+.milestone-body {
+  max-height: min(62dvh, 520px);
+  overflow-y: auto;
+  padding: 12px;
+  text-align: center;
+}
+
+.milestone-star {
+  margin: 1px 0 6px;
+  color: #e2ab00;
+  font-size: 42px;
+  line-height: 1;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, .25);
+}
+
+.milestone-kicker {
+  margin-bottom: 11px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.milestone-notice-list {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.milestone-notice-card {
+  padding: 10px;
+  color: var(--theme-text, #000);
+  background: var(--theme-surface, #fff);
+  border-top: 2px solid var(--theme-dark-edge, #404040);
+  border-left: 2px solid var(--theme-dark-edge, #404040);
+  border-right: 2px solid var(--theme-light-edge, #fff);
+  border-bottom: 2px solid var(--theme-light-edge, #fff);
+}
+
+.milestone-notice-title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.milestone-notice-detail {
+  line-height: 1.35;
+}
+
+.milestone-notice-when,
+.milestone-preview-note {
+  margin-top: 6px;
+  color: var(--theme-muted, #666);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.milestone-buttons {
+  padding: 0 12px 12px;
+}
+
+.milestone-buttons button {
+  min-width: 92px;
+}
+
+.milestone-confetti {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.milestone-confetti-piece {
+  position: absolute;
+  top: -20px;
+  left: var(--x);
+  width: 8px;
+  height: 14px;
+  background: var(--confetti-color);
+  animation: milestone-confetti-fall var(--duration) cubic-bezier(.25, .7, .35, 1) var(--delay) forwards;
+}
+
+@keyframes milestone-confetti-fall {
+  from {
+    transform: translate3d(0, -20px, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(var(--drift), calc(100dvh + 40px), 0) rotate(var(--spin));
+    opacity: .9;
+  }
+}
+
+@media (max-width: 650px) {
+  .milestone-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
+  }
+
+  .milestone-body {
+    max-height: min(64dvh, 480px);
+    padding: 11px;
+  }
+
+  .milestone-star {
+    font-size: 36px;
+  }
+
+  .milestone-kicker,
+  .milestone-notice-title {
+    font-size: 15px;
+  }
+
+  .milestone-notice-card {
+    padding: 9px;
+  }
+
+  .milestone-buttons {
+    padding: 0 11px 11px;
+  }
+
+  .milestone-buttons button {
+    min-width: 104px;
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .milestone-confetti {
+    display: none;
+  }
+}
