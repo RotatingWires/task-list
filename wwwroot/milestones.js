@@ -26,18 +26,18 @@
     const value = numberFormat.format(notice.threshold);
     if (notice.kind === 'created') {
       return {
-        title: `${value} tasks created!`,
+        title: `${value} tasks created`,
         detail: `Your TaskList history has reached ${value} recorded task creations.`
       };
     }
     if (notice.kind === 'completed') {
       return {
-        title: `${value} task completions!`,
+        title: `${value} task completions`,
         detail: `You have logged ${value} recorded task-completion transitions.`
       };
     }
     return {
-      title: `Universal ID #${value} reached!`,
+      title: `Universal ID #${value} reached`,
       detail: `TaskList has assigned its ${value}th Universal ID.`
     };
   }
@@ -71,15 +71,15 @@
       piece.className = 'milestone-confetti-piece';
       piece.style.setProperty('--x', `${4 + Math.random() * 92}%`);
       piece.style.setProperty('--drift', `${-70 + Math.random() * 140}px`);
-      piece.style.setProperty('--delay', `${Math.random() * 0.28}s`);
-      piece.style.setProperty('--duration', `${1.15 + Math.random() * 0.75}s`);
+      piece.style.setProperty('--delay', `${Math.random() * 0.45}s`);
+      piece.style.setProperty('--duration', `${2.4 + Math.random() * 1.4}s`);
       piece.style.setProperty('--spin', `${360 + Math.floor(Math.random() * 900)}deg`);
       piece.style.setProperty('--confetti-color', confettiColors[index % confettiColors.length]);
       layer.append(piece);
     }
 
     host.append(layer);
-    setTimeout(() => layer.remove(), 2400);
+    setTimeout(() => layer.remove(), 4500);
   }
 
   function buildNoticeCard(notice) {
@@ -112,6 +112,7 @@
 
     const dialog = document.createElement('dialog');
     dialog.className = 'retro-dialog milestone-dialog';
+    dialog.tabIndex = -1;
 
     const shell = document.createElement('div');
     shell.className = 'milestone-shell';
@@ -167,7 +168,7 @@
     });
 
     dialog.showModal();
-    close.focus();
+    dialog.focus({ preventScroll: true });
     launchConfetti(dialog);
   }
 
