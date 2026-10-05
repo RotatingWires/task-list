@@ -23,6 +23,7 @@
   --theme-link-hover: #0000d0;
   --theme-note: #ffffe1;
   --theme-highlight: #fff4a8;
+  --theme-row-hover: #e5ecf8;
   --theme-error: #800000;
   --theme-open: #e02d04;
   --theme-closed: #02bd34;
@@ -52,6 +53,7 @@
   --theme-link-hover: #c0ceff;
   --theme-note: #3b3825;
   --theme-highlight: #5c4c00;
+  --theme-row-hover: #2d3850;
   --theme-error: #ff9c9c;
   --theme-open: #ff6b4a;
   --theme-closed: #56dc78;
@@ -295,6 +297,11 @@ button:disabled,
   background: var(--theme-highlight) !important;
 }
 
+.task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
+.task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
+  background: var(--theme-row-hover);
+}
+
 @media (min-width: 651px) {
   .task-table tr.subtask-row {
     background:
@@ -322,6 +329,18 @@ button:disabled,
       linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) top left / 100% 1px no-repeat,
       linear-gradient(var(--theme-subtask-divider), var(--theme-subtask-divider)) bottom left / 100% 1px no-repeat,
       linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
+  }
+
+  .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
+    background: var(--theme-row-hover);
+  }
+
+  .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td:first-child {
+    background: linear-gradient(
+      to right,
+      transparent 0 calc(var(--row-indent) + 3px),
+      var(--theme-row-hover) calc(var(--row-indent) + 3px) 100%
+    );
   }
 
   .task-table tr.subtask-row.task-visit-highlight > td:first-child {
@@ -355,6 +374,10 @@ button:disabled,
 
   .task-table tr.subtask-row + tr:not(.subtask-row) {
     border-top-color: var(--theme-face);
+  }
+
+  .task-table tr.subtask-row:hover:not(.task-visit-highlight) {
+    background: linear-gradient(to right, transparent 0 3px, var(--theme-row-hover) 3px 100%);
   }
 
   .task-table tr.subtask-row.task-visit-highlight {
