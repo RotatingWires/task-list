@@ -11,6 +11,9 @@ data/
 auth.json
 siri-api.json
 
+# Runtime logs
+logs/
+
 # Editor/OS noise
 .idea/
 .vscode/
