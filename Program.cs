@@ -208,7 +208,19 @@ api.MapDelete("/lists/{id:long}", async (long id) =>
     var existing = await GetList(connection, id);
     if (existing is null) return Results.NotFound();
     if (!existing.Archived && await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1) return Results.BadRequest(new { error = "You cannot delete the only active list." });
-    await ExecuteAsync(connection, "DELETE FROM lists WHERE id = $id;", ("$id", id));
+
+    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+    var deletedAt = DateTimeOffset.UtcNow.ToString("O");
+    await ExecuteTxAsync(connection, transaction, """
+        INSERT INTO task_events
+            (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+        SELECT universal_id, 'Deleted', $deletedAt, status, 'Deleted', list_id, display_id, parent_display_id, title, 'live'
+        FROM items
+        WHERE list_id = $id;
+
+        DELETE FROM lists WHERE id = $id;
+        """, ("$deletedAt", deletedAt), ("$id", id));
+    await transaction.CommitAsync();
     return Results.NoContent();
 });
 
@@ -365,8 +377,31 @@ api.MapDelete("/lists/{listId:long}/items/{displayId}", async (long listId, stri
 {
     if (!IsValidDisplayId(displayId)) return Results.BadRequest(new { error = "Invalid task ID." });
     await using var connection = await OpenConnection(connectionString);
-    var changed = await ExecuteAsync(connection, "DELETE FROM items WHERE list_id = $listId AND display_id = $displayId;", ("$listId", listId), ("$displayId", displayId));
-    return changed == 0 ? Results.NotFound() : Results.NoContent();
+    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+
+    var exists = await ScalarTxAsync(connection, transaction,
+        "SELECT EXISTS(SELECT 1 FROM items WHERE list_id = $listId AND display_id = $displayId);",
+        ("$listId", listId), ("$displayId", displayId));
+    if (Convert.ToInt64(exists) == 0) return Results.NotFound();
+
+    var deletedAt = DateTimeOffset.UtcNow.ToString("O");
+    await ExecuteTxAsync(connection, transaction, """
+        INSERT INTO task_events
+            (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+        SELECT universal_id, 'Deleted', $deletedAt, status, 'Deleted', list_id, display_id, parent_display_id, title, 'live'
+        FROM items
+        WHERE list_id = $listId
+          AND (display_id = $displayId OR display_id LIKE $descendantPattern);
+
+        DELETE FROM items
+        WHERE list_id = $listId AND display_id = $displayId;
+        """,
+        ("$deletedAt", deletedAt),
+        ("$listId", listId),
+        ("$displayId", displayId),
+        ("$descendantPattern", $"{displayId}.%"));
+    await transaction.CommitAsync();
+    return Results.NoContent();
 });
 
 api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequest request) =>
@@ -457,7 +492,7 @@ static void InitializeDatabase(string connectionString)
         CREATE TABLE IF NOT EXISTS task_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             universal_id INTEGER NOT NULL,
-            event_type TEXT NOT NULL CHECK(event_type IN ('Created', 'Completed', 'Cancelled', 'Reopened')),
+            event_type TEXT NOT NULL CHECK(event_type IN ('Created', 'Completed', 'Cancelled', 'Reopened', 'Deleted')),
             event_at TEXT NOT NULL,
             from_status TEXT NULL,
             to_status TEXT NULL,
@@ -510,6 +545,8 @@ static void InitializeDatabase(string connectionString)
         END;
         """)) command.ExecuteNonQuery();
 
+    EnsureTaskEventSchema(connection);
+
     var hasArchivedColumn = false;
     using (var columnCommand = Sql(connection, "PRAGMA table_info(lists);"))
     using (var reader = columnCommand.ExecuteReader())
@@ -549,6 +586,95 @@ static void InitializeDatabase(string connectionString)
         SELECT 'Tasks', '', 1, $createdAt WHERE NOT EXISTS (SELECT 1 FROM lists);
         """, ("$createdAt", DateTimeOffset.UtcNow.ToString("O")));
     ensureDefault.ExecuteNonQuery();
+}
+
+static void EnsureTaskEventSchema(SqliteConnection connection)
+{
+    string tableSql;
+    using (var command = Sql(connection, "SELECT COALESCE(sql, '') FROM sqlite_master WHERE type = 'table' AND name = 'task_events';"))
+        tableSql = Convert.ToString(command.ExecuteScalar(), CultureInfo.InvariantCulture) ?? string.Empty;
+
+    if (!tableSql.Contains("'Deleted'", StringComparison.Ordinal))
+    {
+        using var migrate = Sql(connection, """
+            DROP TRIGGER IF EXISTS trg_items_event_insert;
+            DROP TRIGGER IF EXISTS trg_items_event_status;
+            DROP TRIGGER IF EXISTS trg_task_events_milestone_notification;
+
+            ALTER TABLE task_events RENAME TO task_events_before_deleted;
+
+            CREATE TABLE task_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                universal_id INTEGER NOT NULL,
+                event_type TEXT NOT NULL CHECK(event_type IN ('Created', 'Completed', 'Cancelled', 'Reopened', 'Deleted')),
+                event_at TEXT NOT NULL,
+                from_status TEXT NULL,
+                to_status TEXT NULL,
+                list_id INTEGER NOT NULL,
+                display_id TEXT NOT NULL,
+                parent_display_id TEXT NULL,
+                title TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'live' CHECK(source IN ('live', 'legacy'))
+            );
+
+            INSERT INTO task_events
+                (id, universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+            SELECT id, universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source
+            FROM task_events_before_deleted
+            ORDER BY id;
+
+            DROP TABLE task_events_before_deleted;
+
+            CREATE UNIQUE INDEX idx_task_events_unique ON task_events(universal_id, event_type, event_at);
+            CREATE INDEX idx_task_events_time ON task_events(event_at, id);
+            CREATE INDEX idx_task_events_uid ON task_events(universal_id, event_at, id);
+            CREATE INDEX idx_task_events_list ON task_events(list_id, event_at, id);
+            """);
+        migrate.ExecuteNonQuery();
+    }
+
+    using var triggers = Sql(connection, """
+        DROP TRIGGER IF EXISTS trg_items_event_insert;
+        DROP TRIGGER IF EXISTS trg_items_event_status;
+
+        CREATE TRIGGER trg_items_event_insert
+        AFTER INSERT ON items
+        BEGIN
+            INSERT OR IGNORE INTO task_events
+                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+            VALUES
+                (NEW.universal_id, 'Created', NEW.created_at, NULL, 'Open', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
+                 CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END);
+
+            INSERT OR IGNORE INTO task_events
+                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+            SELECT NEW.universal_id, 'Completed', NEW.completed_at, 'Open', 'Done', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
+                   CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
+            WHERE NEW.status = 'Done' AND NEW.completed_at IS NOT NULL;
+
+            INSERT OR IGNORE INTO task_events
+                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+            SELECT NEW.universal_id, 'Cancelled', NEW.cancelled_at, 'Open', 'Cancelled', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
+                   CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
+            WHERE NEW.status = 'Cancelled' AND NEW.cancelled_at IS NOT NULL;
+        END;
+
+        CREATE TRIGGER trg_items_event_status
+        AFTER UPDATE OF status ON items
+        WHEN OLD.status <> NEW.status
+        BEGIN
+            INSERT INTO task_events
+                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
+            VALUES
+                (NEW.universal_id,
+                 CASE NEW.status WHEN 'Done' THEN 'Completed' WHEN 'Cancelled' THEN 'Cancelled' ELSE 'Reopened' END,
+                 CASE NEW.status WHEN 'Done' THEN COALESCE(NEW.completed_at, NEW.updated_at)
+                                 WHEN 'Cancelled' THEN COALESCE(NEW.cancelled_at, NEW.updated_at)
+                                 ELSE COALESCE(NEW.reopened_at, NEW.updated_at) END,
+                 OLD.status, NEW.status, NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title, 'live');
+        END;
+        """);
+    triggers.ExecuteNonQuery();
 }
 
 static async Task<SqliteConnection> OpenConnection(string connectionString) { var connection = new SqliteConnection(connectionString); await connection.OpenAsync(); return connection; }
