@@ -22,21 +22,57 @@
 
   function milestoneText(notice) {
     const value = numberFormat.format(notice.threshold);
-    if (notice.kind === 'created') {
-      return {
-        title: `${value} tasks created`,
-        detail: `Your TaskList history has reached ${value} recorded task creations.`
-      };
+    const first = notice.threshold === 1;
+    const scope = notice.scope ?? 'global';
+    const scopePrefix = scope === 'list' && notice.scopeLabel
+      ? `${notice.scopeLabel} — `
+      : scope === 'year' && notice.scopeValue
+        ? `${notice.scopeValue} — `
+        : '';
+
+    let title;
+    let detailNoun;
+
+    switch (notice.kind) {
+      case 'created':
+        title = first ? 'First task created' : `${value} tasks created`;
+        detailNoun = first ? 'its first recorded task creation' : `${value} recorded task creations`;
+        break;
+      case 'completed':
+        title = first ? 'First task completion' : `${value} task completions`;
+        detailNoun = first ? 'its first recorded task-completion transition' : `${value} recorded task-completion transitions`;
+        break;
+      case 'cancelled':
+        title = first ? 'First task cancellation' : `${value} task cancellations`;
+        detailNoun = first ? 'its first recorded task-cancellation transition' : `${value} recorded task-cancellation transitions`;
+        break;
+      case 'reopened':
+        title = first ? 'First task reopened' : `${value} task reopens`;
+        detailNoun = first ? 'its first recorded task-reopen transition' : `${value} recorded task-reopen transitions`;
+        break;
+      case 'recorded':
+        title = first ? 'First recorded event' : `${value} recorded events`;
+        detailNoun = first ? 'its first recorded task event' : `${value} recorded task events`;
+        break;
+      case 'universal':
+      default:
+        return {
+          title: `Universal ID #${value} reached`,
+          detail: `TaskList has assigned Universal ID #${value}.`
+        };
     }
-    if (notice.kind === 'completed') {
-      return {
-        title: `${value} task completions`,
-        detail: `You have logged ${value} recorded task-completion transitions.`
-      };
-    }
+
+    let detail;
+    if (scope === 'list' && notice.scopeLabel)
+      detail = `The ${notice.scopeLabel} list has reached ${detailNoun}.`;
+    else if (scope === 'year' && notice.scopeValue)
+      detail = `TaskList reached ${detailNoun} in ${notice.scopeValue}.`;
+    else
+      detail = `Your TaskList history has reached ${detailNoun}.`;
+
     return {
-      title: `Universal ID #${value} reached`,
-      detail: `TaskList has assigned its ${value}th Universal ID.`
+      title: `${scopePrefix}${title}`,
+      detail
     };
   }
 

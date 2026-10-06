@@ -1,3 +1,34 @@
+
+/* Hold-to-complete protects the primary action from accidental mobile taps. */
+.task-primary-action.hold-to-complete {
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.task-primary-action .task-complete-progress {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: var(--theme-row-hover);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 80ms linear;
+  pointer-events: none;
+}
+
+.task-primary-action.is-holding .task-complete-progress {
+  transform: scaleX(1);
+  transition-duration: var(--complete-hold-duration, 800ms);
+}
+
+.task-primary-action .task-complete-label {
+  position: relative;
+  z-index: 1;
+}
+
 /* Task-specific control refinements kept separate from the general Win95 shell. */
 
 #moveDialog .move-list-button {
