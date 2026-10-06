@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.10
+# TaskList v1.5.11
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -72,6 +72,22 @@ dotnet run --urls "http://0.0.0.0:8711"
 ```
 
 The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`.
+
+## Runtime logging
+
+TaskList writes its normal ASP.NET/runtime log stream to:
+
+```text
+logs\console.log
+```
+
+The same framework messages still go to the normal console when TaskList is launched interactively. The file includes application startup/shutdown messages, HTTP request routing/status/timing messages, warnings, errors, and exceptions emitted through the normal .NET logging pipeline.
+
+Only one log file is kept. When `logs\console.log` would exceed 10 MiB, TaskList truncates that same file and continues writing from the beginning instead of creating rotated backup files. The `logs/` directory is ignored by Git.
+
+Sensitive first-run authentication material is intentionally excluded from file logging. In particular, the one-time TaskList setup token is still printed directly to the interactive server console and is not sent through the file logger. Passwords are not logged.
+
+Task Scheduler can therefore launch `TaskList.exe` directly rather than using `cmd.exe` only for output redirection.
 
 ## Login and API authentication
 
@@ -250,7 +266,19 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.10
+## Current release: v1.5.11
+
+### v1.5.11
+
+- Add native single-file runtime logging at `logs/console.log` while preserving the normal interactive console output.
+- Capture the ASP.NET/.NET logging pipeline, including startup/shutdown, request status/timing, warnings, errors, and exceptions, without requiring a `cmd.exe` redirection wrapper.
+- Keep exactly one log file: when it would exceed 10 MiB, truncate that same file and continue writing rather than creating rotated copies.
+- Keep the one-time first-run setup token console-only so sensitive setup material is not persisted in the runtime log.
+- Ignore the runtime `logs/` directory in Git and document logging behavior, retention, and Task Scheduler use.
+- Update project/frontend version metadata to v1.5.11.
+- Add no monkey patches or new runtime/frontend dependencies.
+
+### v1.5.10
 
 ### v1.5.10
 
