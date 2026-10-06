@@ -689,11 +689,18 @@ closeInfo.addEventListener('click', () => infoDialog.close());
 
 async function deleteItem(item) {
   const subtaskCount = countDescendants(item);
-  const extra = subtaskCount > 0
-    ? `\n\nThis will also delete ${subtaskCount} descendant subtask${subtaskCount === 1 ? '' : 's'}.`
-    : '';
+  const detailParts = [item.title];
+  if (subtaskCount > 0)
+    detailParts.push(`This will also delete ${subtaskCount} descendant subtask${subtaskCount === 1 ? '' : 's'}.`);
+  detailParts.push('Recorded task history is preserved for Stats.');
 
-  if (!confirm(`Delete ${item.isSubtask ? 'subtask' : 'task'} #${item.displayId}?\n\n${item.title}${extra}`)) return;
+  const confirmed = await confirmAction({
+    title: item.isSubtask ? 'Delete Subtask' : 'Delete Task',
+    message: `Delete ${item.isSubtask ? 'subtask' : 'task'} #${item.displayId}?`,
+    detail: detailParts.join('\n\n'),
+    confirmLabel: 'Delete'
+  });
+  if (!confirmed) return;
 
   setStatus(`Deleting #${item.displayId}...`);
   try {

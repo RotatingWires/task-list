@@ -229,7 +229,13 @@ function renderManageLists() {
 
 async function archiveList(list) {
   if (lists.length === 1) return;
-  if (!confirm(`Archive list "${list.name}"?\n\nIt will be hidden from File and Manage Lists, but its tasks will be preserved.`)) return;
+  const confirmed = await confirmAction({
+    title: 'Archive List',
+    message: `Archive list "${list.name}"?`,
+    detail: 'It will be hidden from File and Manage Lists, but its tasks will be preserved.',
+    confirmLabel: 'Archive'
+  });
+  if (!confirmed) return;
 
   try {
     await api(`/api/lists/${list.id}/archive`, { method: 'POST' });
@@ -321,11 +327,18 @@ async function restoreList(list) {
 
 async function deleteList(list) {
   if (!list.archived && lists.length === 1) return;
-  const warning = list.taskCount > 0
-    ? `\n\nThis also deletes all ${list.taskCount} task${list.taskCount === 1 ? '' : 's'} and their subtasks in this list.`
-    : '';
+  const detailParts = [];
+  if (list.taskCount > 0)
+    detailParts.push(`This also deletes all ${list.taskCount} task${list.taskCount === 1 ? '' : 's'} and their subtasks in this list.`);
+  detailParts.push('Recorded task history is preserved for Stats.');
 
-  if (!confirm(`Delete list "${list.name}"?${warning}`)) return;
+  const confirmed = await confirmAction({
+    title: 'Delete List',
+    message: `Delete list "${list.name}"?`,
+    detail: detailParts.join('\n\n'),
+    confirmLabel: 'Delete'
+  });
+  if (!confirmed) return;
 
   try {
     await api(`/api/lists/${list.id}`, { method: 'DELETE' });
