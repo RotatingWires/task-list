@@ -1,15 +1,15 @@
-const CACHE = 'task-list-shell-v1.5.7';
+const CACHE = 'task-list-shell-v1.5.8';
 const SHELL = [
   '/login.html',
   '/login.js',
   '/version.js',
   '/theme.js',
   '/style.css',
-  '/task-controls.css',
-  '/theme.css',
+  '/task-controls.css?v=1.5.8',
+  '/theme.css?v=1.5.8',
   '/milestones.css',
   '/app.js',
-  '/tasks.js',
+  '/tasks.js?v=1.5.8',
   '/lists.js',
   '/search.js',
   '/milestones.js',
