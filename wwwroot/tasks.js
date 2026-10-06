@@ -399,11 +399,29 @@ function itemEndpoint(item) {
   return `/api/lists/${item.listId}/items/${encodeURIComponent(item.displayId)}`;
 }
 
+function applyUpdatedItem(items, updatedItem) {
+  for (const item of items) {
+    if (item.universalId === updatedItem.universalId) {
+      const subtasks = item.subtasks ?? [];
+      Object.assign(item, updatedItem);
+      item.subtasks = subtasks;
+      return true;
+    }
+    if (applyUpdatedItem(item.subtasks ?? [], updatedItem)) return true;
+  }
+  return false;
+}
+
 async function updateItem(item, changes) {
   setStatus(`Updating #${item.displayId}...`);
   try {
-    await jsonApi(itemEndpoint(item), 'PATCH', changes);
-    await loadTasks();
+    const updatedItem = await jsonApi(itemEndpoint(item), 'PATCH', changes);
+    if (!applyUpdatedItem(tasks, updatedItem)) {
+      await loadTasks();
+      return;
+    }
+    renderTasks();
+    setStatus('Ready');
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }

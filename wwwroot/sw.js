@@ -1,4 +1,4 @@
-const CACHE = 'task-list-shell-v1.5.10';
+const CACHE = 'task-list-shell-v1.5.12';
 const SHELL = [
   '/login.html',
   '/login.js',
@@ -9,7 +9,7 @@ const SHELL = [
   '/theme.css?v=1.5.9',
   '/milestones.css',
   '/app.js?v=1.5.9',
-  '/tasks.js?v=1.5.9',
+  '/tasks.js?v=1.5.12',
   '/lists.js?v=1.5.9',
   '/search.js',
   '/milestones.js?v=1.5.10',
