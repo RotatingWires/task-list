@@ -57,8 +57,12 @@ Directory.CreateDirectory(dataDir);
 var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
+var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
 InitializeDatabase(connectionString);
 MilestoneNotifications.Initialize(connectionString);
+app.Logger.LogInformation(
+    "SQLite performance settings: journal_mode={JournalMode}, synchronous=NORMAL, busy_timeout=5000 ms.",
+    journalMode);
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -461,6 +465,7 @@ static void InitializeDatabase(string connectionString)
 {
     using var connection = new SqliteConnection(connectionString);
     connection.Open();
+    ApplyConnectionPragmas(connection);
     using (var command = Sql(connection, """
         CREATE TABLE IF NOT EXISTS lists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -679,7 +684,62 @@ static void EnsureTaskEventSchema(SqliteConnection connection)
     triggers.ExecuteNonQuery();
 }
 
-static async Task<SqliteConnection> OpenConnection(string connectionString) { var connection = new SqliteConnection(connectionString); await connection.OpenAsync(); return connection; }
+static async Task<SqliteConnection> OpenConnection(string connectionString)
+{
+    var connection = new SqliteConnection(connectionString);
+    await connection.OpenAsync();
+    await ApplyConnectionPragmasAsync(connection);
+    return connection;
+}
+
+static string ConfigureDatabaseJournal(string connectionString, string databasePath)
+{
+    using var connection = new SqliteConnection(connectionString);
+    connection.Open();
+    ApplyConnectionPragmas(connection);
+
+    if (!CanUseWal(databasePath))
+    {
+        using var current = Sql(connection, "PRAGMA journal_mode;");
+        return $"{current.ExecuteScalar()?.ToString() ?? "unknown"} (WAL skipped: network/unknown drive)";
+    }
+
+    using var wal = Sql(connection, "PRAGMA journal_mode=WAL;");
+    return wal.ExecuteScalar()?.ToString() ?? "unknown";
+}
+
+static bool CanUseWal(string databasePath)
+{
+    try
+    {
+        var fullPath = Path.GetFullPath(databasePath);
+        if (fullPath.StartsWith(@"\\", StringComparison.Ordinal) || fullPath.StartsWith("//", StringComparison.Ordinal))
+            return false;
+
+        if (!OperatingSystem.IsWindows()) return true;
+
+        var root = Path.GetPathRoot(fullPath);
+        if (string.IsNullOrWhiteSpace(root)) return false;
+        var drive = new DriveInfo(root);
+        return drive.DriveType is not DriveType.Network and not DriveType.Unknown;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+static void ApplyConnectionPragmas(SqliteConnection connection)
+{
+    using var command = Sql(connection, "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;");
+    command.ExecuteNonQuery();
+}
+
+static async Task ApplyConnectionPragmasAsync(SqliteConnection connection)
+{
+    using var command = Sql(connection, "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;");
+    await command.ExecuteNonQueryAsync();
+}
 static SqliteCommand Sql(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { var command = connection.CreateCommand(); command.CommandText = text; AddParameters(command, parameters); return command; }
 static SqliteCommand SqlTx(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { var command = connection.CreateCommand(); command.Transaction = transaction; command.CommandText = text; AddParameters(command, parameters); return command; }
 static void AddParameters(SqliteCommand command, params (string Name, object? Value)[] parameters) { foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value); }

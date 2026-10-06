@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.11
+# TaskList v1.5.12
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -72,6 +72,19 @@ dotnet run --urls "http://0.0.0.0:8711"
 ```
 
 The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`.
+
+### SQLite performance settings
+
+TaskList configures SQLite for the small, write-heavy transactions used by task status changes and edits:
+
+- `journal_mode=WAL` on local/fixed storage. WAL appends commits to a write-ahead log, reducing rollback-journal churn and allowing Stats/readers to coexist with TaskList writes more efficiently.
+- `synchronous=NORMAL` on every TaskList database connection. In WAL mode this avoids the most aggressive filesystem synchronization on every small commit while keeping the database structurally consistent after crashes; a sudden OS/power loss can still lose the most recent committed transactions that had not reached durable storage.
+- `busy_timeout=5000` on every connection so short-lived SQLite lock contention can wait briefly instead of failing immediately.
+- `foreign_keys=ON` remains enabled on every connection.
+
+TaskList deliberately does not enable WAL when the database path is a UNC path or Windows reports the backing drive as Network/Unknown, because SQLite WAL relies on local shared-memory/file-locking semantics. The selected journal mode and connection settings are written to the normal runtime log at startup.
+
+Task status/title/description PATCH operations also use the updated task returned by the API to update the existing in-memory task tree. They no longer re-download and rebuild the entire current list after a successful PATCH. The UI still waits for the PATCH to finish before changing, so updates are not optimistic.
 
 ## Runtime logging
 
@@ -266,7 +279,20 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.11
+## Current release: v1.5.12
+
+### v1.5.12
+
+- Enable SQLite WAL mode on local/fixed database storage and automatically skip WAL for UNC/network/unknown Windows drives.
+- Apply `synchronous=NORMAL`, `busy_timeout=5000`, and `foreign_keys=ON` to TaskList database connections and log the selected journal mode at startup.
+- Stop re-downloading the entire current list after task PATCH operations; merge the returned task into the existing in-memory tree while preserving loaded subtasks, then re-render.
+- Keep task updates non-optimistic: the UI changes only after the PATCH has completed successfully.
+- Cache-bust the changed task JavaScript and advance the PWA shell cache.
+- Document SQLite durability/performance tradeoffs and PATCH refresh behavior.
+- Update project/frontend version metadata to v1.5.12.
+- Add no monkey patches or new runtime/frontend dependencies.
+
+### v1.5.11
 
 ### v1.5.11
 
