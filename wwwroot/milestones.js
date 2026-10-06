@@ -50,6 +50,10 @@
         title = first ? 'First task reopened' : `${value} task reopens`;
         detailNoun = first ? 'its first recorded task-reopen transition' : `${value} recorded task-reopen transitions`;
         break;
+      case 'deleted':
+        title = first ? 'First task deleted' : `${value} task deletions`;
+        detailNoun = first ? 'its first recorded task deletion' : `${value} recorded task deletions`;
+        break;
       case 'recorded':
         title = first ? 'First recorded event' : `${value} recorded events`;
         detailNoun = first ? 'its first recorded task event' : `${value} recorded task events`;

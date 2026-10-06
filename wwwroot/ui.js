@@ -157,7 +157,7 @@ async function start() {
   }
 
   try {
-    await import('/milestones.js');
+    await import('/milestones.js?v=1.5.10');
   } catch {}
 }
 
