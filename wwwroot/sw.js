@@ -1,4 +1,4 @@
-const CACHE = 'task-list-shell';
+const CACHE = 'task-list-shell-v1.5.7';
 const SHELL = [
   '/login.html',
   '/login.js',
@@ -42,7 +42,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(request).then(response => {
+    fetch(request, { cache: 'no-store' }).then(response => {
       const copy = response.clone();
       caches.open(CACHE).then(cache => cache.put(request, copy));
       return response;

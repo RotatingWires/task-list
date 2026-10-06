@@ -297,9 +297,11 @@ button:disabled,
   background: var(--theme-highlight) !important;
 }
 
-.task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
-.task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
-  background: var(--theme-row-hover);
+@media (hover: hover) and (pointer: fine) {
+  .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
+  .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
+    background: var(--theme-row-hover);
+  }
 }
 
 @media (min-width: 651px) {
@@ -331,16 +333,18 @@ button:disabled,
       linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
   }
 
-  .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
-    background: var(--theme-row-hover);
-  }
+  @media (hover: hover) and (pointer: fine) {
+    .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
+      background: var(--theme-row-hover);
+    }
 
-  .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td:first-child {
-    background: linear-gradient(
-      to right,
-      transparent 0 calc(var(--row-indent) + 3px),
-      var(--theme-row-hover) calc(var(--row-indent) + 3px) 100%
-    );
+    .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td:first-child {
+      background: linear-gradient(
+        to right,
+        transparent 0 calc(var(--row-indent) + 3px),
+        var(--theme-row-hover) calc(var(--row-indent) + 3px) 100%
+      );
+    }
   }
 
   .task-table tr.subtask-row.task-visit-highlight > td:first-child {
@@ -374,10 +378,6 @@ button:disabled,
 
   .task-table tr.subtask-row + tr:not(.subtask-row) {
     border-top-color: var(--theme-face);
-  }
-
-  .task-table tr.subtask-row:hover:not(.task-visit-highlight) {
-    background: linear-gradient(to right, transparent 0 3px, var(--theme-row-hover) 3px 100%);
   }
 
   .task-table tr.subtask-row.task-visit-highlight {
