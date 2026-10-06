@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.6
+# TaskList v1.5.7
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -155,7 +155,7 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. While it is held, the button fills from left to right using the same theme-aware blue used for task-row hover feedback; releasing or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
+Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. Mobile Safari/iOS uses an explicit touch hold path, while mouse/pen uses pointer events; a normal synthesized tap/click is always suppressed. While Complete is held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
 
 Done and Cancelled tasks use **Reopen** normally, without the hold requirement. **Edit** stays directly accessible.
 
@@ -168,7 +168,7 @@ The attached More menu contains actions such as:
 
 Moving a task preserves its Universal ID, title, description, status, timestamps, child numbering, and descendant hierarchy while assigning a new visible top-level ID in the destination list.
 
-Task rows highlight on pointer hover so the controls at the right side of a wide row remain visually tied to the correct task. The hover treatment has separate Light/Dark theme colors and preserves nested-subtask status/hierarchy markings.
+On mouse/trackpad devices, task rows highlight on real hover so the controls at the right side of a wide row remain visually tied to the correct task. Touch/coarse-pointer devices do not use row hover highlighting, which avoids sticky mobile hover states. The desktop hover treatment has separate Light/Dark theme colors and preserves nested-subtask status/hierarchy markings.
 
 ## Task Information
 
@@ -248,7 +248,18 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.6
+## Current release: v1.5.7
+
+### v1.5.7
+
+- Make the 800 ms Complete hold reliable on mobile Safari/iOS with an explicit non-passive touch path instead of relying on touch-flavored pointer events.
+- Suppress synthesized tap/click completion so a normal mobile tap cannot complete an Open task.
+- Preserve the same left-to-right hold progress, early-release/move-away cancellation, mouse/pen hold, and keyboard hold behavior.
+- Restrict task-row hover highlighting to devices with a real fine pointer and hover capability so mobile touch no longer leaves a sticky highlighted task row.
+- Keep deep-link/Search visit highlighting intact because it is intentional navigation feedback rather than hover state.
+- Version the PWA shell cache and bypass the browser HTTP cache for network-first shell fetches so mobile clients pick up updated JavaScript/CSS more reliably after a release.
+- Update project/frontend metadata and README documentation to v1.5.7.
+- Add no monkey patches or new frontend/runtime dependencies.
 
 ### v1.5.6
 

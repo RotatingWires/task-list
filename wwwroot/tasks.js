@@ -158,6 +158,7 @@ function configureHoldToComplete(button, onComplete) {
 
   let timer = null;
   let activePointerId = null;
+  let activeTouchId = null;
   let completed = false;
   let keyboardKey = null;
 
@@ -165,6 +166,7 @@ function configureHoldToComplete(button, onComplete) {
     if (timer !== null) clearTimeout(timer);
     timer = null;
     activePointerId = null;
+    activeTouchId = null;
     keyboardKey = null;
     button.classList.remove('is-holding');
   }
@@ -189,8 +191,66 @@ function configureHoldToComplete(button, onComplete) {
     timer = window.setTimeout(finishHold, COMPLETE_HOLD_MS);
   }
 
+  function pointIsInside(clientX, clientY) {
+    const rect = button.getBoundingClientRect();
+    const slop = 8;
+    return clientX >= rect.left - slop &&
+      clientX <= rect.right + slop &&
+      clientY >= rect.top - slop &&
+      clientY <= rect.bottom + slop;
+  }
+
+  function findTouch(list, identifier) {
+    for (const touch of list)
+      if (touch.identifier === identifier) return touch;
+    return null;
+  }
+
+  // Safari/iOS gets an explicit touch path so a normal tap can never fall
+  // through to the Complete action as a compatibility click.
+  button.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1 || completed) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    activeTouchId = touch.identifier;
+    startHold();
+  }, { passive: false });
+
+  button.addEventListener('touchmove', event => {
+    if (activeTouchId === null || completed) return;
+    const touch = findTouch(event.touches, activeTouchId);
+    if (!touch) return;
+
+    event.preventDefault();
+    if (!pointIsInside(touch.clientX, touch.clientY)) resetHold();
+  }, { passive: false });
+
+  button.addEventListener('touchend', event => {
+    if (activeTouchId === null) return;
+    const touch = findTouch(event.changedTouches, activeTouchId);
+    if (!touch) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (!completed) resetHold();
+    else activeTouchId = null;
+  }, { passive: false });
+
+  button.addEventListener('touchcancel', event => {
+    if (activeTouchId === null) return;
+    event.preventDefault();
+    if (!completed) resetHold();
+  }, { passive: false });
+
+  // Pointer events cover mouse and pen. Touch pointers are ignored because
+  // the explicit touch path above owns mobile press-and-hold behavior.
   button.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'touch') return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+
     event.preventDefault();
     event.stopPropagation();
     activePointerId = event.pointerId;
@@ -200,14 +260,7 @@ function configureHoldToComplete(button, onComplete) {
 
   button.addEventListener('pointermove', event => {
     if (event.pointerId !== activePointerId || completed) return;
-    const rect = button.getBoundingClientRect();
-    const slop = 8;
-    const outside =
-      event.clientX < rect.left - slop ||
-      event.clientX > rect.right + slop ||
-      event.clientY < rect.top - slop ||
-      event.clientY > rect.bottom + slop;
-    if (outside) resetHold();
+    if (!pointIsInside(event.clientX, event.clientY)) resetHold();
   });
 
   button.addEventListener('pointerup', event => {
@@ -225,6 +278,7 @@ function configureHoldToComplete(button, onComplete) {
     if (!completed) resetHold();
   });
 
+  // Never allow a synthesized tap/click to complete a task.
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
