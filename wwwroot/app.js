@@ -21,6 +21,13 @@ const titleAppName = document.querySelector('.title-app-name');
 const titleListName = document.querySelector('#titleListName');
 const aboutVersion = document.querySelector('#aboutVersion');
 
+const confirmDialog = document.querySelector('#confirmDialog');
+const confirmDialogTitle = document.querySelector('#confirmDialogTitle');
+const confirmDialogMessage = document.querySelector('#confirmDialogMessage');
+const confirmDialogDetail = document.querySelector('#confirmDialogDetail');
+const confirmDialogCancel = document.querySelector('#confirmDialogCancel');
+const confirmDialogAccept = document.querySelector('#confirmDialogAccept');
+
 const editDialog = document.querySelector('#editDialog');
 const editForm = document.querySelector('#editForm');
 const editTaskId = document.querySelector('#editTaskId');
@@ -231,6 +238,46 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
 }
+
+let confirmActionResolve = null;
+
+function finishConfirmAction(result) {
+  const resolve = confirmActionResolve;
+  confirmActionResolve = null;
+  if (confirmDialog.open) confirmDialog.close();
+  resolve?.(result);
+}
+
+function confirmAction({
+  title = 'Confirm',
+  message = '',
+  detail = '',
+  confirmLabel = 'OK'
+} = {}) {
+  if (confirmActionResolve) finishConfirmAction(false);
+
+  confirmDialogTitle.textContent = title;
+  confirmDialogMessage.textContent = message;
+  confirmDialogDetail.textContent = detail;
+  confirmDialogDetail.hidden = !detail;
+  confirmDialogAccept.textContent = confirmLabel;
+
+  return new Promise(resolve => {
+    confirmActionResolve = resolve;
+    confirmDialog.showModal();
+    requestAnimationFrame(() => confirmDialogCancel.focus({ preventScroll: true }));
+  });
+}
+
+confirmDialogCancel.addEventListener('click', () => finishConfirmAction(false));
+confirmDialogAccept.addEventListener('click', () => finishConfirmAction(true));
+confirmDialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  finishConfirmAction(false);
+});
+confirmDialog.addEventListener('close', () => {
+  if (confirmActionResolve) finishConfirmAction(false);
+});
 
 function actionButton(label, handler, disabled = false) {
   const button = document.createElement('button');

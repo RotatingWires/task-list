@@ -13,9 +13,9 @@
   <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
   <script src="/theme.js"></script>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/task-controls.css?v=1.5.8">
-  <link rel="stylesheet" href="/theme.css?v=1.5.8">
+  <link rel="stylesheet" href="/style.css?v=1.5.9">
+  <link rel="stylesheet" href="/task-controls.css?v=1.5.9">
+  <link rel="stylesheet" href="/theme.css?v=1.5.9">
 </head>
 <body>
   <main class="window">
@@ -223,10 +223,22 @@
     <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
   </dialog>
 
+  <dialog id="confirmDialog" class="retro-dialog confirm-dialog">
+    <div class="dialog-title" id="confirmDialogTitle">Confirm</div>
+    <div class="dialog-body">
+      <div id="confirmDialogMessage" class="confirm-message"></div>
+      <div id="confirmDialogDetail" class="confirm-detail" hidden></div>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" id="confirmDialogCancel">Cancel</button>
+      <button type="button" id="confirmDialogAccept">OK</button>
+    </div>
+  </dialog>
+
   <script src="/version.js" defer></script>
-  <script src="/app.js" defer></script>
-  <script src="/tasks.js?v=1.5.8" defer></script>
-  <script src="/lists.js" defer></script>
+  <script src="/app.js?v=1.5.9" defer></script>
+  <script src="/tasks.js?v=1.5.9" defer></script>
+  <script src="/lists.js?v=1.5.9" defer></script>
   <script src="/search.js" defer></script>
   <script src="/ui.js" defer></script>
 </body>

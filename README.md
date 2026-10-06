@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.8
+# TaskList v1.5.9
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -166,6 +166,8 @@ The attached More menu contains actions such as:
 - Move...
 - Delete
 
+Destructive/structural confirmations use TaskList's own Win95-style modal instead of the browser's native `confirm()` prompt. The custom confirmation dialog is used for task/subtask deletion, list deletion, and list archiving. Cancel receives initial focus so opening a confirmation does not put the destructive action under Enter by default. Delete confirmations also state that recorded task-event history is retained for TaskList Stats even after the current task/list rows are removed.
+
 Moving a task preserves its Universal ID, title, description, status, timestamps, child numbering, and descendant hierarchy while assigning a new visible top-level ID in the destination list.
 
 On mouse/trackpad devices, task rows highlight on real hover so the controls at the right side of a wide row remain visually tied to the correct task. Touch/coarse-pointer devices do not use row hover highlighting, which avoids sticky mobile hover states. The desktop hover treatment has separate Light/Dark theme colors and preserves nested-subtask status/hierarchy markings.
@@ -248,7 +250,17 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.8
+## Current release: v1.5.9
+
+### v1.5.9
+
+- Replace native browser confirmation prompts with a reusable TaskList Win95-style confirmation dialog.
+- Use the custom dialog for task/subtask deletion, list deletion, and list archiving.
+- Give each confirmation a purpose-specific title/action label and focus Cancel first to reduce accidental destructive actions.
+- Explain in delete confirmations that recorded task-event history remains available to Stats after current task/list rows are removed.
+- Cache-bust the changed dialog/app/list/task assets in the application shell and PWA cache.
+- Update project/frontend metadata and README documentation to v1.5.9.
+- Add no monkey patches or new frontend/runtime dependencies.
 
 ### v1.5.8
 
