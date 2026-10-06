@@ -1,5 +1,7 @@
 'use strict';
 
+const COMPLETE_HOLD_MS = 800;
+
 async function loadTasks() {
   if (!currentListId) return;
 
@@ -139,18 +141,135 @@ function taskActionMenuButton(label, handler, disabled = false) {
   return button;
 }
 
+function configureHoldToComplete(button, onComplete) {
+  button.classList.add('hold-to-complete');
+  button.style.setProperty('--complete-hold-duration', `${COMPLETE_HOLD_MS}ms`);
+  button.title = `Hold for ${COMPLETE_HOLD_MS} ms to complete`;
+  button.setAttribute('aria-label', `Hold Complete for ${COMPLETE_HOLD_MS} milliseconds`);
+
+  const progress = document.createElement('span');
+  progress.className = 'task-complete-progress';
+  progress.setAttribute('aria-hidden', 'true');
+
+  const label = document.createElement('span');
+  label.className = 'task-complete-label';
+  label.textContent = 'Complete';
+  button.replaceChildren(progress, label);
+
+  let timer = null;
+  let activePointerId = null;
+  let completed = false;
+  let keyboardKey = null;
+
+  function resetHold() {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+    activePointerId = null;
+    keyboardKey = null;
+    button.classList.remove('is-holding');
+  }
+
+  function finishHold() {
+    timer = null;
+    completed = true;
+    button.classList.add('is-holding');
+    button.disabled = true;
+
+    Promise.resolve(onComplete()).finally(() => {
+      if (!button.isConnected) return;
+      completed = false;
+      button.disabled = false;
+      resetHold();
+    });
+  }
+
+  function startHold() {
+    if (timer !== null || completed || button.disabled) return;
+    button.classList.add('is-holding');
+    timer = window.setTimeout(finishHold, COMPLETE_HOLD_MS);
+  }
+
+  button.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    activePointerId = event.pointerId;
+    button.setPointerCapture?.(event.pointerId);
+    startHold();
+  });
+
+  button.addEventListener('pointermove', event => {
+    if (event.pointerId !== activePointerId || completed) return;
+    const rect = button.getBoundingClientRect();
+    const slop = 8;
+    const outside =
+      event.clientX < rect.left - slop ||
+      event.clientX > rect.right + slop ||
+      event.clientY < rect.top - slop ||
+      event.clientY > rect.bottom + slop;
+    if (outside) resetHold();
+  });
+
+  button.addEventListener('pointerup', event => {
+    if (event.pointerId !== activePointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (!completed) resetHold();
+    else activePointerId = null;
+  });
+
+  button.addEventListener('pointercancel', () => {
+    if (!completed) resetHold();
+  });
+  button.addEventListener('lostpointercapture', () => {
+    if (!completed) resetHold();
+  });
+
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
+  button.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    if (event.repeat || keyboardKey) return;
+    keyboardKey = event.key;
+    startHold();
+  });
+
+  button.addEventListener('keyup', event => {
+    if (event.key !== keyboardKey) return;
+    event.preventDefault();
+    if (!completed) resetHold();
+    else keyboardKey = null;
+  });
+
+  button.addEventListener('blur', () => {
+    if (!completed) resetHold();
+  });
+}
+
 function createTaskSplitAction(item) {
   const [primaryLabel, primaryStatus] = PRIMARY_STATUS_ACTION[item.status] ?? ['Edit', null];
 
   const group = document.createElement('div');
   group.className = 'task-split-group';
 
-  const primary = actionButton(primaryLabel, () => {
+  const activatePrimary = () => {
     closeTaskActionMenus();
-    if (primaryStatus) updateItem(item, { status: primaryStatus });
-    else openEdit(item);
-  });
+    if (primaryStatus) return updateItem(item, { status: primaryStatus });
+    openEdit(item);
+    return null;
+  };
+
+  const primary = document.createElement('button');
+  primary.type = 'button';
+  primary.textContent = primaryLabel;
   primary.classList.add('task-primary-action');
+
+  if (primaryStatus === 'Done') configureHoldToComplete(primary, activatePrimary);
+  else primary.addEventListener('click', activatePrimary);
 
   const arrow = document.createElement('button');
   arrow.type = 'button';

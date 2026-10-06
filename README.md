@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.5
+# TaskList v1.5.6
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -114,13 +114,21 @@ TaskList expects the current recursive `items` schema. The old pre-v1.1 `tasks`/
 
 ## Milestone celebrations
 
-TaskList records a small set of major Created, Completed, and Universal-ID thresholds in the shared SQLite database. When a new threshold is reached, TaskList or TaskList Stats can claim the pending notification and show the same lightweight Win95-style celebration dialog.
+TaskList keeps the shared milestone-notification ledger in the same SQLite database used by TaskList Stats. The notification rules now mirror the permanent milestone families in Stats:
 
-A real milestone is acknowledged globally: whichever app claims it first marks it viewed, so opening the other app does not repeat the same popup. TaskList checks after successful writes so milestones reached while creating or completing tasks can appear immediately; TaskList Stats provides a fallback when it is the first app opened afterward.
+- global Created / Completed / Cancelled / Reopened milestones at 1, 100, 500, 1,000, 2,000, 3,000, 5,000, and 10,000, then every 5,000 events indefinitely
+- overall recorded-event milestones on the same global schedule
+- Universal ID milestones at #1, #100, #500, #1,000, #2,000, #2,500, #3,000, #5,000, and #10,000, then every 5,000 IDs indefinitely
+- per-list Created / Completed milestones at 100, 500, 1,000, 2,000, and 5,000, then every 5,000 events indefinitely
+- yearly Created / Completed milestones at the first event, 100, 500, 1,000, and 2,000, then every 5,000 events indefinitely within that calendar year
 
-Existing thresholds already attained before v1.5.5 are baselined as viewed on the first upgraded TaskList startup. This prevents old milestones from producing a stack of retroactive popups. The permanent analytical milestone history remains available in TaskList Stats.
+TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup so it stays aligned with the authoritative history.
 
-The celebration uses a short dependency-free confetti animation, adapts to Light and Dark themes and mobile layouts, and suppresses the animation when the browser requests reduced motion.
+A real milestone is acknowledged globally: TaskList and TaskList Stats both use an atomic claim operation that sets the notification's viewed time and viewer. Whichever app claims it first shows the celebration, and the other app does not repeat it. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation.
+
+When an older TaskList database first gains a newer notification family, milestones that were already reached are baselined as viewed instead of generating retroactive celebration spam. Existing genuinely pending notifications are preserved.
+
+The celebration is dependency-free, responsive on desktop and mobile, adapts to Light and Dark themes, and suppresses confetti when the browser requests reduced motion. The permanent analytical milestone timeline remains in TaskList Stats even after a popup has been acknowledged.
 
 ## Nested subtasks
 
@@ -147,7 +155,9 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action. Done and Cancelled tasks use **Reopen**. **Edit** stays directly accessible.
+Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. While it is held, the button fills from left to right using the same theme-aware blue used for task-row hover feedback; releasing or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
+
+Done and Cancelled tasks use **Reopen** normally, without the hold requirement. **Edit** stays directly accessible.
 
 The attached More menu contains actions such as:
 
@@ -238,7 +248,18 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.5
+## Current release: v1.5.6
+
+### v1.5.6
+
+- Expand shared milestone celebrations to mirror the permanent Stats milestone families, including global event, recorded-event, Universal-ID, per-list, and yearly milestones.
+- Continue all long-running milestone families at 5,000-step intervals so celebration notifications do not end permanently.
+- Keep milestone generation lightweight with SQLite counters/triggers and baseline newly introduced families as viewed on upgrade instead of replaying old achievements.
+- Preserve atomic one-time claiming across TaskList and TaskList Stats; multiple simultaneously reached milestones share one celebration dialog/confetti run.
+- Require an 800 ms hold on the **Complete** primary action to prevent accidental mobile completions.
+- Fill the Complete button from left to right with the existing theme-aware task-hover blue while the hold progresses; releasing or moving away early cancels it.
+- Keep Reopen/Edit/More behavior unchanged and expose the hold duration through one `COMPLETE_HOLD_MS` constant.
+- Add no monkey patches or new frontend/runtime dependencies.
 
 ### v1.5.5
 
