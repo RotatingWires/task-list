@@ -21,7 +21,6 @@ function applyTheme(preference, persist = false) {
 
   const root = document.documentElement;
   const previousPreference = root.dataset.themePreference;
-  const previousEffective = root.dataset.themeEffective;
   root.dataset.themePreference = selected;
   root.dataset.themeEffective = selected;
   root.style.colorScheme = selected;
@@ -29,9 +28,9 @@ function applyTheme(preference, persist = false) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', selected === 'dark' ? '#111858' : '#000080');
 
-  if (previousPreference !== undefined && (previousPreference !== selected || previousEffective !== selected)) {
+  if (previousPreference !== undefined && previousPreference !== selected) {
     window.dispatchEvent(new CustomEvent('task-theme-change', {
-      detail: { preference: selected, effective: selected }
+      detail: { theme: selected }
     }));
   }
   return selected;
@@ -39,10 +38,6 @@ function applyTheme(preference, persist = false) {
 
 function getPreference() {
   return document.documentElement.dataset.themePreference || readPreference();
-}
-
-function getEffective() {
-  return document.documentElement.dataset.themeEffective || getPreference();
 }
 
 function setPreference(preference) {
@@ -56,8 +51,6 @@ window.addEventListener('storage', event => {
 applyTheme(readPreference(), false);
 window.TaskTheme = {
   getPreference,
-  getEffective,
-  setPreference,
-  options: ['light', 'dark']
+  setPreference
 };
 })();
