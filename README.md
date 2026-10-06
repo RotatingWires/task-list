@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.7
+# TaskList v1.5.8
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -155,7 +155,7 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. Mobile Safari/iOS uses an explicit touch hold path, while mouse/pen uses pointer events; a normal synthesized tap/click is always suppressed. While Complete is held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
+Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke Complete directly. Mouse/pen and keyboard holds use the same duration. While Complete is held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
 
 Done and Cancelled tasks use **Reopen** normally, without the hold requirement. **Edit** stays directly accessible.
 
@@ -248,7 +248,17 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.7
+## Current release: v1.5.8
+
+### v1.5.8
+
+- Harden mobile hold-to-complete by guarding touchend/touchcancel at the document capture phase, so a quick release always cancels the 800 ms timer even if mobile Safari retargets the touch.
+- Block compatibility/synthesized Complete clicks with a capture-phase stopImmediatePropagation guard.
+- Disable native touch gestures/callouts on the Complete button itself while preserving normal page scrolling everywhere else.
+- Cache-bust the Complete JS/CSS assets in the application shell and PWA precache so mobile clients cannot keep running an older click-to-complete tasks.js alongside newer styling.
+- Preserve the desktop hold behavior and the mobile no-hover-row behavior from v1.5.7.
+- Update project/frontend metadata and README documentation to v1.5.8.
+- Add no monkey patches or new frontend/runtime dependencies.
 
 ### v1.5.7
 

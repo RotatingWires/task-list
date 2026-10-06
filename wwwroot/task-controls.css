@@ -3,7 +3,8 @@
 .task-primary-action.hold-to-complete {
   position: relative;
   overflow: hidden;
-  touch-action: manipulation;
+  touch-action: none;
+  -webkit-touch-callout: none;
   user-select: none;
   -webkit-user-select: none;
 }

@@ -162,6 +162,11 @@ function configureHoldToComplete(button, onComplete) {
   let completed = false;
   let keyboardKey = null;
 
+  function detachTouchEndGuards() {
+    document.removeEventListener('touchend', handleDocumentTouchEnd, true);
+    document.removeEventListener('touchcancel', handleDocumentTouchCancel, true);
+  }
+
   function resetHold() {
     if (timer !== null) clearTimeout(timer);
     timer = null;
@@ -169,11 +174,13 @@ function configureHoldToComplete(button, onComplete) {
     activeTouchId = null;
     keyboardKey = null;
     button.classList.remove('is-holding');
+    detachTouchEndGuards();
   }
 
   function finishHold() {
     timer = null;
     completed = true;
+    detachTouchEndGuards();
     button.classList.add('is-holding');
     button.disabled = true;
 
@@ -206,8 +213,25 @@ function configureHoldToComplete(button, onComplete) {
     return null;
   }
 
-  // Safari/iOS gets an explicit touch path so a normal tap can never fall
-  // through to the Complete action as a compatibility click.
+  function handleDocumentTouchEnd(event) {
+    if (activeTouchId === null || completed) return;
+    const touch = findTouch(event.changedTouches, activeTouchId);
+    if (!touch) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    resetHold();
+  }
+
+  function handleDocumentTouchCancel(event) {
+    if (activeTouchId === null || completed) return;
+    event.preventDefault();
+    resetHold();
+  }
+
+  // Mobile touch handling is guarded at the document capture phase so a
+  // quick release always cancels the timer even if the browser retargets
+  // the touch away from the button.
   button.addEventListener('touchstart', event => {
     if (event.touches.length !== 1 || completed) return;
     const touch = event.changedTouches[0];
@@ -216,6 +240,8 @@ function configureHoldToComplete(button, onComplete) {
     event.preventDefault();
     event.stopPropagation();
     activeTouchId = touch.identifier;
+    document.addEventListener('touchend', handleDocumentTouchEnd, { capture: true, passive: false });
+    document.addEventListener('touchcancel', handleDocumentTouchCancel, { capture: true, passive: false });
     startHold();
   }, { passive: false });
 
@@ -228,25 +254,8 @@ function configureHoldToComplete(button, onComplete) {
     if (!pointIsInside(touch.clientX, touch.clientY)) resetHold();
   }, { passive: false });
 
-  button.addEventListener('touchend', event => {
-    if (activeTouchId === null) return;
-    const touch = findTouch(event.changedTouches, activeTouchId);
-    if (!touch) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    if (!completed) resetHold();
-    else activeTouchId = null;
-  }, { passive: false });
-
-  button.addEventListener('touchcancel', event => {
-    if (activeTouchId === null) return;
-    event.preventDefault();
-    if (!completed) resetHold();
-  }, { passive: false });
-
-  // Pointer events cover mouse and pen. Touch pointers are ignored because
-  // the explicit touch path above owns mobile press-and-hold behavior.
+  // Pointer events cover mouse and pen. Touch pointers are deliberately
+  // ignored because the guarded touch path above owns mobile behavior.
   button.addEventListener('pointerdown', event => {
     if (event.pointerType === 'touch') return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -278,11 +287,13 @@ function configureHoldToComplete(button, onComplete) {
     if (!completed) resetHold();
   });
 
-  // Never allow a synthesized tap/click to complete a task.
+  // A Complete action is never allowed to come from click activation.
+  // stopImmediatePropagation also blocks any compatibility/synthetic click
+  // listener that a mobile browser may try to run on this same button.
   button.addEventListener('click', event => {
     event.preventDefault();
-    event.stopPropagation();
-  });
+    event.stopImmediatePropagation();
+  }, true);
 
   button.addEventListener('keydown', event => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
