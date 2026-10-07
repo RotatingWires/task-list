@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.14
+# TaskList v1.5.15
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -279,7 +279,17 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.14
+## Current release: v1.5.15
+
+### v1.5.15
+
+- Restore task-row hover highlighting on touchscreen laptops and other hybrid devices by detecting any attached hover-capable fine pointer instead of requiring the device's primary pointer to be fine.
+- Keep sticky hover suppression on phones and touch-only/coarse-pointer devices.
+- Preserve the existing desktop root/subtask hover colors and deep-link/Search visit highlighting.
+- Update release metadata to v1.5.15.
+- Add no monkey patches or new runtime/frontend dependencies.
+
+### v1.5.14
 
 ### v1.5.14
 
