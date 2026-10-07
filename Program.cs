@@ -729,15 +729,18 @@ static bool CanUseWal(string databasePath)
     }
 }
 
+static SqliteCommand ConnectionPragmaCommand(SqliteConnection connection) =>
+    Sql(connection, "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;");
+
 static void ApplyConnectionPragmas(SqliteConnection connection)
 {
-    using var command = Sql(connection, "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;");
+    using var command = ConnectionPragmaCommand(connection);
     command.ExecuteNonQuery();
 }
 
 static async Task ApplyConnectionPragmasAsync(SqliteConnection connection)
 {
-    using var command = Sql(connection, "PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;");
+    using var command = ConnectionPragmaCommand(connection);
     await command.ExecuteNonQueryAsync();
 }
 static SqliteCommand Sql(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { var command = connection.CreateCommand(); command.CommandText = text; AddParameters(command, parameters); return command; }

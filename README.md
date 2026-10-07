@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.12
+# TaskList v1.5.13
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -279,7 +279,18 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.12
+## Current release: v1.5.13
+
+### v1.5.13
+
+- Consolidate the shared SQLite connection PRAGMA command so synchronous mode, busy timeout, and foreign-key settings have one source of truth for sync and async connections.
+- Normalize versioned frontend/PWA asset references to the current release instead of carrying a mix of older cache-busting version strings.
+- Remove duplicate v1.5.11 and v1.5.10 release-history headings left by earlier README updates.
+- Keep the existing purpose-based frontend modules; the cleanup audit found no unreferenced JavaScript functions or safely removable runtime/source files.
+- Update project/frontend metadata to v1.5.13.
+- Add no monkey patches or new runtime/frontend dependencies.
+
+### v1.5.12
 
 ### v1.5.12
 
@@ -294,8 +305,6 @@ TaskList is a single-user application.
 
 ### v1.5.11
 
-### v1.5.11
-
 - Add native single-file runtime logging at `logs/console.log` while preserving the normal interactive console output.
 - Capture the ASP.NET/.NET logging pipeline, including startup/shutdown, request status/timing, warnings, errors, and exceptions, without requiring a `cmd.exe` redirection wrapper.
 - Keep exactly one log file: when it would exceed 10 MiB, truncate that same file and continue writing rather than creating rotated copies.
@@ -303,8 +312,6 @@ TaskList is a single-user application.
 - Ignore the runtime `logs/` directory in Git and document logging behavior, retention, and Task Scheduler use.
 - Update project/frontend version metadata to v1.5.11.
 - Add no monkey patches or new runtime/frontend dependencies.
-
-### v1.5.10
 
 ### v1.5.10
 
