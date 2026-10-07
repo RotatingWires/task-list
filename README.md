@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.13
+# TaskList v1.5.14
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -58,11 +58,11 @@ There are no release-specific JavaScript override files. New behavior belongs in
 
 ## Version handling
 
-`TaskList.csproj` is the authoritative application version.
+`TaskList.csproj` contains the single authoritative application version in its `<Version>` property. The .NET SDK derives the assembly/file/informational versions from that value, so they are not repeated as separate manually maintained properties.
 
-The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build. The checked-in `wwwroot/version.js` is also updated on every release so the browser can display the current frontend version after a normal Git pull even when an existing executable has not been rebuilt yet.
+The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build for the browser's About/version label.
 
-The service worker uses a stable shell-cache name and network-first asset requests, so it does not need another duplicated release number.
+Frontend asset URLs no longer carry release-number query strings. The service worker uses a stable shell-cache name and network-first requests with `cache: 'no-store'`, updating the cached copy after a successful network response and using cache only as an offline fallback. That keeps frontend freshness independent of manually duplicated release numbers.
 
 ## Run
 
@@ -279,7 +279,17 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.13
+## Current release: v1.5.14
+
+### v1.5.14
+
+- Make `TaskList.csproj`'s single `<Version>` property the only manually maintained runtime release number; let the .NET SDK derive assembly/file/informational versions from it.
+- Remove release-number query strings from CSS, JavaScript, and dynamic milestone imports so individual asset URLs no longer need manual version bumps.
+- Replace the per-release service-worker cache name with a stable shell cache; keep network-first `cache: 'no-store'` fetches so successful online loads always refresh the cached copy.
+- Keep `version.js` generated from the authoritative project version during build for the browser version label.
+- Remove the remaining duplicate v1.5.12 README release heading.
+- Update release metadata/documentation to v1.5.14.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.13
 
@@ -289,8 +299,6 @@ TaskList is a single-user application.
 - Keep the existing purpose-based frontend modules; the cleanup audit found no unreferenced JavaScript functions or safely removable runtime/source files.
 - Update project/frontend metadata to v1.5.13.
 - Add no monkey patches or new runtime/frontend dependencies.
-
-### v1.5.12
 
 ### v1.5.12
 
