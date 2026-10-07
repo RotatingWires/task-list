@@ -71,6 +71,21 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+function initializeMouseHoverDetection() {
+  const root = document.documentElement;
+  let ignoreSyntheticMouseUntil = 0;
+
+  document.addEventListener('touchstart', () => {
+    ignoreSyntheticMouseUntil = performance.now() + 1200;
+    root.classList.remove('mouse-hover-capable');
+  }, { passive: true, capture: true });
+
+  document.addEventListener('mousemove', () => {
+    if (performance.now() >= ignoreSyntheticMouseUntil)
+      root.classList.add('mouse-hover-capable');
+  }, { passive: true });
+}
+
 function initializeTaskInfoTouchHelp() {
   const popup = document.createElement('div');
   popup.className = 'tap-help-tooltip';
@@ -129,6 +144,7 @@ async function start() {
   updateViewMenu();
   updateThemeMenu();
   loadAppVersion();
+  initializeMouseHoverDetection();
   initializeTaskInfoTouchHelp();
 
   try {
