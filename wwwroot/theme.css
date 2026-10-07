@@ -297,7 +297,7 @@ button:disabled,
   background: var(--theme-highlight) !important;
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (any-hover: hover) and (any-pointer: fine) {
   .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
   .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
     background: var(--theme-row-hover);
@@ -333,7 +333,7 @@ button:disabled,
       linear-gradient(to right, transparent 0 var(--row-indent), var(--theme-surface-alt) var(--row-indent) 100%);
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  @media (any-hover: hover) and (any-pointer: fine) {
     .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
       background: var(--theme-row-hover);
     }
