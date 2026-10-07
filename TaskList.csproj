@@ -5,10 +5,7 @@
     <RootNamespace>TaskList</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.5.13</Version>
-    <AssemblyVersion>1.5.13.0</AssemblyVersion>
-    <FileVersion>1.5.13.0</FileVersion>
-    <InformationalVersion>1.5.13</InformationalVersion>
+    <Version>1.5.14</Version>
     <Product>TaskList</Product>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
