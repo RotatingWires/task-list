@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.16
+# TaskList v1.5.17
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -214,7 +214,7 @@ Task Information exposes the task's stored metadata plus hierarchy/time statisti
 - Current age for Open tasks
 - Terminal time for Done/Cancelled tasks when a real clock time is known
 
-The hierarchy metrics are calculated against the task's actual source list/tree, including when Task Information is opened from Search results. Non-obvious metrics include hover/focus help, with tap/keyboard support on mobile.
+The hierarchy metrics are calculated against the task's actual source list/tree, including when Task Information is opened from Search results. Tasks with a non-empty description show a small document indicator beside the title; selecting it opens Task Information and briefly highlights the Description row. Non-obvious metrics include hover/focus help, with tap/keyboard support on mobile.
 
 ## Search
 
@@ -279,7 +279,17 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.16
+## Current release: v1.5.17
+
+### v1.5.17
+
+- Add a compact document/note indicator immediately after task titles when the task has a non-empty description.
+- Keep rows without descriptions unchanged instead of adding a mostly empty Description column.
+- Make the indicator open Task Information and briefly highlight the Description label/value with the same theme-aware yellow used for deep-link/Search visit highlighting.
+- Use an inline dependency-free document icon so appearance is consistent across operating systems rather than relying on emoji.
+- Support root tasks and nested subtasks without changing task IDs, status/actions, or row behavior.
+- Update release metadata to v1.5.17.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.16
 

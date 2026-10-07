@@ -52,6 +52,33 @@ function countDescendants(item) {
   return (item.subtasks ?? []).reduce((sum, child) => sum + 1 + countDescendants(child), 0);
 }
 
+function createDescriptionIndicator(item, sourceItems = tasks) {
+  if (typeof item.description !== 'string' || !item.description.trim()) return null;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'task-description-indicator';
+  button.title = 'Has description — open Task Information';
+  button.setAttribute('aria-label', `Open description for task #${item.displayId}`);
+
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 16 16');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = `
+    <path d="M3.5 1.5h6l3 3v10h-9z" fill="none" stroke="currentColor"/>
+    <path d="M9.5 1.5v3h3" fill="none" stroke="currentColor"/>
+    <path d="M5.5 7h5M5.5 9.5h5M5.5 12h3.5" fill="none" stroke="currentColor"/>
+  `;
+  button.append(icon);
+
+  button.addEventListener('click', event => {
+    event.stopPropagation();
+    openInfo(item, sourceItems, true);
+  });
+
+  return button;
+}
+
 function createTaskRow(item, depth) {
   const isSubtask = depth > 0;
   const row = document.createElement('tr');
@@ -77,6 +104,17 @@ function createTaskRow(item, depth) {
   titleCell.dataset.label = 'Task';
   titleCell.className = 'task-title';
 
+  const titleContent = document.createElement('span');
+  titleContent.className = 'task-title-content';
+
+  const titleText = document.createElement('span');
+  titleText.className = 'task-title-text';
+  titleText.textContent = item.title;
+  titleContent.append(titleText);
+
+  const descriptionIndicator = createDescriptionIndicator(item);
+  if (descriptionIndicator) titleContent.append(descriptionIndicator);
+
   if (isSubtask) {
     const tree = document.createElement('span');
     tree.className = 'task-title-tree';
@@ -85,13 +123,10 @@ function createTaskRow(item, depth) {
     marker.className = 'task-tree-marker';
     marker.textContent = '└─';
 
-    const titleText = document.createElement('span');
-    titleText.className = 'task-title-text';
-    titleText.textContent = item.title;
-    tree.append(marker, titleText);
+    tree.append(marker, titleContent);
     titleCell.append(tree);
   } else {
-    titleCell.textContent = item.title;
+    titleCell.append(titleContent);
   }
 
   const statusCell = document.createElement('td');
@@ -664,7 +699,31 @@ function taskInfoTerminalDuration(item) {
   return ms >= 0 ? ms : null;
 }
 
-function openInfo(item, sourceItems = tasks) {
+let infoDescriptionHighlightTimer = null;
+
+function setInfoDescriptionHighlight(enabled) {
+  if (infoDescriptionHighlightTimer !== null) {
+    clearTimeout(infoDescriptionHighlightTimer);
+    infoDescriptionHighlightTimer = null;
+  }
+
+  const label = infoDescription.previousElementSibling;
+  label?.classList.remove('info-description-highlight');
+  infoDescription.classList.remove('info-description-highlight');
+
+  if (!enabled) return;
+
+  void infoDescription.offsetWidth;
+  label?.classList.add('info-description-highlight');
+  infoDescription.classList.add('info-description-highlight');
+  infoDescriptionHighlightTimer = window.setTimeout(() => {
+    label?.classList.remove('info-description-highlight');
+    infoDescription.classList.remove('info-description-highlight');
+    infoDescriptionHighlightTimer = null;
+  }, 3200);
+}
+
+function openInfo(item, sourceItems = tasks, highlightDescription = false) {
   infoTaskId.textContent = `#${item.displayId}`;
 
   if (item.parentDisplayId) {
@@ -700,10 +759,13 @@ function openInfo(item, sourceItems = tasks) {
   infoCompleted.textContent = formatDate(item.completedAt);
   infoCancelled.textContent = formatDate(item.cancelledAt);
   infoReopened.textContent = formatDate(item.reopenedAt);
+  setInfoDescriptionHighlight(false);
   infoDialog.showModal();
+  setInfoDescriptionHighlight(highlightDescription);
 }
 
 closeInfo.addEventListener('click', () => infoDialog.close());
+infoDialog.addEventListener('close', () => setInfoDescriptionHighlight(false));
 
 async function deleteItem(item) {
   const subtaskCount = countDescendants(item);

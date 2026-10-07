@@ -228,6 +228,23 @@ textarea::placeholder {
   color: var(--theme-link-hover);
 }
 
+.task-title .task-description-indicator {
+  color: var(--theme-muted-strong);
+  background: transparent;
+  border-color: transparent;
+}
+
+.task-title .task-description-indicator:hover,
+.task-title .task-description-indicator:focus-visible {
+  color: var(--theme-link-hover);
+  background: transparent;
+}
+
+.info-grid dt.info-description-highlight,
+.info-grid dd.info-description-highlight {
+  background: var(--theme-highlight);
+}
+
 .statusbar span {
   border-top-color: var(--theme-shadow);
   border-left-color: var(--theme-shadow);

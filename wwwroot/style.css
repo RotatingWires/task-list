@@ -363,6 +363,39 @@ button:active {
   word-break: break-word;
   min-width: 0;
 }
+
+.task-title-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.task-title-tree > .task-title-content {
+  flex: 1 1 auto;
+}
+
+.task-title .task-description-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0 0 0 5px;
+  padding: 0;
+  vertical-align: -3px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.task-title .task-description-indicator svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
 .subtask-row td {
   background: #f4f4f4;
   padding-top: 5px;
