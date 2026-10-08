@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.17
+# TaskList v1.5.18
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -25,7 +25,7 @@ TaskList intentionally keeps a small source tree. Frontend code is split by resp
 TaskList.csproj        .NET project, dependencies, and authoritative release version
 Program.cs             server, authentication, SQLite schema, event-log triggers, and API
 MilestoneNotifications.cs
-                       milestone notification storage, triggers, baselining, and claim API
+                       pending milestone queue, counter triggers, schema migration, and consume API
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
@@ -42,7 +42,7 @@ wwwroot/
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
-  milestones.js        milestone claim/dialog/confetti behavior
+  milestones.js        pending milestone consumption/dialog/confetti behavior
   milestones.css       responsive Light/Dark milestone celebration styling
   theme.js             persistent Light/Dark theme selection and startup theme application
   login.js             login/setup behavior
@@ -143,7 +143,7 @@ TaskList expects the current recursive `items` schema. The old pre-v1.1 `tasks`/
 
 ## Milestone celebrations
 
-TaskList keeps the shared milestone-notification ledger in the same SQLite database used by TaskList Stats. The notification rules now mirror the permanent milestone families in Stats:
+TaskList alone owns live milestone dialogs and confetti. It keeps a persistent pending-notification queue in its SQLite database. TaskList Stats stays read-only and provides a separate permanent Milestones analysis tab. The notification rules mirror those analytical milestone families:
 
 - global Created / Completed / Cancelled / Reopened / Deleted milestones at 1, 100, 500, 1,000, 2,000, 3,000, 5,000, and 10,000, then every 5,000 events indefinitely
 - overall recorded-event milestones on the same global schedule
@@ -151,13 +151,13 @@ TaskList keeps the shared milestone-notification ledger in the same SQLite datab
 - per-list Created / Completed milestones at 100, 500, 1,000, 2,000, and 5,000, then every 5,000 events indefinitely
 - yearly Created / Completed milestones at the first event, 100, 500, 1,000, and 2,000, then every 5,000 events indefinitely within that calendar year
 
-TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup so it stays aligned with the authoritative history.
+TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup, before the triggers are installed, so existing history is the baseline and only future inserts can create new notifications. All existing threshold families and continuing schedules are preserved.
 
-A real milestone is acknowledged globally: TaskList and TaskList Stats both use an atomic claim operation that sets the notification's viewed time and viewer. Whichever app claims it first shows the celebration, and the other app does not repeat it. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation.
+The TaskList frontend calls authenticated `POST /api/milestones/consume` at startup and after successful writes. One atomic `DELETE ... RETURNING` removes and returns all pending notices. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation. Concurrent TaskList tabs cannot consume the same row twice. Pending notices survive browser/server restarts until consumed; consumed notices are not replayed on restart or subsequent task actions. Consumption happens before display, so a lost response or a browser closing at that point can prevent a popup from being seen.
 
-When an older TaskList database first gains a newer notification family, milestones that were already reached are baselined as viewed instead of generating retroactive celebration spam. Existing genuinely pending notifications are preserved.
+Startup migrates both older global-only and scoped notification ledgers into the pending queue in the same transaction as counter rebuilding and trigger installation. Genuinely pending rows are preserved; acknowledged and historical baseline rows are discarded. The queue no longer stores `viewed_at`, `viewed_by`, or historical baseline records, and the old notification schema-version state is removed. Rebuilding counters from current history prevents upgrades from suddenly celebrating milestones that were already reached.
 
-The celebration is dependency-free, responsive on desktop and mobile, adapts to Light and Dark themes, and suppresses confetti when the browser requests reduced motion. The permanent analytical milestone timeline remains in TaskList Stats even after a popup has been acknowledged.
+The celebration is dependency-free, responsive on desktop and mobile, adapts to Light and Dark themes, and suppresses confetti when the browser requests reduced motion. The permanent analytical milestone timeline in TaskList Stats is computed from event history independently of this queue and remains available after a popup is consumed.
 
 ## Nested subtasks
 
@@ -279,7 +279,18 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.17
+## Current release: v1.5.18
+
+### v1.5.18
+
+- Make TaskList the sole owner of live milestone dialogs and confetti; Stats retains its independent historical Milestones tab.
+- Replace the cross-app viewed-state claim API with an authenticated pending-queue consume API using atomic `DELETE ... RETURNING`.
+- Preserve pending notifications from both supported older ledger schemas and discard acknowledged/baseline rows during a transactional migration.
+- Keep every existing milestone counter, threshold family, and continuation schedule; rebuild counters from history without creating retroactive notifications.
+- Remove obsolete viewed/viewer/historical fields, schema-version state, and historical baseline-generation code.
+- Keep pending notices across restarts and prevent consumed notices from replaying across TaskList tabs or later actions.
+- Update release metadata/documentation to v1.5.18.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.17
 

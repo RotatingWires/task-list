@@ -3,119 +3,72 @@ using Microsoft.Data.Sqlite;
 
 static class MilestoneNotifications
 {
-    private const int SchemaVersion = 2;
-
-    private static readonly long[] GlobalEventBaseThresholds = [1, 100, 500, 1000, 2000, 3000, 5000, 10000];
-    private static readonly long[] UniversalBaseThresholds = [1, 100, 500, 1000, 2000, 2500, 3000, 5000, 10000];
-    private static readonly long[] ListBaseThresholds = [100, 500, 1000, 2000, 5000];
-    private static readonly long[] YearBaseThresholds = [1, 100, 500, 1000, 2000];
-
     public static void Initialize(string connectionString)
     {
         using var connection = new SqliteConnection(connectionString);
         connection.Open();
+        using var transaction = connection.BeginTransaction();
 
-        DropTriggers(connection);
-        EnsureNotificationTable(connection);
-        EnsureStateTable(connection);
-        RebuildCounters(connection);
+        DropTriggers(connection, transaction);
+        EnsureNotificationTable(connection, transaction);
+        // Existing counts are the baseline: only future inserts can reach new thresholds.
+        RebuildCounters(connection, transaction);
+        CreateTriggers(connection, transaction);
 
-        if (GetStateVersion(connection) < SchemaVersion)
-        {
-            BaselineExistingMilestones(connection);
-            SetStateVersion(connection, SchemaVersion);
-        }
-
-        CreateTriggers(connection);
+        transaction.Commit();
     }
 
-    public static void MapEndpoints(RouteGroupBuilder api, string connectionString, string viewer)
+    public static void MapEndpoints(RouteGroupBuilder api, string connectionString)
     {
-        api.MapPost("/milestones/claim", async () =>
+        api.MapPost("/milestones/consume", async () =>
         {
             await using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();
-            var notices = await ClaimPending(connection, viewer);
+            var notices = await ConsumePending(connection);
             return Results.Ok(notices);
         });
     }
 
-    private static void DropTriggers(SqliteConnection connection)
+    private static void DropTriggers(SqliteConnection connection, SqliteTransaction transaction)
     {
-        using var command = connection.CreateCommand();
-        command.CommandText = """
+        Execute(connection, """
             DROP TRIGGER IF EXISTS trg_task_events_milestone_notification;
             DROP TRIGGER IF EXISTS trg_universal_ids_milestone_notification;
-            """;
-        command.ExecuteNonQuery();
+            """, transaction);
     }
 
-    private static void EnsureNotificationTable(SqliteConnection connection)
+    private static void EnsureNotificationTable(SqliteConnection connection, SqliteTransaction transaction)
     {
-        if (!TableExists(connection, "milestone_notifications"))
+        if (!TableExists(connection, "milestone_notifications", transaction))
         {
-            CreateNotificationTable(connection);
+            CreateNotificationTable(connection, transaction);
             return;
         }
 
-        if (!ColumnExists(connection, "milestone_notifications", "scope"))
-        {
-            using var migrate = connection.CreateCommand();
-            migrate.CommandText = """
-                ALTER TABLE milestone_notifications RENAME TO milestone_notifications_legacy;
+        if (!ColumnExists(connection, "milestone_notifications", "viewed_at", transaction)) return;
 
-                CREATE TABLE milestone_notifications (
-                    key TEXT PRIMARY KEY,
-                    kind TEXT NOT NULL,
-                    threshold INTEGER NOT NULL,
-                    scope TEXT NOT NULL CHECK(scope IN ('global', 'list', 'year')),
-                    scope_value TEXT NULL,
-                    scope_label TEXT NULL,
-                    reached_at TEXT NOT NULL,
-                    historical INTEGER NOT NULL DEFAULT 0,
-                    viewed_at TEXT NULL,
-                    viewed_by TEXT NULL
-                );
+        // Support both the original global-only ledger and the later scoped ledger.
+        // Keep genuinely pending notices; acknowledged/baseline rows no longer need storage.
+        var scoped = ColumnExists(connection, "milestone_notifications", "scope", transaction);
+        var key = scoped ? "key" : "CASE WHEN kind = 'universal' THEN 'universal:' || threshold ELSE 'global:' || kind || ':' || threshold END";
+        var scope = scoped ? "scope" : "'global'";
+        var scopeValue = ColumnExists(connection, "milestone_notifications", "scope_value", transaction) ? "scope_value" : "NULL";
+        var scopeLabel = ColumnExists(connection, "milestone_notifications", "scope_label", transaction) ? "scope_label" : "NULL";
 
-                INSERT INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
-                SELECT
-                    CASE
-                        WHEN kind = 'universal' THEN 'universal:' || threshold
-                        ELSE 'global:' || kind || ':' || threshold
-                    END,
-                    kind,
-                    threshold,
-                    'global',
-                    NULL,
-                    NULL,
-                    reached_at,
-                    historical,
-                    viewed_at,
-                    viewed_by
-                FROM milestone_notifications_legacy;
+        Execute(connection, "ALTER TABLE milestone_notifications RENAME TO milestone_notifications_legacy;", transaction);
+        CreateNotificationTable(connection, transaction);
+        Execute(connection, $"""
+            INSERT INTO milestone_notifications
+                (key, kind, threshold, scope, scope_value, scope_label, reached_at)
+            SELECT {key}, kind, threshold, {scope}, {scopeValue}, {scopeLabel}, reached_at
+            FROM milestone_notifications_legacy
+            WHERE viewed_at IS NULL;
 
-                DROP TABLE milestone_notifications_legacy;
-
-                CREATE INDEX IF NOT EXISTS idx_milestone_notifications_pending
-                    ON milestone_notifications(viewed_at, reached_at);
-                """;
-            migrate.ExecuteNonQuery();
-            return;
-        }
-
-        if (!ColumnExists(connection, "milestone_notifications", "scope_value"))
-            Execute(connection, "ALTER TABLE milestone_notifications ADD COLUMN scope_value TEXT NULL;");
-        if (!ColumnExists(connection, "milestone_notifications", "scope_label"))
-            Execute(connection, "ALTER TABLE milestone_notifications ADD COLUMN scope_label TEXT NULL;");
-
-        Execute(connection, """
-            CREATE INDEX IF NOT EXISTS idx_milestone_notifications_pending
-                ON milestone_notifications(viewed_at, reached_at);
-            """);
+            DROP TABLE milestone_notifications_legacy;
+            """, transaction);
     }
 
-    private static void CreateNotificationTable(SqliteConnection connection)
+    private static void CreateNotificationTable(SqliteConnection connection, SqliteTransaction transaction)
     {
         Execute(connection, """
             CREATE TABLE milestone_notifications (
@@ -125,42 +78,21 @@ static class MilestoneNotifications
                 scope TEXT NOT NULL CHECK(scope IN ('global', 'list', 'year')),
                 scope_value TEXT NULL,
                 scope_label TEXT NULL,
-                reached_at TEXT NOT NULL,
-                historical INTEGER NOT NULL DEFAULT 0,
-                viewed_at TEXT NULL,
-                viewed_by TEXT NULL
+                reached_at TEXT NOT NULL
             );
-
-            CREATE INDEX IF NOT EXISTS idx_milestone_notifications_pending
-                ON milestone_notifications(viewed_at, reached_at);
-            """);
+            """, transaction);
     }
 
-    private static void EnsureStateTable(SqliteConnection connection)
+    private static void RebuildCounters(SqliteConnection connection, SqliteTransaction transaction)
     {
         Execute(connection, """
-            CREATE TABLE IF NOT EXISTS milestone_notification_state (
-                id INTEGER PRIMARY KEY CHECK(id = 1),
-                initialized_at TEXT NOT NULL,
-                version INTEGER NOT NULL DEFAULT 2
-            );
-            """);
-
-        if (!ColumnExists(connection, "milestone_notification_state", "version"))
-            Execute(connection, "ALTER TABLE milestone_notification_state ADD COLUMN version INTEGER NOT NULL DEFAULT 1;");
-
-        Execute(connection, """
+            DROP TABLE IF EXISTS milestone_notification_state;
             DROP TABLE IF EXISTS milestone_notification_counters;
             CREATE TABLE milestone_notification_counters (
                 scope_key TEXT PRIMARY KEY,
                 total INTEGER NOT NULL
             );
-            """);
-    }
 
-    private static void RebuildCounters(SqliteConnection connection)
-    {
-        Execute(connection, """
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'global:' || lower(event_type), COUNT(*)
             FROM task_events
@@ -183,161 +115,13 @@ static class MilestoneNotifications
               AND substr(event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
               AND substr(event_at, 5, 1) = '-'
             GROUP BY substr(event_at, 1, 4), lower(event_type);
-            """);
+            """, transaction);
     }
 
-    private static int GetStateVersion(SqliteConnection connection)
-    {
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT COALESCE((SELECT version FROM milestone_notification_state WHERE id = 1), 0);";
-        return Convert.ToInt32(command.ExecuteScalar());
-    }
-
-    private static void SetStateVersion(SqliteConnection connection, int version)
-    {
-        var now = DateTimeOffset.UtcNow.ToString("O");
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            INSERT INTO milestone_notification_state (id, initialized_at, version)
-            VALUES (1, $now, $version)
-            ON CONFLICT(id) DO UPDATE SET version = excluded.version;
-            """;
-        command.Parameters.AddWithValue("$now", now);
-        command.Parameters.AddWithValue("$version", version);
-        command.ExecuteNonQuery();
-    }
-
-    private static void BaselineExistingMilestones(SqliteConnection connection)
-    {
-        var now = DateTimeOffset.UtcNow.ToString("O");
-
-        foreach (var (kind, total) in QueryKindCounts(connection, """
-            SELECT lower(event_type), COUNT(*)
-            FROM task_events
-            GROUP BY lower(event_type);
-            """))
-        {
-            foreach (var threshold in ContinuingThresholds(GlobalEventBaseThresholds, total, 15000))
-                InsertHistorical(connection, kind, threshold, "global", null, null, now);
-        }
-
-        var recorded = ScalarLong(connection, "SELECT COUNT(*) FROM task_events;");
-        foreach (var threshold in ContinuingThresholds(GlobalEventBaseThresholds, recorded, 15000))
-            InsertHistorical(connection, "recorded", threshold, "global", null, null, now);
-
-        var highestUniversalId = ScalarLong(connection, "SELECT COALESCE(MAX(id), 0) FROM universal_ids;");
-        foreach (var threshold in ContinuingThresholds(UniversalBaseThresholds, highestUniversalId, 15000))
-            InsertHistorical(connection, "universal", threshold, "global", null, null, now);
-
-        foreach (var row in QueryListCounts(connection))
-        {
-            foreach (var threshold in ContinuingThresholds(ListBaseThresholds, row.Total, 10000))
-                InsertHistorical(connection, row.Kind, threshold, "list", row.ListId.ToString(), row.ListName, now);
-        }
-
-        foreach (var row in QueryYearCounts(connection))
-        {
-            foreach (var threshold in ContinuingThresholds(YearBaseThresholds, row.Total, 5000))
-                InsertHistorical(connection, row.Kind, threshold, "year", row.Year, null, now);
-        }
-    }
-
-    private static IEnumerable<long> ContinuingThresholds(long[] baseThresholds, long maximum, long continuationStart)
-    {
-        foreach (var threshold in baseThresholds)
-            if (threshold <= maximum)
-                yield return threshold;
-
-        for (var threshold = continuationStart; threshold <= maximum; threshold += 5000)
-            yield return threshold;
-    }
-
-    private static List<(string Kind, long Total)> QueryKindCounts(SqliteConnection connection, string sql)
-    {
-        var rows = new List<(string Kind, long Total)>();
-        using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-            rows.Add((reader.GetString(0), reader.GetInt64(1)));
-        return rows;
-    }
-
-    private static List<(string Kind, long ListId, string ListName, long Total)> QueryListCounts(SqliteConnection connection)
-    {
-        var rows = new List<(string Kind, long ListId, string ListName, long Total)>();
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT lower(e.event_type), e.list_id, COALESCE(l.name, 'List ' || e.list_id), COUNT(*)
-            FROM task_events e
-            LEFT JOIN lists l ON l.id = e.list_id
-            WHERE e.event_type IN ('Created', 'Completed')
-            GROUP BY lower(e.event_type), e.list_id, l.name;
-            """;
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-            rows.Add((reader.GetString(0), reader.GetInt64(1), reader.GetString(2), reader.GetInt64(3)));
-        return rows;
-    }
-
-    private static List<(string Kind, string Year, long Total)> QueryYearCounts(SqliteConnection connection)
-    {
-        var rows = new List<(string Kind, string Year, long Total)>();
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT lower(event_type), substr(event_at, 1, 4), COUNT(*)
-            FROM task_events
-            WHERE event_type IN ('Created', 'Completed')
-              AND substr(event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
-              AND substr(event_at, 5, 1) = '-'
-            GROUP BY lower(event_type), substr(event_at, 1, 4);
-            """;
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-            rows.Add((reader.GetString(0), reader.GetString(1), reader.GetInt64(2)));
-        return rows;
-    }
-
-    private static void InsertHistorical(
-        SqliteConnection connection,
-        string kind,
-        long threshold,
-        string scope,
-        string? scopeValue,
-        string? scopeLabel,
-        string now)
-    {
-        var key = NotificationKey(kind, threshold, scope, scopeValue);
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            INSERT OR IGNORE INTO milestone_notifications
-                (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
-            VALUES ($key, $kind, $threshold, $scope, $scopeValue, $scopeLabel, $now, 1, $now, 'baseline');
-            """;
-        command.Parameters.AddWithValue("$key", key);
-        command.Parameters.AddWithValue("$kind", kind);
-        command.Parameters.AddWithValue("$threshold", threshold);
-        command.Parameters.AddWithValue("$scope", scope);
-        command.Parameters.AddWithValue("$scopeValue", (object?)scopeValue ?? DBNull.Value);
-        command.Parameters.AddWithValue("$scopeLabel", (object?)scopeLabel ?? DBNull.Value);
-        command.Parameters.AddWithValue("$now", now);
-        command.ExecuteNonQuery();
-    }
-
-    private static string NotificationKey(string kind, long threshold, string scope, string? scopeValue)
-    {
-        if (kind == "universal") return $"universal:{threshold}";
-        return scope switch
-        {
-            "list" => $"list:{scopeValue}:{kind}:{threshold}",
-            "year" => $"year:{scopeValue}:{kind}:{threshold}",
-            _ => $"global:{kind}:{threshold}"
-        };
-    }
-
-    private static void CreateTriggers(SqliteConnection connection)
+    private static void CreateTriggers(SqliteConnection connection, SqliteTransaction transaction)
     {
         using var triggers = connection.CreateCommand();
+        triggers.Transaction = transaction;
         triggers.CommandText = """
             CREATE TRIGGER trg_task_events_milestone_notification
             AFTER INSERT ON task_events
@@ -363,7 +147,7 @@ static class MilestoneNotifications
                 ON CONFLICT(scope_key) DO UPDATE SET total = total + 1;
 
                 INSERT OR IGNORE INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
+                    (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 SELECT
                     'global:' || lower(NEW.event_type) || ':' || counters.total,
                     lower(NEW.event_type),
@@ -375,10 +159,7 @@ static class MilestoneNotifications
                         WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
                             THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                         ELSE NEW.event_at
-                    END,
-                    0,
-                    NULL,
-                    NULL
+                    END
                 FROM milestone_notification_counters counters
                 WHERE counters.scope_key = 'global:' || lower(NEW.event_type)
                   AND (
@@ -387,7 +168,7 @@ static class MilestoneNotifications
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
+                    (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 SELECT
                     'global:recorded:' || counters.total,
                     'recorded',
@@ -399,10 +180,7 @@ static class MilestoneNotifications
                         WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
                             THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                         ELSE NEW.event_at
-                    END,
-                    0,
-                    NULL,
-                    NULL
+                    END
                 FROM milestone_notification_counters counters
                 WHERE counters.scope_key = 'global:recorded'
                   AND (
@@ -411,7 +189,7 @@ static class MilestoneNotifications
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
+                    (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 SELECT
                     'list:' || NEW.list_id || ':' || lower(NEW.event_type) || ':' || counters.total,
                     lower(NEW.event_type),
@@ -423,10 +201,7 @@ static class MilestoneNotifications
                         WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
                             THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                         ELSE NEW.event_at
-                    END,
-                    0,
-                    NULL,
-                    NULL
+                    END
                 FROM milestone_notification_counters counters
                 WHERE NEW.event_type IN ('Created', 'Completed')
                   AND counters.scope_key = 'list:' || NEW.list_id || ':' || lower(NEW.event_type)
@@ -436,7 +211,7 @@ static class MilestoneNotifications
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
+                    (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 SELECT
                     'year:' || substr(NEW.event_at, 1, 4) || ':' || lower(NEW.event_type) || ':' || counters.total,
                     lower(NEW.event_type),
@@ -444,10 +219,7 @@ static class MilestoneNotifications
                     'year',
                     substr(NEW.event_at, 1, 4),
                     NULL,
-                    NEW.event_at,
-                    0,
-                    NULL,
-                    NULL
+                    NEW.event_at
                 FROM milestone_notification_counters counters
                 WHERE NEW.event_type IN ('Created', 'Completed')
                   AND substr(NEW.event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
@@ -465,7 +237,7 @@ static class MilestoneNotifications
               OR (NEW.id > 10000 AND NEW.id % 5000 = 0)
             BEGIN
                 INSERT OR IGNORE INTO milestone_notifications
-                    (key, kind, threshold, scope, scope_value, scope_label, reached_at, historical, viewed_at, viewed_by)
+                    (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 VALUES (
                     'universal:' || NEW.id,
                     'universal',
@@ -473,34 +245,26 @@ static class MilestoneNotifications
                     'global',
                     NULL,
                     NULL,
-                    strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
-                    0,
-                    NULL,
-                    NULL
+                    strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                 );
             END;
             """;
         triggers.ExecuteNonQuery();
     }
 
-    private static long ScalarLong(SqliteConnection connection, string sql)
+    private static bool TableExists(SqliteConnection connection, string table, SqliteTransaction transaction)
     {
         using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        return Convert.ToInt64(command.ExecuteScalar());
-    }
-
-    private static bool TableExists(SqliteConnection connection, string table)
-    {
-        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name);";
         command.Parameters.AddWithValue("$name", table);
         return Convert.ToInt64(command.ExecuteScalar()) != 0;
     }
 
-    private static bool ColumnExists(SqliteConnection connection, string table, string column)
+    private static bool ColumnExists(SqliteConnection connection, string table, string column, SqliteTransaction transaction)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = $"PRAGMA table_info({table});";
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -509,26 +273,22 @@ static class MilestoneNotifications
         return false;
     }
 
-    private static void Execute(SqliteConnection connection, string sql)
+    private static void Execute(SqliteConnection connection, string sql, SqliteTransaction transaction)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = sql;
         command.ExecuteNonQuery();
     }
 
-    private static async Task<List<MilestoneNotice>> ClaimPending(SqliteConnection connection, string viewer)
+    private static async Task<List<MilestoneNotice>> ConsumePending(SqliteConnection connection)
     {
-        var now = DateTimeOffset.UtcNow.ToString("O");
         var notices = new List<MilestoneNotice>();
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            UPDATE milestone_notifications
-            SET viewed_at = $now, viewed_by = $viewer
-            WHERE viewed_at IS NULL
-            RETURNING kind, threshold, scope, scope_value, scope_label, reached_at, historical;
+            DELETE FROM milestone_notifications
+            RETURNING kind, threshold, scope, scope_value, scope_label, reached_at;
             """;
-        command.Parameters.AddWithValue("$now", now);
-        command.Parameters.AddWithValue("$viewer", viewer);
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
@@ -538,8 +298,7 @@ static class MilestoneNotifications
                 reader.GetString(2),
                 reader.IsDBNull(3) ? null : reader.GetString(3),
                 reader.IsDBNull(4) ? null : reader.GetString(4),
-                reader.GetString(5),
-                reader.GetInt64(6) != 0));
+                reader.GetString(5)));
         }
         notices.Sort((a, b) => string.CompareOrdinal(a.ReachedAt, b.ReachedAt));
         return notices;
@@ -551,6 +310,5 @@ static class MilestoneNotifications
         string Scope,
         string? ScopeValue,
         string? ScopeLabel,
-        string ReachedAt,
-        bool Historical);
+        string ReachedAt);
 }

@@ -136,7 +136,7 @@
     card.append(title, detail);
 
     const when = reachedLabel(notice.reachedAt);
-    if (when && !notice.historical) {
+    if (when) {
       const timestamp = document.createElement('div');
       timestamp.className = 'milestone-notice-when';
       timestamp.textContent = when;
@@ -203,9 +203,9 @@
     launchConfetti(dialog);
   }
 
-  async function claimPendingMilestones() {
+  async function consumePendingMilestones() {
     try {
-      const response = await fetch('/api/milestones/claim', {
+      const response = await fetch('/api/milestones/consume', {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store'
@@ -223,7 +223,7 @@
 
     checking = (async () => {
       await ensureStyles();
-      const notices = await claimPendingMilestones();
+      const notices = await consumePendingMilestones();
       if (notices.length) showMilestones(notices);
     })();
 
