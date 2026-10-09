@@ -164,7 +164,7 @@ static class MilestoneNotifications
                 WHERE counters.scope_key = 'global:' || lower(NEW.event_type)
                   AND (
                     counters.total IN (1, 100, 500, 1000, 2000, 3000, 5000, 10000)
-                    OR (counters.total > 10000 AND counters.total % 5000 = 0)
+                    OR (counters.total > 10000 AND counters.total % 500 = 0)
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
@@ -185,7 +185,7 @@ static class MilestoneNotifications
                 WHERE counters.scope_key = 'global:recorded'
                   AND (
                     counters.total IN (1, 100, 500, 1000, 2000, 3000, 5000, 10000)
-                    OR (counters.total > 10000 AND counters.total % 5000 = 0)
+                    OR (counters.total > 10000 AND counters.total % 500 = 0)
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
@@ -207,7 +207,7 @@ static class MilestoneNotifications
                   AND counters.scope_key = 'list:' || NEW.list_id || ':' || lower(NEW.event_type)
                   AND (
                     counters.total IN (100, 500, 1000, 2000, 5000)
-                    OR (counters.total >= 10000 AND counters.total % 5000 = 0)
+                    OR (counters.total > 5000 AND counters.total % 500 = 0)
                   );
 
                 INSERT OR IGNORE INTO milestone_notifications
@@ -227,14 +227,14 @@ static class MilestoneNotifications
                   AND counters.scope_key = 'year:' || substr(NEW.event_at, 1, 4) || ':' || lower(NEW.event_type)
                   AND (
                     counters.total IN (1, 100, 500, 1000, 2000)
-                    OR (counters.total >= 5000 AND counters.total % 5000 = 0)
+                    OR (counters.total > 2000 AND counters.total % 500 = 0)
                   );
             END;
 
             CREATE TRIGGER trg_universal_ids_milestone_notification
             AFTER INSERT ON universal_ids
             WHEN NEW.id IN (1, 100, 500, 1000, 2000, 2500, 3000, 5000, 10000)
-              OR (NEW.id > 10000 AND NEW.id % 5000 = 0)
+              OR (NEW.id > 10000 AND NEW.id % 500 = 0)
             BEGIN
                 INSERT OR IGNORE INTO milestone_notifications
                     (key, kind, threshold, scope, scope_value, scope_label, reached_at)
