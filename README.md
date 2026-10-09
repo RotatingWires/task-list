@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.19
+# TaskList v1.5.20
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -117,6 +117,8 @@ Use **View → Theme** to choose either **Light** or **Dark**. The choice is sto
 The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Theme styling is centralized in `wwwroot/theme.css`, and `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
 
 There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
+
+Help opens About directly. Its 16px text and 1.5 line spacing match TaskList Stats Help, with about.lehighradio.com and the application version at the bottom.
 
 ## Data model
 
@@ -281,7 +283,16 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.19
+## Current release: v1.5.20
+
+### v1.5.20
+
+- Match Stats Help with 16px text and 1.5 line spacing in About; keep the typography change scoped to that dialog.
+- Keep the direct Help action, owner/version footer, and existing dialog layout.
+- Cleanup audit found no safely removable source files or unused frontend functions; avoid manufacturing unrelated cleanup changes.
+- Preserve SQLite WAL/performance settings, migrations and event compatibility, pending milestone consumption, non-optimistic updates, optimized PATCH merging, and real-mouse hover detection.
+- Update release metadata/documentation to v1.5.20.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.19
 
