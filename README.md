@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.20
+# TaskList v1.5.21
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -218,6 +218,8 @@ Task Information exposes the task's stored metadata plus hierarchy/time statisti
 - Current age for Open tasks
 - Terminal time for Done/Cancelled tasks when a real clock time is known
 
+The Task Information title bar and OK button stay visible on smaller screens. Only the details inside scroll, and the dialog keeps its natural height when the contents fit.
+
 The hierarchy metrics are calculated against the task's actual source list/tree, including when Task Information is opened from Search results. Tasks with a non-empty description show a small document indicator beside the title; selecting it opens Task Information and briefly highlights the Description row. Non-obvious metrics include hover/focus help, with tap/keyboard support on mobile.
 
 ## Search
@@ -283,7 +285,16 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.20
+## Current release: v1.5.21
+
+### v1.5.21
+
+- Constrain Task Information to the viewport and keep its title bar and OK footer outside the scrolling content on phones, laptops, and desktops.
+- Make the existing info-body the scroll container and allow it to shrink while the title and footer retain their height; preserve content-sized dialogs when everything fits.
+- Remove the obsolete whole-dialog scrolling rule from task-controls.css instead of overriding it with another rule.
+- Move tap-help dismissal to the content scroll event so tooltips close when the task details move; preserve keyboard help, Description highlighting, and task metadata.
+- Update release metadata/documentation to v1.5.21.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.20
 

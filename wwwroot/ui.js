@@ -135,7 +135,7 @@ function initializeTaskInfoTouchHelp() {
     }
   });
 
-  infoDialog.addEventListener('scroll', hide, { passive: true });
+  infoDialog.querySelector('.info-body').addEventListener('scroll', hide, { passive: true });
   infoDialog.addEventListener('close', hide);
   window.addEventListener('resize', hide);
 }
