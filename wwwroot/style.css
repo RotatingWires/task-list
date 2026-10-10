@@ -299,7 +299,24 @@ button:active {
 .confirm-detail { white-space: pre-line; line-height: 1.45; overflow-wrap: anywhere; }
 .move-note { color: #333; font-size: 12px; line-height: 1.4; }
 
-.info-dialog { width: min(660px, calc(100vw - 24px)); }
+.info-dialog {
+  width: min(660px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+}
+.info-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.info-dialog > .dialog-title,
+.info-dialog > .dialog-buttons {
+  flex: 0 0 auto;
+}
+.info-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 .info-grid {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);

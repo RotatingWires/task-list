@@ -79,11 +79,6 @@
   pointer-events: none;
 }
 
-#infoDialog {
-  max-height: calc(100dvh - 24px);
-  overflow: auto;
-}
-
 @media (min-width: 651px) {
   .task-table td.task-actions {
     display: table-cell;
