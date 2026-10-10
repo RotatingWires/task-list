@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.21
+# TaskList v1.5.22
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -218,6 +218,8 @@ Task Information exposes the task's stored metadata plus hierarchy/time statisti
 - Current age for Open tasks
 - Terminal time for Done/Cancelled tasks when a real clock time is known
 
+Dialog buttons use shared footer spacing of 6px above and below, so Task Information, Search, Help, and other dialogs consistently place their buttons lower.
+
 The Task Information title bar and OK button stay visible on smaller screens. Only the details inside scroll, and the dialog keeps its natural height when the contents fit.
 
 The hierarchy metrics are calculated against the task's actual source list/tree, including when Task Information is opened from Search results. Tasks with a non-empty description show a small document indicator beside the title; selecting it opens Task Information and briefly highlights the Description row. Non-obvious metrics include hover/focus help, with tap/keyboard support on mobile.
@@ -285,7 +287,16 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.21
+## Current release: v1.5.22
+
+### v1.5.22
+
+- Make lower dialog buttons the shared default: redistribute footer padding to 6px above and below, moving Task Information OK and other dialog buttons down 6px without changing the standard footer height.
+- Remove the Search-specific button transform; retain its existing lower position through shared footer layout.
+- Remove redundant milestone footer padding and keep only its mobile horizontal inset so live milestone buttons use the same default spacing.
+- Preserve fixed Task Information/Search title bars and footers, content scrolling, tap help, and button actions.
+- Update release metadata/documentation to v1.5.22.
+- Add no monkey patches or new runtime/frontend dependencies.
 
 ### v1.5.21
 

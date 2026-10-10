@@ -88,10 +88,6 @@
   line-height: 1.35;
 }
 
-.milestone-buttons {
-  padding: 0 12px 12px;
-}
-
 .milestone-buttons button {
   min-width: 92px;
 }
@@ -150,7 +146,7 @@
   }
 
   .milestone-buttons {
-    padding: 0 11px 11px;
+    padding-inline: 11px;
   }
 
   .milestone-buttons button {
