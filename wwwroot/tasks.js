@@ -586,15 +586,17 @@ function openMove(item, bulkItems = null) {
 
   movingItem = item;
   bulkMoveItems = bulkItems;
-  moveTaskId.textContent = bulkItems ? `${bulkItems.length} selected tasks` : `#${item.displayId} — ${item.title}`;
+  moveDialog.querySelector('.dialog-title').textContent = bulkItems ? 'Move Selected Tasks' : 'Move Task';
+  moveTaskId.textContent = bulkItems ? `Selected tasks: ${bulkItems.length}` : `Task #${item.displayId} — ${item.title}`;
+  moveSelectedTasks.hidden = !bulkItems;
+  moveSelectedTasks.textContent = bulkItems ? selectedTaskSummary(bulkItems) : '';
   renderMoveListChoices(destinations);
 
-  const descendants = bulkItems
-    ? selectedSubtreeRoots(bulkItems).reduce((sum, root) => sum + countDescendants(root), 0)
-    : countDescendants(item);
   if (bulkItems) {
-    moveNote.textContent = `Selected tasks will receive new task IDs in the destination list. Universal IDs, status, dates, titles, descriptions, and child numbering are preserved. Selected subtasks become top-level tasks unless an ancestor is selected. Parent/child selections move together once, including ${descendants} descendant subtask${descendants === 1 ? '' : 's'}. You will confirm the move next.`;
+    const affected = selectedSubtreeRoots(bulkItems).reduce((sum, root) => sum + 1 + countDescendants(root), 0);
+    moveNote.textContent = `${affected} tasks/subtasks will move, including descendants. Selected tasks will receive new task IDs in the destination list. Universal IDs, status, dates, titles, descriptions, and child numbering are preserved. Selected subtasks become top-level tasks unless an ancestor is selected. You will confirm the move next.`;
   } else {
+    const descendants = countDescendants(item);
     const subtreeText = descendants > 0
       ? ` This will also move ${descendants} descendant subtask${descendants === 1 ? '' : 's'} with it.`
       : '';
@@ -663,16 +665,16 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeMoveListMenu();
 });
 
-function flattenInfoItems(items, output = []) {
+function flattenTaskItems(items, output = []) {
   for (const item of items) {
     output.push(item);
-    flattenInfoItems(item.subtasks ?? [], output);
+    flattenTaskItems(item.subtasks ?? [], output);
   }
   return output;
 }
 
 function taskInfoHierarchy(item, sourceItems) {
-  const all = flattenInfoItems(sourceItems);
+  const all = flattenTaskItems(sourceItems);
   const prefix = `${item.displayId}.`;
   const rootDisplayId = String(item.displayId).split('.')[0];
   return {

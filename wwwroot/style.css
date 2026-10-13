@@ -312,6 +312,7 @@ button:active {
 .confirm-message { font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
 .confirm-detail { white-space: pre-line; line-height: 1.45; overflow-wrap: anywhere; }
 .move-note { color: #333; font-size: 12px; line-height: 1.4; }
+.selected-task-summary { margin-bottom: 12px; }
 
 .info-dialog {
   width: min(660px, calc(100vw - 24px));

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6
+# TaskList v1.6.1
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -209,9 +209,9 @@ On mouse/trackpad devices, task rows highlight on real hover so the controls at 
 
 ## Bulk actions
 
-**File > Select...** toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
+**File > Select...**, just below Search..., toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selecting or deselecting a root task also selects or deselects every descendant, at every depth. Subtasks can still be toggled individually. The toolbar and dialog counts include all selected descendants. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
 
-The menu bar shows **Selected tasks: N** and the same split action button used on individual tasks. Its primary Complete/Reopen action uses the same 800 ms hold. The attached menu offers Complete, Reopen, Cancel, Move..., and Delete. Every bulk action opens a confirmation dialog listing the selection and effects. Move first asks for a destination, then confirms.
+The menu bar shows **Selected tasks: N** and the same split action button used on individual tasks. Its primary Complete/Reopen action uses the same 800 ms hold. The attached menu offers Complete, Reopen, Cancel, Move..., and Delete. Every bulk action opens a confirmation dialog listing the selection and effects. Move first shows the selected tasks/subtasks and asks for a destination, then confirms. Both Move dialogs use the same selection preview as the other bulk confirmations (the first 12 items, followed by the remaining count).
 
 Complete affects selected Open items; Reopen and Cancel skip items already in the requested state. Status changes apply only to selected items. Moving or deleting includes descendants; selecting both a parent and child processes that subtree once. Moving a selected subtask without its ancestor makes it a top-level task in the destination. Delete preserves recorded history for Stats.
 
@@ -299,7 +299,15 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6
+## Current release: v1.6.1
+
+### v1.6.1
+
+- Place File > Select... immediately below Search... in the File menu.
+- Select and deselect every descendant with a root task; include those subtasks in toolbar and confirmation counts.
+- Share a selection preview between bulk confirmations and the Move destination dialog; clear the preview for individual moves.
+- Simplify structural-action wording to tasks/subtasks while preserving subtree deduplication and existing server actions.
+- Reuse one recursive task-flattening helper for selection and Task Information; update project/frontend version metadata.
 
 ### v1.6
 
