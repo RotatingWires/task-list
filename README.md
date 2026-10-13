@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.23
+# TaskList v1.5.24
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -136,6 +136,8 @@ Tasks and subtasks live in one recursive `items` table. The visible task ID is s
 Every item also has a global Universal ID. Universal IDs increment across all lists and are never reused. Each item has its own `next_child_number`, so nesting is not limited to one subtask level.
 
 TaskList also keeps an append-only `task_events` table for task history. SQLite triggers record Created, Completed, Cancelled, and Reopened events with the Universal ID, event timestamp, old/new status, list/display hierarchy location, title snapshot, and provenance. Starting with v1.5.10, direct task/subtask deletion and list deletion also append a Deleted event before the current item row is removed; that event records the task's status immediately before deletion and uses `Deleted` as the destination state.
+
+Starting with v1.5.24, a list-deletion trigger preserves the list's last name in `deleted_lists`, independently of the deleted list and its tasks. TaskList Stats can read these names for historical events. Lists deleted before this version have no recoverable saved name.
 
 The current `items` row remains the fast current-state model while `task_events` preserves repeated transitions and later deletions for historical analysis. Moving a task between lists does not create a Deleted event even though the move implementation temporarily removes/reinserts item rows.
 
@@ -286,7 +288,13 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.23
+## Current release: v1.5.24
+
+### v1.5.24
+
+- Preserve the last name of deleted lists in a separate history table before deletion, including empty lists and archived lists.
+- Keep list names and task deletion events atomic with the existing deletion transaction; retain task/subtask cascades and permanent list IDs.
+- Update project/frontend version metadata and documentation to v1.5.24.
 
 ### v1.5.23
 
