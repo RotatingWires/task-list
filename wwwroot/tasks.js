@@ -35,6 +35,9 @@ function renderTasks() {
   for (const task of visibleTasks)
     appendTaskTree(task, 0);
 
+  pruneTaskSelection();
+  updateBulkToolbar();
+
   const open = tasks.filter(task => task.status === 'Open').length;
   const done = tasks.filter(task => task.status === 'Done').length;
   const cancelled = tasks.filter(task => task.status === 'Cancelled').length;
@@ -142,6 +145,7 @@ function createTaskRow(item, depth) {
   );
 
   row.append(idCell, titleCell, statusCell, actionsCell);
+  configureTaskSelection(row, item);
   return row;
 }
 
@@ -353,9 +357,6 @@ function configureHoldAction(button, actionLabel, onActivate) {
 function createTaskSplitAction(item) {
   const [primaryLabel, primaryStatus] = PRIMARY_STATUS_ACTION[item.status] ?? ['Edit', null];
 
-  const group = document.createElement('div');
-  group.className = 'task-split-group';
-
   const activatePrimary = () => {
     closeTaskActionMenus();
     if (primaryStatus) return updateItem(item, { status: primaryStatus });
@@ -363,12 +364,24 @@ function createTaskSplitAction(item) {
     return null;
   };
 
+  const actions = [['Add Subtask', () => openSubtaskDialog(item)]];
+  if (item.status !== 'Cancelled') actions.push(['Cancel', () => updateItem(item, { status: 'Cancelled' })]);
+  actions.push(['Move...', () => openMove(item), lists.length <= 1], ['Delete', () => deleteItem(item)]);
+  return createSplitAction(primaryLabel, activatePrimary, actions,
+    `More actions for task #${item.displayId}`, Boolean(primaryStatus));
+}
+
+function createSplitAction(primaryLabel, activatePrimary, actions, menuLabel, hold = true, disabled = false) {
+  const group = document.createElement('div');
+  group.className = 'task-split-group';
+
   const primary = document.createElement('button');
   primary.type = 'button';
   primary.textContent = primaryLabel;
   primary.classList.add('task-primary-action');
+  primary.disabled = disabled;
 
-  if (primaryStatus) configureHoldAction(primary, primaryLabel, activatePrimary);
+  if (hold) configureHoldAction(primary, primaryLabel, activatePrimary);
   else primary.addEventListener('click', activatePrimary);
 
   const arrow = document.createElement('button');
@@ -376,7 +389,8 @@ function createTaskSplitAction(item) {
   arrow.className = 'task-action-arrow';
   arrow.textContent = '▼';
   arrow.title = 'More actions';
-  arrow.setAttribute('aria-label', `More actions for task #${item.displayId}`);
+  arrow.setAttribute('aria-label', menuLabel);
+  arrow.disabled = disabled;
   arrow.setAttribute('aria-haspopup', 'menu');
   arrow.setAttribute('aria-expanded', 'false');
 
@@ -385,13 +399,7 @@ function createTaskSplitAction(item) {
   menu.setAttribute('role', 'menu');
   menu.hidden = true;
 
-  menu.append(taskActionMenuButton('Add Subtask', () => openSubtaskDialog(item)));
-  if (item.status !== 'Cancelled')
-    menu.append(taskActionMenuButton('Cancel', () => updateItem(item, { status: 'Cancelled' })));
-  menu.append(
-    taskActionMenuButton('Move...', () => openMove(item), lists.length <= 1),
-    taskActionMenuButton('Delete', () => deleteItem(item))
-  );
+  menu.append(...actions.map(([label, handler, unavailable]) => taskActionMenuButton(label, handler, unavailable)));
 
   arrow.addEventListener('click', event => {
     event.stopPropagation();
@@ -569,7 +577,7 @@ function renderMoveListChoices(destinations) {
   setMoveTargetList(destinations[0]?.id ?? null);
 }
 
-function openMove(item) {
+function openMove(item, bulkItems = null) {
   const destinations = lists.filter(list => list.id !== item.listId);
   if (!destinations.length) {
     setStatus('Create another list before moving tasks.');
@@ -577,17 +585,24 @@ function openMove(item) {
   }
 
   movingItem = item;
-  moveTaskId.textContent = `#${item.displayId} — ${item.title}`;
+  bulkMoveItems = bulkItems;
+  moveTaskId.textContent = bulkItems ? `${bulkItems.length} selected tasks` : `#${item.displayId} — ${item.title}`;
   renderMoveListChoices(destinations);
 
-  const descendants = countDescendants(item);
-  const subtreeText = descendants > 0
-    ? ` This will also move ${descendants} descendant subtask${descendants === 1 ? '' : 's'} with it.`
-    : '';
-  const rootText = item.isSubtask
-    ? ' It will become a top-level task in the destination list.'
-    : '';
-  moveNote.textContent = `The moved task will receive the destination list's next task ID. Its Universal ID, status, dates, title, description, and child numbering are preserved.${rootText}${subtreeText}`;
+  const descendants = bulkItems
+    ? selectedSubtreeRoots(bulkItems).reduce((sum, root) => sum + countDescendants(root), 0)
+    : countDescendants(item);
+  if (bulkItems) {
+    moveNote.textContent = `Selected tasks will receive new task IDs in the destination list. Universal IDs, status, dates, titles, descriptions, and child numbering are preserved. Selected subtasks become top-level tasks unless an ancestor is selected. Parent/child selections move together once, including ${descendants} descendant subtask${descendants === 1 ? '' : 's'}. You will confirm the move next.`;
+  } else {
+    const subtreeText = descendants > 0
+      ? ` This will also move ${descendants} descendant subtask${descendants === 1 ? '' : 's'} with it.`
+      : '';
+    const rootText = item.isSubtask
+      ? ' It will become a top-level task in the destination list.'
+      : '';
+    moveNote.textContent = `The moved task will receive the destination list's next task ID. Its Universal ID, status, dates, title, description, and child numbering are preserved.${rootText}${subtreeText}`;
+  }
 
   moveDialog.showModal();
   moveListButton.focus();
@@ -610,6 +625,15 @@ moveForm.addEventListener('submit', async event => {
   if (!targetList || targetListId === movingItem.listId) return;
 
   const item = movingItem;
+  if (bulkMoveItems) {
+    const selected = bulkMoveItems;
+    moveDialog.close();
+    movingItem = null;
+    bulkMoveItems = null;
+    moveTargetListId = null;
+    await requestBulkAction('move', targetListId, selected);
+    return;
+  }
   setStatus(`Moving #${item.displayId} to ${targetList.name}...`);
   try {
     const result = await jsonApi(`${itemEndpoint(item)}/move`, 'POST', { targetListId });
@@ -627,6 +651,7 @@ cancelMove.addEventListener('click', () => {
   closeMoveListMenu();
   moveDialog.close();
   movingItem = null;
+  bulkMoveItems = null;
   moveTargetListId = null;
 });
 
@@ -820,6 +845,7 @@ markdownFile.addEventListener('change', async () => {
 });
 
 function setView(view) {
+  selectedTaskIds.clear();
   clearDeepLink();
   currentView = view;
   updateViewMenu();

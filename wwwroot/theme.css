@@ -439,3 +439,25 @@ select:focus-visible,
   outline: 1px dotted currentColor;
   outline-offset: 2px;
 }
+
+/* Selection uses the same theme token as real mouse hover, on every device. */
+.task-table tbody tr.task-selected:not(.subtask-row),
+.task-table tbody tr.task-selected > td {
+  background: var(--theme-row-hover) !important;
+}
+
+@media (min-width: 651px) {
+  .task-table tbody tr.subtask-row.task-selected > td:first-child {
+    background: linear-gradient(to right, transparent 0 calc(var(--row-indent) + 3px),
+      var(--theme-row-hover) calc(var(--row-indent) + 3px) 100%) !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .task-table tbody tr.subtask-row.task-selected {
+    background: linear-gradient(to right, transparent 0 3px, var(--theme-row-hover) 3px 100%) !important;
+  }
+  .task-table tbody tr.subtask-row.task-selected > td {
+    background: transparent !important;
+  }
+}

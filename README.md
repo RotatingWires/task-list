@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.24
+# TaskList v1.5.25
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -39,6 +39,7 @@ wwwroot/
   version.js           frontend release version, regenerated from TaskList.csproj during build
   app.js               shared DOM/state/API/helpers
   tasks.js             task rendering, actions, edit/subtask/move/import and Task Information metrics
+  bulk.js              persistent selection mode, bulk toolbar, confirmations and execution
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
@@ -206,6 +207,16 @@ Moving a task preserves its Universal ID, title, description, status, timestamps
 
 On mouse/trackpad devices, task rows highlight on real hover so the controls at the right side of a wide row remain visually tied to the correct task. Touch/coarse-pointer devices do not use row hover highlighting, which avoids sticky mobile hover states. The desktop hover treatment has separate Light/Dark theme colors and preserves nested-subtask status/hierarchy markings.
 
+## Bulk actions
+
+**File > Select...** toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
+
+The menu bar shows **Selected tasks: N** and the same split action button used on individual tasks. Its primary Complete/Reopen action uses the same 800 ms hold. The attached menu offers Complete, Reopen, Cancel, Move..., and Delete. Every bulk action opens a confirmation dialog listing the selection and effects. Move first asks for a destination, then confirms.
+
+Complete affects selected Open items; Reopen and Cancel skip items already in the requested state. Status changes apply only to selected items. Moving or deleting includes descendants; selecting both a parent and child processes that subtree once. Moving a selected subtask without its ancestor makes it a top-level task in the destination. Delete preserves recorded history for Stats.
+
+Actions run sequentially through the existing authenticated endpoints, each with its existing server behavior and transaction boundaries. A batch is not a single database transaction. Milestone notifications are checked once after the batch finishes. Successful items leave the selection; an error stops the remaining requests and reports how many succeeded. Remaining visible tasks stay selected for review or retry. If a refresh fails after an error or structural action, selection clears and the status asks for a refresh before retrying.
+
 ## Task Information
 
 Task Information exposes the task's stored metadata plus hierarchy/time statistics such as:
@@ -288,7 +299,15 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.24
+## Current release: v1.5.25
+
+### v1.5.25
+
+- Add persistent File > Select... mode, row/checkbox/keyboard selection, and sticky theme-aware highlighting.
+- Center the selection count and shared Complete/Reopen split action in the menu bar, with responsive layout for smaller screens.
+- Confirm bulk Complete, Reopen, Cancel, Move, and Delete; include descendants for structural actions and process overlapping selections once.
+- Reuse existing authenticated endpoints and hold controls; stop on errors, report partial success, and retain remaining visible selections.
+- Cache the selection module with the application shell and update project/frontend version metadata.
 
 ### v1.5.24
 

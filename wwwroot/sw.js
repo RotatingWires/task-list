@@ -10,6 +10,7 @@ const SHELL = [
   '/milestones.css',
   '/app.js',
   '/tasks.js',
+  '/bulk.js',
   '/lists.js',
   '/search.js',
   '/milestones.js',

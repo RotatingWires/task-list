@@ -67,6 +67,7 @@ function renderFileMenu() {
   fileDropdown.append(separator);
 
   fileDropdown.append(
+    selectionMenuCommand(),
     menuCommand('Refresh', refreshApp),
     menuCommand('Create a List...', openCreateList),
     menuCommand('Manage Lists...', openManageLists),
@@ -106,6 +107,7 @@ function menuCommand(label, handler) {
 }
 
 async function selectList(id) {
+  selectedTaskIds.clear();
   clearDeepLink();
   currentListId = id;
   localStorage.setItem('task-list-current-list', String(id));
