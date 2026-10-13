@@ -88,17 +88,31 @@ button { cursor: pointer; }
 .menubar {
   padding: 2px 4px;
   border-bottom: 1px solid var(--shadow);
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 4px;
   align-items: center;
 }
 
-.menubar > button,
+.menubar-menus { display: flex; align-items: center; }
+.bulk-controls { display: flex; align-items: center; justify-self: center; gap: 10px; white-space: nowrap; }
+.bulk-controls[hidden] { display: none; }
+.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--theme-title); }
+.task-selectable { cursor: pointer; }
+.task-selectable .task-title { user-select: none; -webkit-user-select: none; }
+
+@media (max-width: 1000px) {
+  .menubar { grid-template-columns: 1fr; }
+  .bulk-controls { grid-row: 2; }
+}
+
+.menubar-menus > button,
 .menu-wrap > button {
   background: transparent;
   border: 1px solid transparent;
   padding: 4px 10px;
 }
-.menubar > button:active,
+.menubar-menus > button:active,
 .menu-wrap > button:active,
 .menu-wrap > button[aria-expanded="true"] {
   border: 1px dotted #000;
@@ -1070,16 +1084,16 @@ button:disabled {
   vertical-align: middle;
   margin: 2px 3px 2px 0;
 }
-.task-actions .task-split-group > button {
+:is(.task-actions, .bulk-actions) .task-split-group > button {
   margin: 0;
 }
-.task-actions .task-primary-action {
+:is(.task-actions, .bulk-actions) .task-primary-action {
   border-right-width: 1px;
   width: 88px;
   min-width: 88px;
   justify-content: center;
 }
-.task-actions .task-action-arrow {
+:is(.task-actions, .bulk-actions) .task-action-arrow {
   min-width: 25px;
   padding: 3px 5px;
   border-left-width: 1px;
@@ -1091,7 +1105,7 @@ button:disabled {
   min-width: 145px;
   z-index: 40;
 }
-.task-actions .task-action-dropdown button {
+:is(.task-actions, .bulk-actions) .task-action-dropdown button {
   margin: 0;
   padding: 4px 8px 4px 4px;
 }

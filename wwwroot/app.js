@@ -132,7 +132,7 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
-async function api(url, options = {}) {
+async function api(url, options = {}, checkMilestones = true) {
   const method = (options.method ?? 'GET').toUpperCase();
   const response = await fetch(url, { credentials: 'same-origin', ...options });
   if (response.status === 401) {
@@ -148,16 +148,16 @@ async function api(url, options = {}) {
     throw new Error(message);
   }
   const result = response.status === 204 ? null : await response.json();
-  if (method !== 'GET') queueMicrotask(() => window.TaskMilestones?.check?.());
+  if (method !== 'GET' && checkMilestones) queueMicrotask(() => window.TaskMilestones?.check?.());
   return result;
 }
 
-function jsonApi(url, method, body) {
+function jsonApi(url, method, body, checkMilestones = true) {
   return api(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
-  });
+  }, checkMilestones);
 }
 
 function applyAppVersion(version) {
