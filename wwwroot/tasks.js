@@ -89,7 +89,7 @@ function createTaskRow(item, depth) {
   if (isSubtask) row.classList.add('subtask-row');
   row.dataset.depth = String(depth);
   row.dataset.displayId = item.displayId;
-  row.style.setProperty('--tree-indent', `${Math.max(0, depth - 1) * 18}px`);
+  row.style.setProperty('--tree-indent', `${depth * 18}px`);
   row.style.setProperty('--row-indent', `${depth * 12}px`);
 
   const idCell = document.createElement('td');

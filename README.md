@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.2
+# TaskList v1.6.3
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -179,7 +179,7 @@ Every item can have subtasks:
 └─ #174.2
 ```
 
-Deleting an item also deletes all descendants. Parent/root status controls which Open/Done/All view the entire tree appears in.
+Deleting an item also deletes all descendants. Parent/root status controls which Open/Done/All view the entire tree appears in. Subtask tree markers and titles start 18 pixels inside the task column, with another 18 pixels for each deeper level.
 
 ## Lists and archives
 
@@ -301,7 +301,13 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6.2
+## Current release: v1.6.3
+
+### v1.6.3
+
+- Move subtask tree markers and titles 18 pixels farther right at every nesting level, on desktop and mobile.
+- Keep the existing depth spacing, status lines, selection behavior, and shared Light/Dark styles.
+- Update project/frontend version metadata and documentation.
 
 ### v1.6.2
 
