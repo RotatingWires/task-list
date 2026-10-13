@@ -67,11 +67,11 @@ function renderFileMenu() {
   fileDropdown.append(separator);
 
   fileDropdown.append(
-    selectionMenuCommand(),
     menuCommand('Refresh', refreshApp),
     menuCommand('Create a List...', openCreateList),
     menuCommand('Manage Lists...', openManageLists),
-    menuCommand('Search...', openSearch)
+    menuCommand('Search...', openSearch),
+    selectionMenuCommand()
   );
 
   const accountSeparator = document.createElement('div');

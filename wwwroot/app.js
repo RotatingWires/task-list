@@ -45,6 +45,7 @@ const cancelSubtask = document.querySelector('#cancelSubtask');
 const moveDialog = document.querySelector('#moveDialog');
 const moveForm = document.querySelector('#moveForm');
 const moveTaskId = document.querySelector('#moveTaskId');
+const moveSelectedTasks = document.querySelector('#moveSelectedTasks');
 const moveListButton = document.querySelector('#moveListButton');
 const moveListLabel = document.querySelector('#moveListLabel');
 const moveListDropdown = document.querySelector('#moveListDropdown');

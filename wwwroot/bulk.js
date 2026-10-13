@@ -10,13 +10,7 @@ const bulkActions = document.querySelector('#bulkActions');
 const appWindow = document.querySelector('main.window');
 
 function visibleTaskItems() {
-  const result = [];
-  function visit(item) {
-    if (item.listId === currentListId) result.push(item);
-    for (const child of item.subtasks ?? []) visit(child);
-  }
-  for (const root of tasksForCurrentView()) visit(root);
-  return result;
+  return flattenTaskItems(tasksForCurrentView()).filter(item => item.listId === currentListId);
 }
 
 function selectedTaskItems() {
@@ -73,8 +67,12 @@ function configureTaskSelection(row, item) {
 
 function toggleTaskSelection(item) {
   if (!selectionMode || bulkBusy || item.listId !== currentListId) return;
-  if (selectedTaskIds.has(item.universalId)) selectedTaskIds.delete(item.universalId);
-  else selectedTaskIds.add(item.universalId);
+  const selecting = !selectedTaskIds.has(item.universalId);
+  const items = item.isSubtask ? [item] : flattenTaskItems([item]);
+  for (const selectedItem of items) {
+    if (selecting) selectedTaskIds.add(selectedItem.universalId);
+    else selectedTaskIds.delete(selectedItem.universalId);
+  }
   for (const row of taskList.querySelectorAll('[data-universal-id]')) {
     const selected = selectedTaskIds.has(Number(row.dataset.universalId));
     row.classList.toggle('task-selected', selected);
@@ -88,6 +86,12 @@ function toggleTaskSelection(item) {
 function selectedSubtreeRoots(items) {
   return items.filter(item => !items.some(parent => parent !== item && parent.listId === item.listId &&
     item.displayId.startsWith(`${parent.displayId}.`)));
+}
+
+function selectedTaskSummary(items) {
+  const lines = items.slice(0, 12).map(item => `#${item.displayId} — ${item.title}`);
+  if (items.length > 12) lines.push(`And ${items.length - 12} more selected tasks/subtasks.`);
+  return lines.join('\n');
 }
 
 function bulkActionItems(action, items) {
@@ -127,15 +131,14 @@ async function requestBulkAction(action, targetListId = null, selected = selecte
   if (action === 'move' && (!destination || targetListId === currentListId)) return;
   const structural = action === 'delete' || action === 'move';
   const affected = structural ? items.reduce((sum, item) => sum + 1 + countDescendants(item), 0) : items.length;
-  const detail = [selected.slice(0, 12).map(item => `#${item.displayId} — ${item.title}`).join('\n')];
-  if (selected.length > 12) detail.push(`And ${selected.length - 12} more selected tasks.`);
+  const detail = [selectedTaskSummary(selected)];
   if (structural) {
-    detail.push(`${affected} tasks and subtasks will be ${action === 'delete' ? 'deleted' : 'moved'}, including descendants. Selected parents and children are processed together once.`);
+    detail.push(`${affected} tasks/subtasks will be ${action === 'delete' ? 'deleted' : 'moved'}, including descendants.`);
     if (action === 'delete') detail.push('Recorded task history is preserved for Stats.');
     else detail.push(`Destination: ${destination.name}. Selected subtasks become top-level tasks unless an ancestor is also selected. Universal IDs, status, dates, and hierarchy are preserved.`);
   } else {
-    detail.push(`${items.length} selected tasks will change. Status changes do not affect unselected descendants.`);
-    if (items.length < selected.length) detail.push(`${selected.length - items.length} selected tasks ${action === 'complete' ? 'are already closed' : 'already have the requested status'} and will be skipped.`);
+    detail.push(`${items.length} selected tasks/subtasks will change. Status changes do not affect unselected descendants.`);
+    if (items.length < selected.length) detail.push(`${selected.length - items.length} selected tasks/subtasks ${action === 'complete' ? 'are already closed' : 'already have the requested status'} and will be skipped.`);
   }
   bulkBusy = true;
   updateBulkToolbar();
@@ -145,7 +148,7 @@ async function requestBulkAction(action, targetListId = null, selected = selecte
   let confirmed = false;
   try {
     confirmed = await confirmAction({ title: `${label} Selected Tasks`,
-      message: `${label} ${selected.length} selected task${selected.length === 1 ? '' : 's'}${destination ? ` to ${destination.name}` : ''}?`,
+      message: `${label} ${selected.length} selected ${selected.length === 1 ? 'task/subtask' : 'tasks/subtasks'}${destination ? ` to ${destination.name}` : ''}?`,
       detail: detail.join('\n\n'), confirmLabel: label });
     if (!confirmed) return;
     appWindow.inert = true;
