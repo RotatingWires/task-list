@@ -1,6 +1,6 @@
 'use strict';
 
-const COMPLETE_HOLD_MS = 800;
+const TASK_ACTION_HOLD_MS = 800;
 
 async function loadTasks() {
   if (!currentListId) return;
@@ -176,25 +176,25 @@ function taskActionMenuButton(label, handler, disabled = false) {
   return button;
 }
 
-function configureHoldToComplete(button, onComplete) {
-  button.classList.add('hold-to-complete');
-  button.style.setProperty('--complete-hold-duration', `${COMPLETE_HOLD_MS}ms`);
-  button.title = `Hold for ${COMPLETE_HOLD_MS} ms to complete`;
-  button.setAttribute('aria-label', `Hold Complete for ${COMPLETE_HOLD_MS} milliseconds`);
+function configureHoldAction(button, actionLabel, onActivate) {
+  button.classList.add('hold-action');
+  button.style.setProperty('--action-hold-duration', `${TASK_ACTION_HOLD_MS}ms`);
+  button.title = `Hold for ${TASK_ACTION_HOLD_MS} ms to ${actionLabel.toLowerCase()}`;
+  button.setAttribute('aria-label', `Hold ${actionLabel} for ${TASK_ACTION_HOLD_MS} milliseconds`);
 
   const progress = document.createElement('span');
-  progress.className = 'task-complete-progress';
+  progress.className = 'task-hold-progress';
   progress.setAttribute('aria-hidden', 'true');
 
   const label = document.createElement('span');
-  label.className = 'task-complete-label';
-  label.textContent = 'Complete';
+  label.className = 'task-hold-label';
+  label.textContent = actionLabel;
   button.replaceChildren(progress, label);
 
   let timer = null;
   let activePointerId = null;
   let activeTouchId = null;
-  let completed = false;
+  let activated = false;
   let keyboardKey = null;
 
   function detachTouchEndGuards() {
@@ -214,23 +214,23 @@ function configureHoldToComplete(button, onComplete) {
 
   function finishHold() {
     timer = null;
-    completed = true;
+    activated = true;
     detachTouchEndGuards();
     button.classList.add('is-holding');
     button.disabled = true;
 
-    Promise.resolve(onComplete()).finally(() => {
+    Promise.resolve(onActivate()).finally(() => {
       if (!button.isConnected) return;
-      completed = false;
+      activated = false;
       button.disabled = false;
       resetHold();
     });
   }
 
   function startHold() {
-    if (timer !== null || completed || button.disabled) return;
+    if (timer !== null || activated || button.disabled) return;
     button.classList.add('is-holding');
-    timer = window.setTimeout(finishHold, COMPLETE_HOLD_MS);
+    timer = window.setTimeout(finishHold, TASK_ACTION_HOLD_MS);
   }
 
   function pointIsInside(clientX, clientY) {
@@ -249,7 +249,7 @@ function configureHoldToComplete(button, onComplete) {
   }
 
   function handleDocumentTouchEnd(event) {
-    if (activeTouchId === null || completed) return;
+    if (activeTouchId === null || activated) return;
     const touch = findTouch(event.changedTouches, activeTouchId);
     if (!touch) return;
 
@@ -259,7 +259,7 @@ function configureHoldToComplete(button, onComplete) {
   }
 
   function handleDocumentTouchCancel(event) {
-    if (activeTouchId === null || completed) return;
+    if (activeTouchId === null || activated) return;
     event.preventDefault();
     resetHold();
   }
@@ -268,7 +268,7 @@ function configureHoldToComplete(button, onComplete) {
   // quick release always cancels the timer even if the browser retargets
   // the touch away from the button.
   button.addEventListener('touchstart', event => {
-    if (event.touches.length !== 1 || completed) return;
+    if (event.touches.length !== 1 || activated) return;
     const touch = event.changedTouches[0];
     if (!touch) return;
 
@@ -281,7 +281,7 @@ function configureHoldToComplete(button, onComplete) {
   }, { passive: false });
 
   button.addEventListener('touchmove', event => {
-    if (activeTouchId === null || completed) return;
+    if (activeTouchId === null || activated) return;
     const touch = findTouch(event.touches, activeTouchId);
     if (!touch) return;
 
@@ -303,7 +303,7 @@ function configureHoldToComplete(button, onComplete) {
   });
 
   button.addEventListener('pointermove', event => {
-    if (event.pointerId !== activePointerId || completed) return;
+    if (event.pointerId !== activePointerId || activated) return;
     if (!pointIsInside(event.clientX, event.clientY)) resetHold();
   });
 
@@ -311,18 +311,18 @@ function configureHoldToComplete(button, onComplete) {
     if (event.pointerId !== activePointerId) return;
     event.preventDefault();
     event.stopPropagation();
-    if (!completed) resetHold();
+    if (!activated) resetHold();
     else activePointerId = null;
   });
 
   button.addEventListener('pointercancel', () => {
-    if (!completed) resetHold();
+    if (!activated) resetHold();
   });
   button.addEventListener('lostpointercapture', () => {
-    if (!completed) resetHold();
+    if (!activated) resetHold();
   });
 
-  // A Complete action is never allowed to come from click activation.
+  // A held action is never allowed to come from click activation.
   // stopImmediatePropagation also blocks any compatibility/synthetic click
   // listener that a mobile browser may try to run on this same button.
   button.addEventListener('click', event => {
@@ -341,12 +341,12 @@ function configureHoldToComplete(button, onComplete) {
   button.addEventListener('keyup', event => {
     if (event.key !== keyboardKey) return;
     event.preventDefault();
-    if (!completed) resetHold();
+    if (!activated) resetHold();
     else keyboardKey = null;
   });
 
   button.addEventListener('blur', () => {
-    if (!completed) resetHold();
+    if (!activated) resetHold();
   });
 }
 
@@ -368,7 +368,7 @@ function createTaskSplitAction(item) {
   primary.textContent = primaryLabel;
   primary.classList.add('task-primary-action');
 
-  if (primaryStatus === 'Done') configureHoldToComplete(primary, activatePrimary);
+  if (primaryStatus) configureHoldAction(primary, primaryLabel, activatePrimary);
   else primary.addEventListener('click', activatePrimary);
 
   const arrow = document.createElement('button');

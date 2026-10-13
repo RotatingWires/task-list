@@ -1,6 +1,6 @@
 
-/* Hold-to-complete protects the primary action from accidental mobile taps. */
-.task-primary-action.hold-to-complete {
+/* Hold activation protects Complete and Reopen from accidental mobile taps. */
+.task-primary-action.hold-action {
   position: relative;
   overflow: hidden;
   touch-action: none;
@@ -9,7 +9,7 @@
   -webkit-user-select: none;
 }
 
-.task-primary-action .task-complete-progress {
+.task-primary-action .task-hold-progress {
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -20,12 +20,12 @@
   pointer-events: none;
 }
 
-.task-primary-action.is-holding .task-complete-progress {
+.task-primary-action.is-holding .task-hold-progress {
   transform: scaleX(1);
-  transition-duration: var(--complete-hold-duration, 800ms);
+  transition-duration: var(--action-hold-duration, 800ms);
 }
 
-.task-primary-action .task-complete-label {
+.task-primary-action .task-hold-label {
   position: relative;
   z-index: 1;
 }

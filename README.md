@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.22
+# TaskList v1.5.23
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -188,9 +188,8 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action. To prevent accidental completions on touch screens, **Complete must be held for 800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke Complete directly. Mouse/pen and keyboard holds use the same duration. While Complete is held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. The hold duration is controlled by the single `COMPLETE_HOLD_MS` constant in `wwwroot/tasks.js`, so it can be changed without editing the styling.
+Open tasks use **Complete** as the primary action; Done and Cancelled tasks use **Reopen**. Both actions must be held for **800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke either action directly. Mouse/pen and keyboard holds use the same duration. While held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. Complete and Reopen share the same handler, progress styling, and `TASK_ACTION_HOLD_MS` constant in `wwwroot/tasks.js`. **Edit** stays directly accessible.
 
-Done and Cancelled tasks use **Reopen** normally, without the hold requirement. **Edit** stays directly accessible.
 
 The attached More menu contains actions such as:
 
@@ -287,7 +286,13 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.22
+## Current release: v1.5.23
+
+### v1.5.23
+
+- Require the same 800 ms hold for Reopen as Complete, including the progress fill and touch/mouse/pen/keyboard cancellation behavior.
+- Share one action-labelled hold handler and remove Complete-only names from the shared JavaScript and CSS.
+- Update project/frontend version metadata and documentation to v1.5.23.
 
 ### v1.5.22
 
