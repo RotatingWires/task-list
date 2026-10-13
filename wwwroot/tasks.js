@@ -847,7 +847,7 @@ markdownFile.addEventListener('change', async () => {
 });
 
 function setView(view) {
-  selectedTaskIds.clear();
+  clearTaskSelection();
   clearDeepLink();
   currentView = view;
   updateViewMenu();

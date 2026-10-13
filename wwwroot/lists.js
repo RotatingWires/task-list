@@ -107,7 +107,7 @@ function menuCommand(label, handler) {
 }
 
 async function selectList(id) {
-  selectedTaskIds.clear();
+  clearTaskSelection();
   clearDeepLink();
   currentListId = id;
   localStorage.setItem('task-list-current-list', String(id));
