@@ -2,6 +2,7 @@
 
 let selectionMode = localStorage.getItem('task-list-selection-mode') === 'true';
 const selectedTaskIds = new Set();
+let selectionAnchorId = null;
 let bulkBusy = false;
 let bulkMoveItems = null;
 const bulkControls = document.querySelector('#bulkControls');
@@ -17,9 +18,15 @@ function selectedTaskItems() {
   return visibleTaskItems().filter(item => selectedTaskIds.has(item.universalId));
 }
 
+function clearTaskSelection() {
+  selectedTaskIds.clear();
+  selectionAnchorId = null;
+}
+
 function pruneTaskSelection() {
   const visible = new Set(visibleTaskItems().map(item => item.universalId));
   for (const id of selectedTaskIds) if (!visible.has(id)) selectedTaskIds.delete(id);
+  if (!visible.has(selectionAnchorId)) selectionAnchorId = null;
 }
 
 function selectionMenuCommand() {
@@ -27,7 +34,7 @@ function selectionMenuCommand() {
     if (bulkBusy) return;
     selectionMode = !selectionMode;
     localStorage.setItem('task-list-selection-mode', String(selectionMode));
-    if (!selectionMode) selectedTaskIds.clear();
+    if (!selectionMode) clearTaskSelection();
     closeFileMenu();
     closeTaskActionMenus();
     renderFileMenu();
@@ -52,26 +59,38 @@ function configureTaskSelection(row, item) {
   checkbox.className = 'task-selection-check';
   checkbox.checked = selectedTaskIds.has(item.universalId);
   checkbox.setAttribute('aria-label', `Select task #${item.displayId}: ${item.title}`);
-  checkbox.addEventListener('change', () => toggleTaskSelection(item));
+  checkbox.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleTaskSelection(item, event.shiftKey);
+  });
   row.firstElementChild.prepend(checkbox);
   row.addEventListener('click', event => {
     if (event.target.closest('button, a, input, select, textarea')) return;
-    toggleTaskSelection(item);
+    toggleTaskSelection(item, event.shiftKey);
   });
   row.addEventListener('keydown', event => {
     if (event.target !== row || event.repeat || !['Enter', ' '].includes(event.key)) return;
     event.preventDefault();
-    toggleTaskSelection(item);
+    toggleTaskSelection(item, event.shiftKey);
   });
 }
 
-function toggleTaskSelection(item) {
+function toggleTaskSelection(item, extendRange = false) {
   if (!selectionMode || bulkBusy || item.listId !== currentListId) return;
-  const selecting = !selectedTaskIds.has(item.universalId);
-  const items = item.isSubtask ? [item] : flattenTaskItems([item]);
-  for (const selectedItem of items) {
-    if (selecting) selectedTaskIds.add(selectedItem.universalId);
-    else selectedTaskIds.delete(selectedItem.universalId);
+  let range = null;
+  if (extendRange && selectionAnchorId !== null) {
+    const visible = visibleTaskItems();
+    const start = visible.findIndex(candidate => candidate.universalId === selectionAnchorId);
+    const end = visible.findIndex(candidate => candidate.universalId === item.universalId);
+    if (start >= 0 && end >= 0) range = visible.slice(Math.min(start, end), Math.max(start, end) + 1);
+  }
+  if (!range) selectionAnchorId = item.universalId;
+  const selecting = Boolean(range) || !selectedTaskIds.has(item.universalId);
+  for (const target of range ?? [item]) {
+    for (const selectedItem of target.isSubtask ? [target] : flattenTaskItems([target])) {
+      if (selecting) selectedTaskIds.add(selectedItem.universalId);
+      else selectedTaskIds.delete(selectedItem.universalId);
+    }
   }
   for (const row of taskList.querySelectorAll('[data-universal-id]')) {
     const selected = selectedTaskIds.has(Number(row.dataset.universalId));
@@ -179,7 +198,7 @@ async function requestBulkAction(action, targetListId = null, selected = selecte
         await refreshListCounts();
       } catch (error) {
         failure = `${failure ? `${failure} ` : ''}Could not refresh the task list: ${error.message}`;
-        selectedTaskIds.clear();
+        clearTaskSelection();
         selectionLost = true;
       }
     }
