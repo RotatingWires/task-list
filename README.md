@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.5.25
+# TaskList v1.6
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -299,9 +299,9 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.5.25
+## Current release: v1.6
 
-### v1.5.25
+### v1.6
 
 - Add persistent File > Select... mode, row/checkbox/keyboard selection, and sticky theme-aware highlighting.
 - Center the selection count and shared Complete/Reopen split action in the menu bar, with responsive layout for smaller screens.
