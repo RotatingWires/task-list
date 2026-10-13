@@ -476,6 +476,15 @@ static void InitializeDatabase(string connectionString)
             archived INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS universal_ids (id INTEGER PRIMARY KEY AUTOINCREMENT);
+        CREATE TABLE IF NOT EXISTS deleted_lists (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL
+        );
+        CREATE TRIGGER IF NOT EXISTS trg_lists_preserve_deleted_name
+        BEFORE DELETE ON lists
+        BEGIN
+            INSERT OR REPLACE INTO deleted_lists (id, name) VALUES (OLD.id, OLD.name);
+        END;
         CREATE TABLE IF NOT EXISTS items (
             universal_id INTEGER NOT NULL UNIQUE,
             list_id INTEGER NOT NULL,
