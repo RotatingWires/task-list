@@ -315,30 +315,28 @@ button:active {
 .selected-task-summary { margin-bottom: 12px; }
 
 .info-dialog { width: min(660px, calc(100vw - 24px)); }
-.info-dialog,
-.transfer-dialog {
+.scroll-dialog {
   max-height: calc(100dvh - 24px);
   overflow: hidden;
 }
-.info-dialog[open],
-.transfer-dialog[open] {
+.scroll-dialog[open] {
   display: flex;
   flex-direction: column;
 }
-.info-dialog > .dialog-title,
-.info-dialog > .dialog-buttons,
-.transfer-dialog > .dialog-title,
-.transfer-dialog > .dialog-buttons {
+.scroll-dialog > .dialog-title,
+.scroll-dialog > .dialog-buttons {
   flex: 0 0 auto;
 }
-.info-body,
-.transfer-body {
+.scroll-dialog > .dialog-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
-.transfer-body { line-height: 1.5; }
-.transfer-body p { margin: 0; }
+.transfer-body,
+.first-run-body { line-height: 1.5; }
+.transfer-body p,
+.first-run-body p { margin: 0; }
+.first-run-dialog { font-size: 16px; }
 .info-grid {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);

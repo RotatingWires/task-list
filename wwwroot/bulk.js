@@ -8,7 +8,6 @@ let bulkMoveItems = null;
 const bulkControls = document.querySelector('#bulkControls');
 const selectedTaskCount = document.querySelector('#selectedTaskCount');
 const bulkActions = document.querySelector('#bulkActions');
-const appWindow = document.querySelector('main.window');
 
 function visibleTaskItems() {
   return flattenTaskItems(tasksForCurrentView()).filter(item => item.listId === currentListId);

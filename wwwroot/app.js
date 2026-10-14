@@ -4,6 +4,7 @@ const taskList = document.querySelector('#taskList');
 const emptyState = document.querySelector('#emptyState');
 const statusText = document.querySelector('#statusText');
 const taskCount = document.querySelector('#taskCount');
+const appWindow = document.querySelector('main.window');
 const newTaskForm = document.querySelector('#newTaskForm');
 const newTaskTitle = document.querySelector('#newTaskTitle');
 

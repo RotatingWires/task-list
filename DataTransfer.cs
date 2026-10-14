@@ -131,6 +131,7 @@ static class DataTransfer
                 context.RequestAborted.ThrowIfCancellationRequested();
                 transaction.Commit();
             }
+            Onboarding.Acknowledge(dataDir);
             await Results.Ok(new { restored = true, totals, recoveryBackup = recoveryName }).ExecuteAsync(context);
         }
         catch (InvalidDataException error)
