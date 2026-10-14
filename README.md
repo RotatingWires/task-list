@@ -1,9 +1,9 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.3
+# TaskList v1.6.4
 
-TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
+TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
 It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. There is no Node.js build step or frontend framework.
 
@@ -24,6 +24,7 @@ TaskList intentionally keeps a small source tree. Frontend code is split by resp
 ```text
 TaskList.csproj        .NET project, dependencies, and authoritative release version
 Program.cs             server, authentication, SQLite schema, event-log triggers, and API
+DataTransfer.cs        authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
 MilestoneNotifications.cs
                        pending milestone queue, counter triggers, schema migration, and consume API
 README.md              setup, architecture, behavior, security, and release notes
@@ -31,6 +32,7 @@ README.md              setup, architecture, behavior, security, and release note
 data/                  runtime/private data
   task-list.db         SQLite database
   auth.json            salted password hash
+  backups/             private recovery ZIPs created before full restores
   siri-api.json        optional local runtime data
 
 wwwroot/
@@ -38,8 +40,9 @@ wwwroot/
   login.html           login / first-run password setup
   version.js           frontend release version, regenerated from TaskList.csproj during build
   app.js               shared DOM/state/API/helpers
-  tasks.js             task rendering, actions, edit/subtask/move/import and Task Information metrics
+  tasks.js             task rendering, actions, edit/subtask/move and Task Information metrics
   bulk.js              persistent selection mode, bulk toolbar, confirmations and execution
+  transfer.js          Import/Export dialog, downloads, ZIP restore and Markdown upload
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup, deep-link startup, PWA registration
@@ -209,7 +212,7 @@ On mouse/trackpad devices, task rows highlight on real hover so the controls at 
 
 ## Bulk actions
 
-**File > Select...**, just below Search..., toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selecting or deselecting a root task also selects or deselects every descendant, at every depth. Subtasks can still be toggled individually. The toolbar and dialog counts include all selected descendants. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
+**File > Select...**, below Import/Export..., toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selecting or deselecting a root task also selects or deselects every descendant, at every depth. Subtasks can still be toggled individually. The toolbar and dialog counts include all selected descendants. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
 
 Shift-click a row or its checkbox to select the inclusive range from the last normally clicked row, in the current visible order. Existing selections stay selected. Roots in the range include their descendants. Repeated Shift-clicks keep the same anchor until a normal click; switching lists/views or turning selection mode off resets it.
 
@@ -269,7 +272,40 @@ TaskList resolves the correct list and visible task ID, switches to **All**, scr
 
 The old query-string deep-link format is no longer supported.
 
-## Markdown import
+## Import and export
+
+**File > Import/Export...**, immediately after Search..., opens a dialog with **Download Export** and **Choose File to Import...**. Import no longer has a separate menu-bar button. The dialog keeps its title and lower OK button fixed while its content scrolls on smaller screens.
+
+Rebuild and restart TaskList after deploying this update so the new export/restore server endpoints are available.
+
+Download Export creates one `task-list-YYYYMMDD-HHMMSS.zip` containing:
+
+| File | Contents |
+| --- | --- |
+| `task-list.db` | A standalone SQLite snapshot of the complete TaskList database, including its schema and all application tables. |
+| `manifest.json` | Format/version marker, TaskList version, UTC export time, and counts for lists, archived lists, root tasks, subtasks, and recorded history events. |
+
+The database includes every active and archived list; all tasks/subtasks and descriptions, hierarchy, statuses and dates; visible and Universal IDs and allocation counters; recorded Created/Completed/Cancelled/Reopened/Deleted events; saved deleted-list names; and pending milestone notices/counters. It preserves what TaskList has already recorded and cannot reconstruct missing historical data. Deleted tasks remain historical records rather than becoming live tasks.
+
+Export uses SQLite's [online backup API](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/backup) so committed WAL data is included in a consistent snapshot while TaskList runs. The exported database is made standalone, so `-wal` and `-shm` sidecars are unnecessary. Exports and recovery ZIPs are unencrypted and should be stored like the database. API exports/restores require the normal authenticated cookie and export responses are not cached.
+
+The ZIP excludes `auth.json`, the login password, authentication cookies/keys, logs, runtime files outside SQLite, application binaries/configuration, and browser preferences such as theme and selection mode. Configure a new server's login normally before restoring through its UI. Restore keeps the current server's password and local browser preferences.
+
+### Restore a TaskList ZIP
+
+Choose a TaskList export ZIP in the file picker, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
+
+Before replacing data, the server creates `data/backups/before-restore-<UTC timestamp>-<unique ID>.zip` containing the previous database. These private recovery files remain until you delete them manually. Copy one from the server and use the same Import button to restore it if needed. The server must be able to create that recovery file before restoration proceeds.
+
+Restore copies known TaskList data tables in one SQLite transaction and keeps the running application's schema and triggers. Imported triggers/code are never installed or executed. Existing triggers are suspended inside the transaction while data is copied, then restored before commit; this avoids generating duplicate history or milestone notices. If copying or validation fails, changes and trigger changes roll back together. Existing queued milestone notices in the backup remain pending.
+
+Recorded IDs are preserved. The lifetime Universal-ID allocation ledger stays append-only, and list/event autoincrement counters, matching-list task numbers, and matching-task child numbers keep the higher value from the backup or current server. Restoring an older backup therefore does not let future entries reuse IDs/numbers already allocated after it. Task/history rows are replaced, while these allocation records remain monotonic.
+
+After a successful import the browser reloads confirmed lists and tasks, clears selections, and displays the restored totals. If a restore response or refresh fails, it rechecks server data and clears stale rows if it cannot confirm them. Refresh TaskList Stats after restoring so its display reflects the restored data.
+
+### Import Markdown
+
+Choose a `.md`, `.markdown`, or plain-text `.txt` checklist to add tasks to the current list without replacing other lists or history.
 
 Import preserves arbitrary checklist nesting. Root groups are imported bottom-up so older roots receive lower visible IDs and Universal IDs, while descendants keep their source order.
 
@@ -301,7 +337,16 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6.3
+## Current release: v1.6.4
+
+### v1.6.4
+
+- Replace the top-level Import button with File > Import/Export... immediately after Search..., with export and file-picker buttons in a scrolling-content dialog.
+- Download a complete, authenticated ZIP backup containing a consistent standalone SQLite snapshot and manifest; include archived lists, task history, deleted-list names and milestone data.
+- Add confirmed ZIP restore with validation, private pre-restore recovery ZIPs, atomic table replacement, current trigger preservation, and monotonic allocation counters.
+- Keep Markdown import into the current list; remove the old import controls/handlers and place transfer behavior in its owning frontend/backend modules.
+- Share authenticated response handling for JSON and binary downloads, refresh confirmed imported data, and cache the transfer module with the app shell.
+- Update documentation and project/frontend version metadata; add no dependencies.
 
 ### v1.6.3
 

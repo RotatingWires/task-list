@@ -818,34 +818,6 @@ async function deleteItem(item) {
   }
 }
 
-function chooseMarkdown() {
-  if (!currentListId) return;
-  markdownFile.value = '';
-  markdownFile.click();
-}
-
-importMenu.addEventListener('click', chooseMarkdown);
-
-markdownFile.addEventListener('change', async () => {
-  const file = markdownFile.files?.[0];
-  if (!file || !currentListId) return;
-
-  setStatus(`Importing ${file.name}...`);
-  try {
-    const markdown = await file.text();
-    const result = await api(`/api/lists/${currentListId}/import/markdown`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-      body: markdown
-    });
-    await Promise.all([loadTasks(), refreshListCounts()]);
-    await loadStats().catch(() => {});
-    setStatus(`Imported ${result.tasksImported} task${result.tasksImported === 1 ? '' : 's'} and ${result.subtasksImported} subtask${result.subtasksImported === 1 ? '' : 's'}.`);
-  } catch (error) {
-    setStatus(`Import error: ${error.message}`);
-  }
-});
-
 function setView(view) {
   clearTaskSelection();
   clearDeepLink();

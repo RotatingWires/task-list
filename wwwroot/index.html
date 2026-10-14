@@ -32,8 +32,6 @@
           <div id="fileDropdown" class="menu-dropdown file-dropdown" role="menu" hidden></div>
         </div>
 
-        <button type="button" id="importMenu">Import</button>
-
         <div class="menu-wrap">
           <button type="button" id="viewMenu" aria-haspopup="menu" aria-expanded="false">View</button>
           <div id="viewDropdown" class="menu-dropdown" role="menu" hidden>
@@ -62,7 +60,6 @@
         <input id="newTaskTitle" name="title" maxlength="500" autocomplete="off" placeholder="New task..." required>
         <button type="submit">Add Task</button>
       </form>
-      <input type="file" id="markdownFile" accept=".md,.markdown,text/markdown,text/plain" hidden>
     </section>
 
     <section class="panel task-panel" aria-label="Tasks">
@@ -85,6 +82,19 @@
       <span id="taskCount">0 tasks</span>
     </footer>
   </main>
+
+  <dialog id="transferDialog" class="retro-dialog transfer-dialog">
+    <div class="dialog-title">Import/Export</div>
+    <div class="dialog-body transfer-body">
+      <p>Export downloads a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and an export manifest.</p>
+      <button type="button" id="exportData">Download Export</button>
+      <p>Import a TaskList ZIP to restore all lists and history, replacing current data after confirmation. Markdown checklists add tasks to <strong id="transferListName"></strong>.</p>
+      <button type="button" id="importData">Choose File to Import...</button>
+      <p>The login password and browser preferences are separate and are kept when restoring. ID counters keep their highest values to prevent reuse. A recovery backup of current data is saved on the server before a ZIP restore.</p>
+      <input type="file" id="transferFile" accept=".zip,.md,.markdown,.txt,text/markdown,text/plain,application/zip" hidden>
+    </div>
+    <div class="dialog-buttons"><button type="button" id="closeTransfer">OK</button></div>
+  </dialog>
 
   <dialog id="editDialog" class="retro-dialog">
     <form method="dialog" id="editForm">
@@ -246,6 +256,7 @@
   <script src="/app.js" defer></script>
   <script src="/tasks.js" defer></script>
   <script src="/bulk.js" defer></script>
+  <script src="/transfer.js" defer></script>
   <script src="/lists.js" defer></script>
   <script src="/search.js" defer></script>
   <script src="/ui.js" defer></script>
