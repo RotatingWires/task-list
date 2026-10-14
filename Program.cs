@@ -57,6 +57,7 @@ Directory.CreateDirectory(dataDir);
 var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
+Onboarding.Initialize(dataDir, databasePath);
 var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
 InitializeDatabase(connectionString);
 MilestoneNotifications.Initialize(connectionString);
@@ -127,6 +128,7 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 var api = app.MapGroup("/api").RequireAuthorization();
 MilestoneNotifications.MapEndpoints(api, connectionString);
 DataTransfer.MapEndpoints(api, connectionString, dataDir, app.Logger);
+Onboarding.MapEndpoints(api, dataDir);
 
 api.MapGet("/lists", async () =>
 {

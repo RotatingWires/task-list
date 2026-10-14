@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.4
+# TaskList v1.6.5
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -25,6 +25,7 @@ TaskList intentionally keeps a small source tree. Frontend code is split by resp
 TaskList.csproj        .NET project, dependencies, and authoritative release version
 Program.cs             server, authentication, SQLite schema, event-log triggers, and API
 DataTransfer.cs        authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
+Onboarding.cs          first-run backup reminder state and authenticated acknowledgement
 MilestoneNotifications.cs
                        pending milestone queue, counter triggers, schema migration, and consume API
 README.md              setup, architecture, behavior, security, and release notes
@@ -33,6 +34,8 @@ data/                  runtime/private data
   task-list.db         SQLite database
   auth.json            salted password hash
   backups/             private recovery ZIPs created before full restores
+  import-reminder.pending
+                       first-run reminder marker, removed when acknowledged or a ZIP is restored
   siri-api.json        optional local runtime data
 
 wwwroot/
@@ -45,7 +48,7 @@ wwwroot/
   transfer.js          Import/Export dialog, downloads, ZIP restore and Markdown upload
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
-  ui.js                menus, navigation, startup, deep-link startup, PWA registration
+  ui.js                menus, navigation, startup/first-run reminder, deep links, PWA registration
   milestones.js        pending milestone consumption/dialog/confetti behavior
   milestones.css       responsive Light/Dark milestone celebration styling
   theme.js             persistent Light/Dark theme selection and startup theme application
@@ -113,6 +116,14 @@ On first launch, TaskList prints a random setup token in the server console. The
 The plaintext password is never stored. `auth.json` contains a random salt and PBKDF2-SHA256 password hash.
 
 After login, ASP.NET Core issues an HttpOnly, SameSite=Strict authentication cookie. Login and first-run setup are rate-limited per source IP to 5 attempts per minute.
+
+## First-run backup reminder
+
+When TaskList creates a fresh database, it records a pending reminder outside SQLite. After password setup/login, the main application shows **Restore a Backup Before Starting** before its task controls become usable:
+
+> If you have a TaskList ZIP backup, import it before creating tasks. Use File > Import/Export... to restore it. Restoring a ZIP replaces all current lists, tasks/subtasks, and recorded history, so anything you create first would be replaced by a later restore. If you don't have a backup, choose Start Fresh.
+
+**Import/Export...** acknowledges the reminder and opens the existing import/export dialog. **Start Fresh** acknowledges it and continues; it does not reset or delete data. Escape follows Start Fresh. Acknowledgement is saved for the server, so the reminder stays dismissed across browsers and restarts. Existing installations do not acquire the reminder just by updating. A successful ZIP restore also acknowledges it, including restores made directly through the API. The reminder marker is outside the database and is not part of exported ZIPs.
 
 ## Themes
 
@@ -303,6 +314,8 @@ Recorded IDs are preserved. The lifetime Universal-ID allocation ledger stays ap
 
 After a successful import the browser reloads confirmed lists and tasks, clears selections, and displays the restored totals. If a restore response or refresh fails, it rechecks server data and clears stale rows if it cannot confirm them. Refresh TaskList Stats after restoring so its display reflects the restored data.
 
+ZIP import currently restores a complete dataset. Adding an exported ZIP alongside existing data would require allocating new list/task/Universal IDs, remapping parent and history references, handling deleted-list names and duplicate imports, and recalculating milestone state. That merge mode is not implemented. Markdown import already adds tasks safely with newly allocated IDs.
+
 ### Import Markdown
 
 Choose a `.md`, `.markdown`, or plain-text `.txt` checklist to add tasks to the current list without replacing other lists or history.
@@ -312,6 +325,80 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 Source reference: https://community.obsidian.md/plugins/obsidian-tasks-plugin
 
 `➕ YYYY-MM-DD` becomes Created and `✅ YYYY-MM-DD` becomes Completed. Missing source dates are stored as `Unknown` where applicable. Imported items use `Unknown` for Last updated when the source has no update timestamp.
+
+## HTTP endpoints
+
+Paths below are relative to the TaskList server URL. JSON uses camelCase property names. Send JSON bodies with `Content-Type: application/json`; Markdown and ZIP imports send raw file bytes/text, not multipart form data. `{id}` and `{listId}` are numeric list IDs from list responses. `{displayId}` is the list-local visible task ID, such as `75` or `75.1.2`, **not** the Universal ID.
+
+All `/api/` endpoints require the `TaskList.Auth` cookie except auth status, initial password setup and login. The cookie is HttpOnly and SameSite=Strict, lasts 30 days, and uses sliding expiration. Setup/login share a limit of 5 attempts per source IP per minute. API writes apply immediately: holds and confirmation dialogs are browser UI behavior rather than requirements enforced on direct API requests.
+
+### Authentication
+
+| Method | Endpoint | Request | Result |
+| --- | --- | --- | --- |
+| GET | `/api/auth/status` | None; public. | `{configured, authenticated}` reports whether a password exists and whether this request is logged in. |
+| POST | `/api/auth/setup` | Public JSON: `setupToken`, `password`, `confirmPassword`. | Validates the console setup token, minimum 8-character password and confirmation; saves the password hash and sets the auth cookie. Returns `{authenticated: true}`. Available only before a password exists. |
+| POST | `/api/auth/login` | Public JSON: `password`. | Checks the configured password and sets the auth cookie. Returns `{authenticated: true}`. |
+| POST | `/api/auth/logout` | None; authenticated. | Clears this client's auth cookie. Returns 204 with no body. |
+
+### Lists
+
+List responses contain `id`, `name`, `description`, `createdAt`, `taskCount` (root tasks only), and `archived`. Names must be nonempty and unique across active and archived lists, ignoring case. Omitted/null PATCH fields keep their old values; an empty description clears it.
+
+| Method | Endpoint | Request | Result |
+| --- | --- | --- | --- |
+| GET | `/api/lists` | None. | Active lists in ascending list-ID order. |
+| GET | `/api/lists/archives` | None. | Archived lists in ascending list-ID order. |
+| POST | `/api/lists` | JSON: required `name`, optional `description`. | Creates an active list. Returns 201, the list object and a Location header. |
+| PATCH | `/api/lists/{id}` | JSON: optional `name`, `description`. | Edits a list and returns the updated list object. |
+| POST | `/api/lists/{id}/archive` | None. | Archives a list while preserving its tasks/history. Returns the list object; rejects archiving the only active list. Already archived is a successful no-op. |
+| POST | `/api/lists/{id}/restore` | None. | Makes an archived list active and returns its list object. Already active is a successful no-op. This restores an archived list, not a ZIP backup. |
+| DELETE | `/api/lists/{id}` | None. | Deletes the list and every task/subtask, records Deleted events and saves its last name for history. Returns 204. Existing recorded history and the lifetime ID ledger remain. Rejects deleting the only active list. |
+
+### Tasks and subtasks
+
+Item responses contain `universalId`, `listId`, `displayId`, `parentDisplayId`, `isSubtask`, `title`, `description`, `status`, `createdAt`, `updatedAt`, `completedAt`, `cancelledAt`, `reopenedAt`, and `subtasks`. New entries start Open with server UTC creation times. Titles must be nonempty; descriptions are optional. Status values are Open, Done and Cancelled (case-insensitive on PATCH). Date-only/Unknown import values are returned as stored.
+
+| Method | Endpoint | Request | Result |
+| --- | --- | --- | --- |
+| GET | `/api/lists/{listId}/tasks` | None. | All statuses in the list, including archived lists, as recursive task trees. Root tasks are newest visible ID first; child IDs are ascending. There is no paging or server-side view filter. |
+| POST | `/api/lists/{listId}/tasks` | JSON: required `title`, optional `description`. | Creates a root task with new visible and Universal IDs. Returns 201, its item object and a Location header. |
+| POST | `/api/lists/{listId}/items/{displayId}/subtasks` | JSON: required `title`, optional `description`. | Creates a direct child under an existing task/subtask, allocating a child number and Universal ID. Returns 201, the child object and a Location header. |
+| PATCH | `/api/lists/{listId}/items/{displayId}` | JSON: optional `title`, `description`, `status`. | Edits that item, updates its last-updated time and records a history event for a status transition. Returns the updated item with an empty `subtasks` array; it does not return the full subtree. Null/omitted fields keep old values; an empty description clears it. Descendants keep their own statuses. |
+| POST | `/api/lists/{listId}/items/{displayId}/move` | JSON: `targetListId`. | Moves the whole subtree to a different active list; a moved subtask becomes a root. Preserves Universal IDs, status, content, dates and hierarchy, while changing the visible root ID/prefix. Returns `{targetListId, displayId, universalId, movedCount}`. |
+| DELETE | `/api/lists/{listId}/items/{displayId}` | None. | Deletes that item and all descendants, records Deleted events and preserves existing history/lifetime IDs. Returns 204. |
+| POST | `/api/lists/{listId}/import/markdown` | Raw UTF-8 checklist text; `Content-Type: text/markdown; charset=utf-8`. | Adds roots/subtasks to that list using new IDs and the documented Markdown date/nesting rules. Returns `{imported, tasksImported, subtasksImported}`. Existing entries remain. |
+
+Creation Location headers identify the created resource path; there are no standalone GET handlers for a single list or item at those paths. Read lists with the list endpoints and items with the list's tasks endpoint. Search, Task Information, view filtering, Universal-ID lookup and bulk actions use these existing data endpoints in the browser; they do not have separate TaskList API routes. Bulk actions make sequential individual requests and are not one server-side batch transaction. TaskList Stats has its own endpoints and is a separate application.
+
+### Stats and milestone notifications
+
+| Method | Endpoint | Request | Result |
+| --- | --- | --- | --- |
+| GET | `/api/stats` | None. | `{highestUniversalId}`: highest lifetime ID in the allocation ledger, including deleted entries. This is not the TaskList Stats analytics API. |
+| POST | `/api/milestones/consume` | None. | Atomically removes and returns all pending milestone notices, oldest reached time first. Fields: `kind`, `threshold`, `scope`, `scopeValue`, `scopeLabel`, `reachedAt`. Repeated calls return an empty array when no notices are pending. Task/history data and milestone counters are kept. |
+
+### Import/export and first-run reminder
+
+| Method | Endpoint | Request | Result |
+| --- | --- | --- | --- |
+| GET | `/api/export` | None. | Downloads `application/zip` with a timestamped filename in Content-Disposition. Contains `task-list.db` and `manifest.json`; uses a consistent online database snapshot. Cache-Control is no-store. |
+| POST | `/api/import/backup` | Raw TaskList export ZIP; `Content-Type: application/zip`. | Validates the backup, saves a private recovery ZIP and replaces lists/tasks/history atomically, keeping current schema/triggers and monotonic ID allocations. Returns `{restored: true, totals, recoveryBackup}`; `totals` has `lists`, `archivedLists`, `tasks`, `subtasks`, `events`, and `recoveryBackup` is the saved filename under `data/backups/`. Clears a pending first-run reminder after success. See Import and export for format/size limits and restore behavior. |
+| GET | `/api/onboarding` | None. | `{importReminderPending}`: whether this fresh server database still has its backup reminder pending. Cache-Control is no-store. |
+| POST | `/api/onboarding/acknowledge` | None. | Dismisses the backup reminder for this server. Returns 204; repeated acknowledgements are safe. Only reminder state changes. |
+
+Most results are JSON; export is a ZIP and 204 responses have no body. Validation errors usually include `{error: "message"}`. Common status codes are 400 for invalid input, 401 for missing/expired authentication or incorrect credentials, 404 for missing lists/items, 409 for setup conflicts or a busy backup restore, 429 for the auth cooldown, and 413 when a hosting upload limit rejects the request. Some errors have an empty body. No direct history-query or ZIP-merge endpoint is provided; recorded history is included in the database export.
+
+### Browser pages and static assets
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| GET/HEAD | `/`, `/index.html` | Main TaskList application. Unauthenticated requests redirect to login. |
+| GET/HEAD | `/login.html` | Login/initial password setup. Already authenticated requests redirect to the main app. |
+| GET/HEAD | `/task/{universalId}` | Authenticated Universal-ID deep link. Serves the app shell; the browser locates the matching item across active/archived lists. |
+| GET/HEAD | Other frontend/PWA files in `wwwroot`, including CSS, JavaScript, `/sw.js`, `/manifest.webmanifest`, `/favicon.ico`, and `/icons/*` | Static application assets. Database, auth, logs and recovery files outside `wwwroot` are not static downloads. |
+
+The authenticated app-shell fallback can serve HTML for other unmatched non-file GET/HEAD paths. Use only the listed API routes when expecting JSON; frontend asset availability does not mean new server endpoints are installed, so rebuild/restart after backend updates.
 
 ## Keyboard behavior
 
@@ -337,7 +424,14 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6.4
+## Current release: v1.6.5
+
+### v1.6.5
+
+- Add a server-scoped first-run backup reminder before task controls become usable, with Import/Export... and Start Fresh choices.
+- Persist acknowledgement outside SQLite; retain it across browsers/restarts, avoid prompting existing installations, and clear it on successful ZIP restore.
+- Document all HTTP endpoints, request/response fields, authentication, data effects, browser routes and API limitations.
+- Share scrollable-dialog chrome and centralize the shared main-window DOM reference; update project/frontend version metadata.
 
 ### v1.6.4
 

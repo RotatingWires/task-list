@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
-  <main class="window">
+  <main class="window" inert>
     <header class="titlebar">
       <span class="title-app-name">TaskList</span>
       <span id="titleListName" class="title-list-name"></span>
@@ -83,7 +83,19 @@
     </footer>
   </main>
 
-  <dialog id="transferDialog" class="retro-dialog transfer-dialog">
+  <dialog id="firstRunDialog" class="retro-dialog scroll-dialog first-run-dialog" aria-labelledby="firstRunTitle" aria-describedby="firstRunMessage">
+    <div id="firstRunTitle" class="dialog-title">Restore a Backup Before Starting</div>
+    <div class="dialog-body first-run-body">
+      <p id="firstRunMessage">If you have a TaskList ZIP backup, import it before creating tasks. Use File &gt; Import/Export... to restore it. Restoring a ZIP replaces all current lists, tasks/subtasks, and recorded history, so anything you create first would be replaced by a later restore. If you don't have a backup, choose Start Fresh.</p>
+      <div id="firstRunError" class="login-error" role="alert"></div>
+    </div>
+    <div class="dialog-buttons">
+      <button type="button" id="firstRunContinue">Start Fresh</button>
+      <button type="button" id="firstRunImport">Import/Export...</button>
+    </div>
+  </dialog>
+
+  <dialog id="transferDialog" class="retro-dialog scroll-dialog">
     <div class="dialog-title">Import/Export</div>
     <div class="dialog-body transfer-body">
       <p>Export downloads a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and an export manifest.</p>
@@ -152,7 +164,7 @@
     </form>
   </dialog>
 
-  <dialog id="infoDialog" class="retro-dialog info-dialog">
+  <dialog id="infoDialog" class="retro-dialog scroll-dialog info-dialog">
     <div class="dialog-title">Task Information</div>
     <div class="dialog-body info-body">
       <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>

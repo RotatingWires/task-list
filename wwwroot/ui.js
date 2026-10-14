@@ -1,6 +1,53 @@
 'use strict';
 
 const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
+const firstRunDialog = document.querySelector('#firstRunDialog');
+const firstRunImport = document.querySelector('#firstRunImport');
+const firstRunContinue = document.querySelector('#firstRunContinue');
+const firstRunError = document.querySelector('#firstRunError');
+let importReminderResolve = null;
+let importReminderBusy = false;
+
+async function showImportReminder() {
+  const onboarding = await api('/api/onboarding', { cache: 'no-store' });
+  if (!onboarding.importReminderPending) return;
+  firstRunError.textContent = '';
+  await new Promise(resolve => {
+    importReminderResolve = resolve;
+    firstRunDialog.showModal();
+    firstRunImport.focus();
+  });
+}
+
+async function dismissImportReminder(openImport = false) {
+  if (importReminderBusy) return;
+  importReminderBusy = true;
+  firstRunImport.disabled = true;
+  firstRunContinue.disabled = true;
+  firstRunError.textContent = '';
+  try {
+    await api('/api/onboarding/acknowledge', { method: 'POST' }, false);
+    firstRunDialog.close();
+    if (openImport) openTransfer();
+  } catch (error) {
+    firstRunError.textContent = error.message;
+  } finally {
+    importReminderBusy = false;
+    firstRunImport.disabled = false;
+    firstRunContinue.disabled = false;
+  }
+}
+
+firstRunImport.addEventListener('click', () => dismissImportReminder(true));
+firstRunContinue.addEventListener('click', () => dismissImportReminder());
+firstRunDialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  dismissImportReminder();
+});
+firstRunDialog.addEventListener('close', () => {
+  importReminderResolve?.();
+  importReminderResolve = null;
+});
 
 function closeFileMenu() {
   fileDropdown.hidden = true;
@@ -141,6 +188,7 @@ function initializeTaskInfoTouchHelp() {
 }
 
 async function start() {
+  appWindow.inert = true;
   updateViewMenu();
   updateThemeMenu();
   loadAppVersion();
@@ -168,8 +216,11 @@ async function start() {
 
     await loadTasks();
     if (deepLinkError) setStatus(deepLinkError);
+    await showImportReminder();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
+  } finally {
+    appWindow.inert = false;
   }
 
   try {
