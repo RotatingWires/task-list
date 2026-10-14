@@ -28,17 +28,26 @@ function pruneTaskSelection() {
   if (!visible.has(selectionAnchorId)) selectionAnchorId = null;
 }
 
+function setSelectionMode(enabled) {
+  if (bulkBusy) return;
+  selectionMode = enabled;
+  localStorage.setItem('task-list-selection-mode', String(selectionMode));
+  if (!selectionMode) clearTaskSelection();
+  closeFileMenu();
+  closeTaskActionMenus();
+  renderFileMenu();
+  renderTasks();
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || event.defaultPrevented || !selectionMode || bulkBusy ||
+      document.querySelector('dialog[open]') || appWindow.inert) return;
+  event.preventDefault();
+  setSelectionMode(false);
+});
+
 function selectionMenuCommand() {
-  const button = menuCommand('Select...', () => {
-    if (bulkBusy) return;
-    selectionMode = !selectionMode;
-    localStorage.setItem('task-list-selection-mode', String(selectionMode));
-    if (!selectionMode) clearTaskSelection();
-    closeFileMenu();
-    closeTaskActionMenus();
-    renderFileMenu();
-    renderTasks();
-  });
+  const button = menuCommand('Select...', () => setSelectionMode(!selectionMode));
   button.setAttribute('role', 'menuitemradio');
   button.setAttribute('aria-checked', String(selectionMode));
   button.disabled = bulkBusy;
