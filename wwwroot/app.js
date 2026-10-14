@@ -6,8 +6,6 @@ const statusText = document.querySelector('#statusText');
 const taskCount = document.querySelector('#taskCount');
 const newTaskForm = document.querySelector('#newTaskForm');
 const newTaskTitle = document.querySelector('#newTaskTitle');
-const importMenu = document.querySelector('#importMenu');
-const markdownFile = document.querySelector('#markdownFile');
 
 const fileMenu = document.querySelector('#fileMenu');
 const fileDropdown = document.querySelector('#fileDropdown');
@@ -133,8 +131,7 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
-async function api(url, options = {}, checkMilestones = true) {
-  const method = (options.method ?? 'GET').toUpperCase();
+async function apiResponse(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', ...options });
   if (response.status === 401) {
     window.location.replace('/login.html');
@@ -148,6 +145,12 @@ async function api(url, options = {}, checkMilestones = true) {
     } catch {}
     throw new Error(message);
   }
+  return response;
+}
+
+async function api(url, options = {}, checkMilestones = true) {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const response = await apiResponse(url, options);
   const result = response.status === 204 ? null : await response.json();
   if (method !== 'GET' && checkMilestones) queueMicrotask(() => window.TaskMilestones?.check?.());
   return result;

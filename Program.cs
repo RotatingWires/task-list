@@ -126,6 +126,7 @@ app.MapPost("/api/auth/logout", async (HttpContext context) =>
 
 var api = app.MapGroup("/api").RequireAuthorization();
 MilestoneNotifications.MapEndpoints(api, connectionString);
+DataTransfer.MapEndpoints(api, connectionString, dataDir, app.Logger);
 
 api.MapGet("/lists", async () =>
 {

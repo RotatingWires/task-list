@@ -11,6 +11,7 @@ const SHELL = [
   '/app.js',
   '/tasks.js',
   '/bulk.js',
+  '/transfer.js',
   '/lists.js',
   '/search.js',
   '/milestones.js',
