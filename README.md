@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.6
+# TaskList v1.6.7
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -233,6 +233,8 @@ The menu bar shows **Selected tasks: N** and the same split action button used o
 
 Complete affects selected Open items; Reopen and Cancel skip items already in the requested state. Status changes apply only to selected items. Moving or deleting includes descendants; selecting both a parent and child processes that subtree once. Moving a selected subtask without its ancestor makes it a top-level task in the destination. Delete preserves recorded history for Stats.
 
+Bulk Move preserves the selected tasks' relative visible order in the destination. Dates are not used for ordering: root tasks display by descending task number. Each moved subtree receives the next root number in the destination, so the batch submits moves bottom-to-top to keep the original top-to-bottom order. Selected descendants travel once with their selected ancestor; independent selected subtasks become roots. All task dates and Universal IDs are preserved. Existing destination tasks appear below the moved batch.
+
 Actions run sequentially through the existing authenticated endpoints, each with its existing server behavior and transaction boundaries. A batch is not a single database transaction. Milestone notifications are checked once after the batch finishes. Successful items leave the selection; an error stops the remaining requests and reports how many succeeded. Remaining visible tasks stay selected for review or retry. If a refresh fails after an error or structural action, selection clears and the status asks for a refresh before retrying.
 
 ## Task Information
@@ -426,7 +428,13 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6.6
+## Current release: v1.6.7
+
+### v1.6.7
+
+- Process bulk moves bottom-to-top to preserve relative visible order under destination task-number sorting.
+- Preserve subtree deduplication, independent-subtask promotion, dates, Universal IDs, confirmation previews, and partial-failure handling.
+- Document move ordering and update project/frontend release metadata.
 
 ### v1.6.6
 

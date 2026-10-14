@@ -125,7 +125,10 @@ function bulkActionItems(action, items) {
   if (action === 'complete') return items.filter(item => item.status === 'Open');
   if (action === 'reopen') return items.filter(item => item.status !== 'Open');
   if (action === 'cancel') return items.filter(item => item.status !== 'Cancelled');
-  return selectedSubtreeRoots(items);
+  const roots = selectedSubtreeRoots(items);
+  // Destination root numbers increase, while the task list displays them
+  // descending. Move bottom-to-top to preserve the selection's visible order.
+  return action === 'move' ? roots.reverse() : roots;
 }
 
 function updateBulkToolbar() {
