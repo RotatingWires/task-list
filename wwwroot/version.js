@@ -1,1 +1,1 @@
-window.TASKLIST_VERSION = '1.6.5';
+window.TASKLIST_VERSION = '1.6.6';
