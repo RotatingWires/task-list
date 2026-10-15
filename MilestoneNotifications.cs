@@ -96,22 +96,26 @@ static class MilestoneNotifications
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'global:' || lower(event_type), COUNT(*)
             FROM task_events
+            WHERE julianday(event_at) IS NOT NULL
             GROUP BY lower(event_type);
 
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'global:recorded', COUNT(*)
-            FROM task_events;
+            FROM task_events
+            WHERE julianday(event_at) IS NOT NULL;
 
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'list:' || list_id || ':' || lower(event_type), COUNT(*)
             FROM task_events
             WHERE event_type IN ('Created', 'Completed')
+              AND julianday(event_at) IS NOT NULL
             GROUP BY list_id, lower(event_type);
 
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'year:' || substr(event_at, 1, 4) || ':' || lower(event_type), COUNT(*)
             FROM task_events
             WHERE event_type IN ('Created', 'Completed')
+              AND julianday(event_at) IS NOT NULL
               AND substr(event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
               AND substr(event_at, 5, 1) = '-'
             GROUP BY substr(event_at, 1, 4), lower(event_type);
@@ -125,6 +129,7 @@ static class MilestoneNotifications
         triggers.CommandText = """
             CREATE TRIGGER trg_task_events_milestone_notification
             AFTER INSERT ON task_events
+            WHEN julianday(NEW.event_at) IS NOT NULL
             BEGIN
                 INSERT INTO milestone_notification_counters (scope_key, total)
                 VALUES ('global:' || lower(NEW.event_type), 1)
@@ -155,11 +160,7 @@ static class MilestoneNotifications
                     'global',
                     NULL,
                     NULL,
-                    CASE
-                        WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
-                            THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                        ELSE NEW.event_at
-                    END
+                    NEW.event_at
                 FROM milestone_notification_counters counters
                 WHERE counters.scope_key = 'global:' || lower(NEW.event_type)
                   AND (
@@ -176,11 +177,7 @@ static class MilestoneNotifications
                     'global',
                     NULL,
                     NULL,
-                    CASE
-                        WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
-                            THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                        ELSE NEW.event_at
-                    END
+                    NEW.event_at
                 FROM milestone_notification_counters counters
                 WHERE counters.scope_key = 'global:recorded'
                   AND (
@@ -197,11 +194,7 @@ static class MilestoneNotifications
                     'list',
                     CAST(NEW.list_id AS TEXT),
                     COALESCE((SELECT name FROM lists WHERE id = NEW.list_id), 'List ' || NEW.list_id),
-                    CASE
-                        WHEN NEW.event_at IS NULL OR lower(NEW.event_at) = 'unknown'
-                            THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                        ELSE NEW.event_at
-                    END
+                    NEW.event_at
                 FROM milestone_notification_counters counters
                 WHERE NEW.event_type IN ('Created', 'Completed')
                   AND counters.scope_key = 'list:' || NEW.list_id || ':' || lower(NEW.event_type)
