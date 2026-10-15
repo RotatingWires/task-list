@@ -479,6 +479,11 @@ static void InitializeDatabase(string connectionString)
             archived INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS universal_ids (id INTEGER PRIMARY KEY AUTOINCREMENT);
+        CREATE TABLE IF NOT EXISTS task_history_state (
+            id INTEGER PRIMARY KEY CHECK(id = 1),
+            revision TEXT NOT NULL
+        );
+        INSERT OR IGNORE INTO task_history_state (id, revision) VALUES (1, lower(hex(randomblob(16))));
         CREATE TABLE IF NOT EXISTS deleted_lists (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL
@@ -521,47 +526,11 @@ static void InitializeDatabase(string connectionString)
             title TEXT NOT NULL,
             source TEXT NOT NULL DEFAULT 'live' CHECK(source IN ('live', 'legacy'))
         );
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_task_events_unique ON task_events(universal_id, event_type, event_at);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_task_events_unique ON task_events(universal_id, event_type, event_at) WHERE event_type = 'Created';
         CREATE INDEX IF NOT EXISTS idx_task_events_time ON task_events(event_at, id);
         CREATE INDEX IF NOT EXISTS idx_task_events_uid ON task_events(universal_id, event_at, id);
         CREATE INDEX IF NOT EXISTS idx_task_events_list ON task_events(list_id, event_at, id);
 
-        CREATE TRIGGER IF NOT EXISTS trg_items_event_insert
-        AFTER INSERT ON items
-        BEGIN
-            INSERT OR IGNORE INTO task_events
-                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
-            VALUES
-                (NEW.universal_id, 'Created', NEW.created_at, NULL, 'Open', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
-                 CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END);
-
-            INSERT OR IGNORE INTO task_events
-                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
-            SELECT NEW.universal_id, 'Completed', NEW.completed_at, 'Open', 'Done', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
-                   CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
-            WHERE NEW.status = 'Done' AND NEW.completed_at IS NOT NULL;
-
-            INSERT OR IGNORE INTO task_events
-                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
-            SELECT NEW.universal_id, 'Cancelled', NEW.cancelled_at, 'Open', 'Cancelled', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
-                   CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
-            WHERE NEW.status = 'Cancelled' AND NEW.cancelled_at IS NOT NULL;
-        END;
-
-        CREATE TRIGGER IF NOT EXISTS trg_items_event_status
-        AFTER UPDATE OF status ON items
-        WHEN OLD.status <> NEW.status
-        BEGIN
-            INSERT INTO task_events
-                (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
-            VALUES
-                (NEW.universal_id,
-                 CASE NEW.status WHEN 'Done' THEN 'Completed' WHEN 'Cancelled' THEN 'Cancelled' ELSE 'Reopened' END,
-                 CASE NEW.status WHEN 'Done' THEN COALESCE(NEW.completed_at, NEW.updated_at)
-                                 WHEN 'Cancelled' THEN COALESCE(NEW.cancelled_at, NEW.updated_at)
-                                 ELSE COALESCE(NEW.reopened_at, NEW.updated_at) END,
-                 OLD.status, NEW.status, NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title, 'live');
-        END;
         """)) command.ExecuteNonQuery();
 
     EnsureTaskEventSchema(connection);
@@ -587,17 +556,23 @@ static void InitializeDatabase(string connectionString)
         INSERT OR IGNORE INTO task_events
             (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
         SELECT universal_id, 'Completed', completed_at, NULL, 'Done', list_id, display_id, parent_display_id, title, 'legacy'
-        FROM items WHERE completed_at IS NOT NULL;
+        FROM items WHERE completed_at IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM task_events e WHERE e.universal_id = items.universal_id
+                          AND e.event_type = 'Completed' AND e.event_at = items.completed_at);
 
         INSERT OR IGNORE INTO task_events
             (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
         SELECT universal_id, 'Cancelled', cancelled_at, NULL, 'Cancelled', list_id, display_id, parent_display_id, title, 'legacy'
-        FROM items WHERE cancelled_at IS NOT NULL;
+        FROM items WHERE cancelled_at IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM task_events e WHERE e.universal_id = items.universal_id
+                          AND e.event_type = 'Cancelled' AND e.event_at = items.cancelled_at);
 
         INSERT OR IGNORE INTO task_events
             (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
         SELECT universal_id, 'Reopened', reopened_at, NULL, 'Open', list_id, display_id, parent_display_id, title, 'legacy'
-        FROM items WHERE reopened_at IS NOT NULL;
+        FROM items WHERE reopened_at IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM task_events e WHERE e.universal_id = items.universal_id
+                          AND e.event_type = 'Reopened' AND e.event_at = items.reopened_at);
         """)) backfill.ExecuteNonQuery();
 
     using var ensureDefault = Sql(connection, """
@@ -644,7 +619,7 @@ static void EnsureTaskEventSchema(SqliteConnection connection)
 
             DROP TABLE task_events_before_deleted;
 
-            CREATE UNIQUE INDEX idx_task_events_unique ON task_events(universal_id, event_type, event_at);
+            CREATE UNIQUE INDEX idx_task_events_unique ON task_events(universal_id, event_type, event_at) WHERE event_type = 'Created';
             CREATE INDEX idx_task_events_time ON task_events(event_at, id);
             CREATE INDEX idx_task_events_uid ON task_events(universal_id, event_at, id);
             CREATE INDEX idx_task_events_list ON task_events(list_id, event_at, id);
@@ -653,6 +628,10 @@ static void EnsureTaskEventSchema(SqliteConnection connection)
     }
 
     using var triggers = Sql(connection, """
+        DROP INDEX IF EXISTS idx_task_events_unique;
+        CREATE UNIQUE INDEX idx_task_events_unique ON task_events(universal_id, event_type, event_at)
+            WHERE event_type = 'Created';
+
         DROP TRIGGER IF EXISTS trg_items_event_insert;
         DROP TRIGGER IF EXISTS trg_items_event_status;
 
@@ -669,13 +648,17 @@ static void EnsureTaskEventSchema(SqliteConnection connection)
                 (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
             SELECT NEW.universal_id, 'Completed', NEW.completed_at, 'Open', 'Done', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
                    CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
-            WHERE NEW.status = 'Done' AND NEW.completed_at IS NOT NULL;
+            WHERE NEW.status = 'Done' AND NEW.completed_at IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM task_events e WHERE e.universal_id = NEW.universal_id
+                              AND e.event_type = 'Completed' AND e.event_at = NEW.completed_at);
 
             INSERT OR IGNORE INTO task_events
                 (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
             SELECT NEW.universal_id, 'Cancelled', NEW.cancelled_at, 'Open', 'Cancelled', NEW.list_id, NEW.display_id, NEW.parent_display_id, NEW.title,
                    CASE WHEN NEW.updated_at = 'Unknown' THEN 'legacy' ELSE 'live' END
-            WHERE NEW.status = 'Cancelled' AND NEW.cancelled_at IS NOT NULL;
+            WHERE NEW.status = 'Cancelled' AND NEW.cancelled_at IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM task_events e WHERE e.universal_id = NEW.universal_id
+                              AND e.event_type = 'Cancelled' AND e.event_at = NEW.cancelled_at);
         END;
 
         CREATE TRIGGER trg_items_event_status

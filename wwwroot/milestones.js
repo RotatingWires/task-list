@@ -4,6 +4,8 @@
   const numberFormat = new Intl.NumberFormat();
   const confettiColors = ['#ff3b30', '#ffcc00', '#34c759', '#0a84ff', '#bf5af2', '#ff9f0a'];
   let checking = null;
+  let checkRequested = false;
+  let waitingNotices = [];
 
   function ensureStyles() {
     const existing = document.querySelector('link[data-milestone-styles]');
@@ -81,7 +83,7 @@
   }
 
   function reachedLabel(raw) {
-    if (!raw) return '';
+    if (!raw || raw.toLowerCase() === 'unknown') return 'Unknown date';
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
       const [year, month, day] = raw.split('-').map(Number);
@@ -91,7 +93,7 @@
     }
 
     const date = new Date(raw);
-    if (Number.isNaN(date.getTime())) return '';
+    if (Number.isNaN(date.getTime())) return 'Unknown date';
     return date.toLocaleString(undefined, {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: 'numeric', minute: '2-digit'
@@ -219,22 +221,36 @@
   }
 
   async function check() {
+    checkRequested = true;
     if (checking) return checking;
+    if (document.visibilityState === 'hidden' || !document.hasFocus()) return;
 
     checking = (async () => {
       await ensureStyles();
-      const notices = await consumePendingMilestones();
-      if (notices.length) showMilestones(notices);
+      while (checkRequested && document.visibilityState !== 'hidden' && document.hasFocus()) {
+        checkRequested = false;
+        waitingNotices.push(...await consumePendingMilestones());
+        if (waitingNotices.length && document.visibilityState !== 'hidden' && document.hasFocus()) {
+          showMilestones(waitingNotices);
+          waitingNotices = [];
+        }
+      }
     })();
 
     try {
       await checking;
     } finally {
       checking = null;
+      if (checkRequested && document.visibilityState !== 'hidden' && document.hasFocus())
+        queueMicrotask(check);
     }
   }
 
   window.TaskMilestones = Object.freeze({ check });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') check();
+  });
+  window.addEventListener('focus', check);
 
   async function start() {
     await ensureStyles();

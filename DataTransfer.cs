@@ -120,6 +120,9 @@ static class DataTransfer
                 }
                 KeepCounters(destination, transaction, listNumbers, "UPDATE lists SET next_task_number=MAX(next_task_number,$value) WHERE id=$id;");
                 KeepCounters(destination, transaction, childNumbers, "UPDATE items SET next_child_number=MAX(next_child_number,$value) WHERE universal_id=$id;");
+                MilestoneNotifications.RebuildCounters(destination, transaction);
+                using (var history = Command(destination, "UPDATE task_history_state SET revision=lower(hex(randomblob(16))) WHERE id=1;", transaction))
+                    history.ExecuteNonQuery();
                 using (var check = Command(destination, "PRAGMA foreign_key_check;", transaction))
                 using (var reader = check.ExecuteReader())
                     if (reader.Read()) throw new InvalidDataException("Backup contains invalid task relationships.");

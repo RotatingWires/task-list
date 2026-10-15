@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.8
+# TaskList v1.6.9
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -174,9 +174,9 @@ Continuing milestones start at 10,500 for global events, recorded events, and Un
 
 TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup, before the triggers are installed, so existing history is the baseline and only future inserts can create new notifications. Counter rebuilding preserves progress across restarts.
 
-Event-based milestone counters use events with a recorded date, matching the dated history used by Stats' milestone timeline. Date-only imports count; events whose date is “Unknown” or invalid remain in history but do not advance these counters. Universal-ID milestones still track every allocated ID. Moving a task does not move its original creation event to another list, and renaming a list preserves its ID and milestone progress. Startup rebuilds the corrected counters without replaying past milestones; already pending notices remain queued.
+Global and per-list event milestones count every recorded event, including events whose date is “Unknown” or invalid. Milestones advance in event-record order, matching Stats, so importing an older date does not reorder the counters. Missing dates display as unknown rather than becoming a made-up timestamp. Yearly milestones need a valid date and use UTC years for timestamps; date-only imports use their written calendar year. Universal-ID milestones track every allocated ID. Moving a task does not move its original creation event to another list, and renaming a list preserves its ID and milestone progress. Startup rebuilds counters without replaying past milestones; already pending notices remain queued.
 
-The TaskList frontend calls authenticated `POST /api/milestones/consume` at startup and after successful writes. One atomic `DELETE ... RETURNING` removes and returns all pending notices. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation. Concurrent TaskList tabs cannot consume the same row twice. Pending notices survive browser/server restarts until consumed; consumed notices are not replayed on restart or subsequent task actions. Consumption happens before display, so a lost response or a browser closing at that point can prevent a popup from being seen.
+The TaskList frontend calls authenticated `POST /api/milestones/consume` at startup and after successful writes while its page is visible and focused, and checks again when it regains focus. A write during an in-flight check schedules another check. If focus is lost after a response arrives, received notices stay in page memory for display on return. One atomic `DELETE ... RETURNING` removes and returns all pending notices. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation. Concurrent TaskList tabs cannot consume the same row twice. Pending notices survive browser/server restarts until consumed; consumed notices are not replayed on restart or subsequent task actions. Consumption happens before display, so a lost response or a browser closing at that point can prevent a popup from being seen.
 
 Startup migrates both older global-only and scoped notification ledgers into the pending queue in the same transaction as counter rebuilding and trigger installation. Genuinely pending rows are preserved; acknowledged and historical baseline rows are discarded. The queue no longer stores `viewed_at`, `viewed_by`, or historical baseline records, and the old notification schema-version state is removed. Rebuilding counters from current history prevents upgrades from suddenly celebrating milestones that were already reached.
 
@@ -316,6 +316,8 @@ Before replacing data, the server creates `data/backups/before-restore-<UTC time
 
 Restore copies known TaskList data tables in one SQLite transaction and keeps the running application's schema and triggers. Imported triggers/code are never installed or executed. Existing triggers are suspended inside the transaction while data is copied, then restored before commit; this avoids generating duplicate history or milestone notices. If copying or validation fails, changes and trigger changes roll back together. Existing queued milestone notices in the backup remain pending.
 
+Restore rebuilds milestone counters from the restored history rather than trusting a backup's derived totals. It also changes a server-owned history revision, allowing updated Stats clients to replace their cached event history even when the restored database has the same final event. This revision is generated by the running server and is not copied from the backup; older backups remain supported.
+
 Recorded IDs are preserved. The lifetime Universal-ID allocation ledger stays append-only, and list/event autoincrement counters, matching-list task numbers, and matching-task child numbers keep the higher value from the backup or current server. Restoring an older backup therefore does not let future entries reuse IDs/numbers already allocated after it. Task/history rows are replaced, while these allocation records remain monotonic.
 
 After a successful import the browser reloads confirmed lists and tasks, clears selections, and displays the restored totals. If a restore response or refresh fails, it rechecks server data and clears stale rows if it cannot confirm them. Refresh TaskList Stats after restoring so its display reflects the restored data.
@@ -432,9 +434,19 @@ TaskList is a single-user application.
 
 ## Development checks
 
-Run the milestone SQL regression tests with `python3 -m unittest discover -s tests -v`. They use Python's standard SQLite module to execute the notification SQL and task-event triggers directly from the application source, including renamed lists, moves, undated imports, and subtask creation. Python is only needed for these tests, not to run TaskList.
+Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node tests/frontend.test.cjs` for frontend tests. SQL fixtures execute the schema, triggers, and operation SQL from the C# source against disposable databases. Cases cover moves, renames, status changes, imports, deletion, restore/rollback, IDs, counters, and 1,200 seeded mixed operations. JavaScript tests exercise the actual selection/bulk-action and milestone-check code with DOM fixtures. Python and Node are test tools, not TaskList runtime dependencies.
 
-## Current release: v1.6.8
+With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
+
+## Current release: v1.6.9
+
+### v1.6.9
+
+- Count undated events in global/list milestones and match Stats' event-record ordering; keep yearly milestones tied to valid UTC dates.
+- Rebuild derived milestone counters on ZIP restore and rotate a history revision for Stats cache invalidation.
+- Preserve distinct same-timestamp status transitions, while guarding reconstructed/moved events against duplicates; remove duplicate startup trigger definitions.
+- Recheck milestones after writes during an in-flight request and defer background-tab consumption until focus returns.
+- Add database, frontend, and cross-app regression coverage for data identity, histories, moves, renames, imports, status changes, restore, and milestone parity.
 
 ### v1.6.8
 
