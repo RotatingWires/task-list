@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.7
+# TaskList v1.6.8
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -173,6 +173,8 @@ TaskList alone owns live milestone dialogs and confetti. It keeps a persistent p
 Continuing milestones start at 10,500 for global events, recorded events, and Universal IDs; 5,500 for per-list events; and 2,500 for yearly events. Each family continues at 500-step intervals.
 
 TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup, before the triggers are installed, so existing history is the baseline and only future inserts can create new notifications. Counter rebuilding preserves progress across restarts.
+
+Event-based milestone counters use events with a recorded date, matching the dated history used by Stats' milestone timeline. Date-only imports count; events whose date is “Unknown” or invalid remain in history but do not advance these counters. Universal-ID milestones still track every allocated ID. Moving a task does not move its original creation event to another list, and renaming a list preserves its ID and milestone progress. Startup rebuilds the corrected counters without replaying past milestones; already pending notices remain queued.
 
 The TaskList frontend calls authenticated `POST /api/milestones/consume` at startup and after successful writes. One atomic `DELETE ... RETURNING` removes and returns all pending notices. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation. Concurrent TaskList tabs cannot consume the same row twice. Pending notices survive browser/server restarts until consumed; consumed notices are not replayed on restart or subsequent task actions. Consumption happens before display, so a lost response or a browser closing at that point can prevent a popup from being seen.
 
@@ -428,7 +430,19 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
-## Current release: v1.6.7
+## Development checks
+
+Run the milestone SQL regression tests with `python3 -m unittest discover -s tests -v`. They use Python's standard SQLite module to execute the notification SQL and task-event triggers directly from the application source, including renamed lists, moves, undated imports, and subtask creation. Python is only needed for these tests, not to run TaskList.
+
+## Current release: v1.6.8
+
+### v1.6.8
+
+- Match event-based milestone popup counters to Stats' dated milestone history, excluding unknown/invalid dates while retaining date-only imports.
+- Rebuild corrected counters at startup and keep already pending notices without replaying historical milestones.
+- Preserve list IDs across renames, original event attribution after moves, Universal-ID milestones, and the existing threshold schedules.
+- Remove the now-unreachable unknown-date fallback from dated event notification inserts.
+- Add SQLite regression checks using the actual notification and task-event SQL, including renamed lists, moved undated imports, and a newly created subtask.
 
 ### v1.6.7
 

@@ -2,6 +2,7 @@
 bin/
 obj/
 .vs/
+__pycache__/
 
 # Runtime/private data
 data/
