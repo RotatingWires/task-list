@@ -12,7 +12,7 @@ PROGRAM = (ROOT / "Program.cs").read_text()
 
 
 def notification_sql(method):
-    body = NOTIFICATIONS.split(f"private static void {method}(", 1)[1]
+    body = re.split(rf"(?:public|private) static void {method}\(", NOTIFICATIONS, maxsplit=1)[1]
     return re.search(r'"""(.*?)"""', body, re.S).group(1)
 
 
@@ -70,7 +70,7 @@ class MilestoneNotificationTests(unittest.TestCase):
             "SELECT key, scope_label, reached_at FROM milestone_notifications ORDER BY key",
         ).fetchall()
 
-    def test_moved_undated_imports_and_list_rename_do_not_hide_100th_dated_subtask(self):
+    def test_move_and_rename_preserve_all_creation_counts(self):
         for _ in range(100):
             self.add_task("Unknown")
         for _ in range(98):
@@ -93,11 +93,12 @@ class MilestoneNotificationTests(unittest.TestCase):
         reached_at = "2026-10-15T01:58:21.0000000+00:00"
         self.add_task(reached_at, display_id="199.2", parent="199")
 
-        self.assertEqual(self.total("list:7:created"), 100)
-        self.assertEqual(self.total("global:created"), 100)
-        self.assertEqual(self.total("global:recorded"), 100)
+        self.assertEqual(self.total("list:7:created"), 200)
+        self.assertEqual(self.total("global:created"), 200)
+        self.assertEqual(self.total("global:recorded"), 200)
         self.assertEqual(self.total("list:8:created"), 0)
-        self.assertIn(("list:7:created:100", "homework year 2", reached_at), self.pending())
+        self.assertFalse(any(row[0] == "list:7:created:100" for row in self.pending()))
+        self.assertIn(("year:2026:created:100", None, reached_at), self.pending())
         self.assertEqual(self.connection.execute(
             "SELECT COUNT(*) FROM task_events WHERE list_id = 7 AND event_at = 'Unknown'",
         ).fetchone()[0], 100)
@@ -105,14 +106,14 @@ class MilestoneNotificationTests(unittest.TestCase):
             "SELECT COUNT(*) FROM items WHERE list_id = 8",
         ).fetchone()[0], 100)
 
-    def test_all_event_families_ignore_undated_history_when_reaching_100(self):
+    def test_all_event_families_count_undated_history_when_reaching_100(self):
         for kind in ["Created", "Completed", "Cancelled", "Reopened", "Deleted"]:
             with self.subTest(kind=kind):
                 self.connection.execute("DELETE FROM task_events")
                 self.connection.execute("DELETE FROM milestone_notifications")
                 self.connection.executescript(notification_sql("DropTriggers"))
-                self.seed_events(kind, 100, "Unknown")
-                self.seed_events(kind, 99, "2026-10-14")
+                self.seed_events(kind, 99, "Unknown")
+                self.seed_events(kind, 0, "2026-10-14")
                 self.start_notifications()
                 self.seed_events(kind, 1, "2026-10-15T01:58:21Z")
                 self.assertEqual(self.total(f"global:{kind.lower()}"), 100)
@@ -122,17 +123,17 @@ class MilestoneNotificationTests(unittest.TestCase):
                 self.assertIn("global:recorded:100", keys)
                 if kind in ("Created", "Completed"):
                     self.assertIn(f"list:7:{kind.lower()}:100", keys)
-                    self.assertIn(f"year:2026:{kind.lower()}:100", keys)
+                    self.assertIn(f"year:2026:{kind.lower()}:1", keys)
 
-    def test_unknown_and_invalid_dates_do_not_increment_event_counters(self):
+    def test_undated_events_count_without_inventing_a_calendar_year(self):
         self.start_notifications()
         for date in ["Unknown", "unknown", "", "invalid", "2026-not-a-date"]:
             self.add_task(date)
-        self.assertEqual(self.total("global:created"), 0)
-        self.assertEqual(self.total("global:recorded"), 0)
-        self.assertEqual(self.total("list:7:created"), 0)
+        self.assertEqual(self.total("global:created"), 5)
+        self.assertEqual(self.total("global:recorded"), 5)
+        self.assertEqual(self.total("list:7:created"), 5)
         self.assertEqual(self.total("year:2026:created"), 0)
-        self.assertEqual([row[0] for row in self.pending()], ["universal:1"])
+        self.assertEqual([row[0] for row in self.pending()], ["global:created:1", "global:recorded:1", "universal:1"])
         self.assertEqual(self.connection.execute("SELECT COUNT(*) FROM task_events").fetchone()[0], 5)
 
     def test_date_only_imports_still_count_and_keep_their_date(self):
@@ -155,21 +156,21 @@ class MilestoneNotificationTests(unittest.TestCase):
         self.connection.execute("DELETE FROM milestone_notifications")
         self.start_notifications()
         self.assertEqual(self.pending(), [])
-        self.assertEqual(self.total("list:7:created"), 100)
+        self.assertEqual(self.total("list:7:created"), 200)
 
     def test_continuing_list_and_year_thresholds_remain_every_500(self):
         self.seed_events("Created", 100, "Unknown")
-        self.seed_events("Created", 5499, "2026-10-14")
+        self.seed_events("Created", 5399, "2026-10-14")
         self.start_notifications()
         self.seed_events("Created", 1, "2026-10-15T01:58:21Z")
         keys = [row[0] for row in self.pending()]
         self.assertIn("list:7:created:5500", keys)
-        self.assertIn("year:2026:created:5500", keys)
+        self.assertNotIn("year:2026:created:5500", keys)
         self.assertEqual(self.total("global:created"), 5500)
 
     def test_continuing_global_and_universal_thresholds_remain_every_500(self):
         self.seed_events("Created", 100, "Unknown")
-        self.seed_events("Created", 10499, "2026-10-14")
+        self.seed_events("Created", 10399, "2026-10-14")
         self.start_notifications()
         self.seed_events("Created", 1, "2026-10-15T01:58:21Z")
         self.connection.execute("INSERT INTO universal_ids VALUES (10500)")

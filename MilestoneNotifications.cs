@@ -83,7 +83,7 @@ static class MilestoneNotifications
             """, transaction);
     }
 
-    private static void RebuildCounters(SqliteConnection connection, SqliteTransaction transaction)
+    public static void RebuildCounters(SqliteConnection connection, SqliteTransaction transaction)
     {
         Execute(connection, """
             DROP TABLE IF EXISTS milestone_notification_state;
@@ -96,29 +96,25 @@ static class MilestoneNotifications
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'global:' || lower(event_type), COUNT(*)
             FROM task_events
-            WHERE julianday(event_at) IS NOT NULL
             GROUP BY lower(event_type);
 
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'global:recorded', COUNT(*)
-            FROM task_events
-            WHERE julianday(event_at) IS NOT NULL;
+            FROM task_events;
 
             INSERT INTO milestone_notification_counters (scope_key, total)
             SELECT 'list:' || list_id || ':' || lower(event_type), COUNT(*)
             FROM task_events
             WHERE event_type IN ('Created', 'Completed')
-              AND julianday(event_at) IS NOT NULL
             GROUP BY list_id, lower(event_type);
 
             INSERT INTO milestone_notification_counters (scope_key, total)
-            SELECT 'year:' || substr(event_at, 1, 4) || ':' || lower(event_type), COUNT(*)
+            SELECT 'year:' || strftime('%Y', event_at) || ':' || lower(event_type), COUNT(*)
             FROM task_events
             WHERE event_type IN ('Created', 'Completed')
               AND julianday(event_at) IS NOT NULL
-              AND substr(event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
-              AND substr(event_at, 5, 1) = '-'
-            GROUP BY substr(event_at, 1, 4), lower(event_type);
+              AND date(substr(event_at, 1, 10), '+0 days') = substr(event_at, 1, 10)
+            GROUP BY strftime('%Y', event_at), lower(event_type);
             """, transaction);
     }
 
@@ -129,7 +125,6 @@ static class MilestoneNotifications
         triggers.CommandText = """
             CREATE TRIGGER trg_task_events_milestone_notification
             AFTER INSERT ON task_events
-            WHEN julianday(NEW.event_at) IS NOT NULL
             BEGIN
                 INSERT INTO milestone_notification_counters (scope_key, total)
                 VALUES ('global:' || lower(NEW.event_type), 1)
@@ -145,10 +140,10 @@ static class MilestoneNotifications
                 ON CONFLICT(scope_key) DO UPDATE SET total = total + 1;
 
                 INSERT INTO milestone_notification_counters (scope_key, total)
-                SELECT 'year:' || substr(NEW.event_at, 1, 4) || ':' || lower(NEW.event_type), 1
+                SELECT 'year:' || strftime('%Y', NEW.event_at) || ':' || lower(NEW.event_type), 1
                 WHERE NEW.event_type IN ('Created', 'Completed')
-                  AND substr(NEW.event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
-                  AND substr(NEW.event_at, 5, 1) = '-'
+                  AND julianday(NEW.event_at) IS NOT NULL
+                  AND date(substr(NEW.event_at, 1, 10), '+0 days') = substr(NEW.event_at, 1, 10)
                 ON CONFLICT(scope_key) DO UPDATE SET total = total + 1;
 
                 INSERT OR IGNORE INTO milestone_notifications
@@ -206,18 +201,18 @@ static class MilestoneNotifications
                 INSERT OR IGNORE INTO milestone_notifications
                     (key, kind, threshold, scope, scope_value, scope_label, reached_at)
                 SELECT
-                    'year:' || substr(NEW.event_at, 1, 4) || ':' || lower(NEW.event_type) || ':' || counters.total,
+                    'year:' || strftime('%Y', NEW.event_at) || ':' || lower(NEW.event_type) || ':' || counters.total,
                     lower(NEW.event_type),
                     counters.total,
                     'year',
-                    substr(NEW.event_at, 1, 4),
+                    strftime('%Y', NEW.event_at),
                     NULL,
                     NEW.event_at
                 FROM milestone_notification_counters counters
                 WHERE NEW.event_type IN ('Created', 'Completed')
-                  AND substr(NEW.event_at, 1, 4) GLOB '[0-9][0-9][0-9][0-9]'
-                  AND substr(NEW.event_at, 5, 1) = '-'
-                  AND counters.scope_key = 'year:' || substr(NEW.event_at, 1, 4) || ':' || lower(NEW.event_type)
+                  AND julianday(NEW.event_at) IS NOT NULL
+                  AND date(substr(NEW.event_at, 1, 10), '+0 days') = substr(NEW.event_at, 1, 10)
+                  AND counters.scope_key = 'year:' || strftime('%Y', NEW.event_at) || ':' || lower(NEW.event_type)
                   AND (
                     counters.total IN (1, 100, 500, 1000, 2000)
                     OR (counters.total > 2000 AND counters.total % 500 = 0)
