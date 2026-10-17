@@ -65,14 +65,24 @@ button { cursor: pointer; }
   padding: 5px 7px;
   background: var(--blue);
   color: #fff;
+  font-size: 14px;
   font-weight: 700;
+  line-height: normal;
   display: grid;
-  grid-template-columns: 1fr minmax(0, auto) 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
   align-items: center;
 }
 
-.title-app-name { justify-self: start; }
+.title-app-name {
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .title-list-name {
+  min-width: 0;
   justify-self: center;
   max-width: min(50vw, 520px);
   overflow: hidden;
@@ -83,6 +93,7 @@ button { cursor: pointer; }
 .title-buttons {
   justify-self: end;
   letter-spacing: 4px;
+  white-space: nowrap;
 }
 
 .menubar {
