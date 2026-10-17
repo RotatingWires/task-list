@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.9
+# TaskList v1.6.10
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -438,7 +438,12 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.6.9
+## Current release: v1.6.10
+
+### v1.6.10
+
+- Normalize title-bar typography, single-line labels, centered context, and decorative window symbols with TaskList Stats and NewsReview.
+- Allow long application/list names to truncate within their columns instead of overlapping the other title-bar content.
 
 ### v1.6.9
 
