@@ -18,6 +18,12 @@ It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. The
 - No React, Node.js, npm, Electron, Bootstrap, Entity Framework, or ORM
 
 ## Project layout
+<img width="2558" height="1299" alt="image" src="https://github.com/user-attachments/assets/ca4697ac-a541-4c8b-8f1c-c60aee5d782f" />
+<img width="949" height="899" alt="image" src="https://github.com/user-attachments/assets/594d1b9b-c4ff-4174-b6c3-f359433a903c" />
+<img width="945" height="899" alt="image" src="https://github.com/user-attachments/assets/419abc23-4edc-49fb-b5d2-84d10de5d2a5" />
+<img width="893" height="401" alt="image" src="https://github.com/user-attachments/assets/1fd3458f-1a4b-4775-abac-e2feab769203" />
+<img width="2560" height="1305" alt="image" src="https://github.com/user-attachments/assets/63054a38-1d9d-4096-b846-4f9f0c479273" />
+
 
 TaskList intentionally keeps a small source tree. Frontend code is split by responsibility rather than by release version.
 
