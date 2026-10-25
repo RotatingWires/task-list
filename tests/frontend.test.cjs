@@ -4,6 +4,55 @@ const { fixture, task } = require('./frontend-fixture.cjs');
 const settle = () => new Promise(resolve => setImmediate(resolve));
 const notice = { kind: 'created', threshold: 100, scope: 'list', scopeValue: '1', scopeLabel: 'homework', reachedAt: 'Unknown' };
 
+const searchDates = [
+  '2026-10-03T09:00:00', '2026-10-08T17:00:59', '2026-10-08',
+  '2026-10-09T10:00:00', 'Unknown', '2026-10-08T23:00:00',
+  '2026-10-08T01:00:00', '2026-10-03T08:59:00',
+];
+
+for (const [period, expected] of [
+  ['10/3/26 - 10/8/26, 9am - 5pm', [1, 2]],
+  ['10/3/26 – 10/8/26', [1, 2, 3, 6, 7, 8]],
+  ['9am — 5pm', [1, 2, 4]],
+  ['10/8/2026 - 10/8/2026, 10pm - 2am', [6, 7]],
+  [', 9 a.m. - 5 p.m.', [1, 2, 4]],
+]) {
+  test('combined search field submits ' + period, async () => {
+    const f = fixture(['app.js', 'search.js']);
+    f.run("lists=[{id:1,name:'A'}]");
+    f.context.fetch = async () => ({ ok: true, json: async () => searchDates.map((createdAt, i) => task(i + 1, { createdAt })) });
+    f.get('#searchPeriod').value = period;
+    await f.get('#dateSearchForm').listeners.submit[0]({ preventDefault() {} });
+    assert.deepEqual(f.json('searchResultSet.map(result=>result.item.universalId).sort((a,b)=>a-b)'), expected);
+    assert.doesNotMatch(f.get('#searchSummary').textContent, /error/i);
+  });
+}
+
+test('combined search validates ranges before fetching and resets its single field', async () => {
+  const f = fixture(['app.js', 'search.js']);
+  let requests = 0;
+  f.context.fetch = async () => { requests++; throw new Error('unexpected fetch'); };
+  for (const period of ['', '10/8/26 - 10/3/26', '2/30/26 - 3/1/26', '9am - 25pm',
+    '10/3/26 - 10/8/26, 9am - 5pm, extra', '10/3/26 - 10/8/26 9am - 5pm']) {
+    f.get('#searchPeriod').value = period;
+    await f.get('#dateSearchForm').listeners.submit[0]({ preventDefault() {} });
+    assert.ok(f.get('#searchSummary').textContent);
+    assert.match(f.run('readSearchPeriod(searchPeriod.value).error'), /.+/);
+  }
+  assert.equal(requests, 0);
+  f.run('openSearch()');
+  assert.equal(f.get('#searchPeriod').value, '');
+  assert.ok(f.get('#searchDialog').open);
+});
+
+test('combined search preserves noon, midnight, same-minute, and current-year parsing', () => {
+  const f = fixture(['app.js', 'search.js']);
+  assert.equal(f.run("readSearchPeriod('12am - 12am').timeRange.start"), 0);
+  assert.equal(f.run("readSearchPeriod('12pm - 12pm').timeRange.start"), 720);
+  assert.equal(f.run("readSearchPeriod('9 - 10').timeRange.start"), 540);
+  assert.equal(f.run("readSearchPeriod('10/3 - 10/8').dateRange.start"), new Date().getFullYear() * 10000 + 1003);
+});
+
 test('background tabs do not consume pending celebrations; focus checks them', async () => {
   const f = fixture();
   let calls = 0;

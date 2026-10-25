@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.10
+# TaskList v1.6.11
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -269,8 +269,7 @@ The hierarchy metrics are calculated against the task's actual source list/tree,
 **File → Search...** supports:
 
 - fuzzy keyword/title/description search across active lists
-- compact creation-date ranges typed into one field
-- compact creation-time ranges typed into one field
+- creation-date and time ranges combined in one field, matching NewsReview
 - time-only searches across all dates
 - overnight time windows
 - task and subtask results
@@ -279,9 +278,9 @@ The hierarchy metrics are calculated against the task's actual source list/tree,
 
 The Search list filter is intentionally scoped to one open Search window. It is retained when another search is run while the dialog remains open, but resets to **All lists** after Search is closed and reopened. If the previously selected list has no matches in the next result set, the filter falls back to **All lists**.
 
-Date ranges are typed like `10/3 - 10/8`. Each side accepts `m/d`, `m/d/yy`, or `m/d/yyyy`; dates without a year use the current year. Time ranges are typed like `9am - 9pm` and keep the same flexible 12-hour parsing as before. A normal hyphen, en dash, or em dash can separate the two values.
+Use the single **Date/time range** field under Search → Date/Time: `10/3 - 10/8, 9am - 9pm`. The comma separates the date range from the time range. Either range alone is accepted, such as `10/3 - 10/8` or `9am - 9pm`.
 
-The compact Date/Time form uses the same two fields on desktop and mobile, leaving more room for results while keeping date-only, time-only, date/time, and overnight-time searches.
+Each date accepts `m/d`, `m/d/yy`, or `m/d/yyyy`; dates without a year use the current year. Times keep flexible 12-hour parsing, and times without AM/PM are treated as AM. A normal hyphen, en dash, or em dash can separate range endpoints. An overnight window such as `10pm - 2am` matches late-night and early-morning times on each selected date. Time-only searches cover all dates; time filters exclude tasks with an unknown creation time, including date-only imports. The same single field is used on desktop and mobile.
 
 ## Deep links
 
@@ -444,7 +443,13 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.6.10
+## Current release: v1.6.11
+
+### v1.6.11
+
+- Combine Search's creation date/time ranges into one field using NewsReview's comma-separated format; retain date-only, time-only, and overnight searches.
+- Remove the separate range fields and stale start/end bindings; explicitly bind the new field and retain existing list filters, task/subtask results, and local-time matching.
+- Cover real form submission, malformed ranges, missing times, date bounds, noon/midnight, and field reset with frontend tests.
 
 ### v1.6.10
 
