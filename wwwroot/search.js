@@ -30,8 +30,7 @@ function openSearch() {
   closeFileMenu();
   setSearchTab('keyword');
   searchKeyword.value = '';
-  searchDateRange.value = '';
-  searchTimeRange.value = '';
+  searchPeriod.value = '';
   searchSummary.textContent = 'Searches all lists.';
   resetSearchListFilter();
   searchResults.replaceChildren(Object.assign(document.createElement('div'), {
@@ -51,7 +50,7 @@ function setSearchTab(tab) {
 
   if (searchDialog.open) {
     if (keyword) searchKeyword.focus();
-    else searchDateRange.focus();
+    else searchPeriod.focus();
   }
 }
 
@@ -255,6 +254,23 @@ function readSearchTimeRange(value) {
   const end = parseSearchTime(parts[1]);
   if (!start?.specified || !end?.specified) return null;
   return { specified: true, start: start.minutes, end: end.minutes };
+}
+
+function readSearchPeriod(value) {
+  const parts = value.trim().split(',');
+  if (parts.length > 2) return { error: 'Use one comma between the date and time ranges.' };
+  const [dates, times] = parts.length === 2 ? parts : parts[0].includes('/') ? [parts[0], ''] : ['', parts[0]];
+  const dateRange = readSearchDateRange(dates);
+  const timeRange = readSearchTimeRange(times);
+  if (!dateRange)
+    return { error: 'Use a date range like 10/3 - 10/8. Each date can be m/d, m/d/yy, or m/d/yyyy.' };
+  if (!timeRange)
+    return { error: 'Use a time range like 9 AM - 9 PM or 9:10 AM - 5:30 PM. Times without AM/PM are treated as AM.' };
+  if (dateRange.specified && dateRange.start > dateRange.end)
+    return { error: 'Start date must be on or before End date.' };
+  if (!dateRange.specified && !timeRange.specified)
+    return { error: 'Enter a date range, a time range, or both separated by a comma.' };
+  return { dateRange, timeRange, error: null };
 }
 
 function creationDateTimeParts(value) {
@@ -498,26 +514,9 @@ keywordSearchForm.addEventListener('submit', async event => {
 dateSearchForm.addEventListener('submit', async event => {
   event.preventDefault();
 
-  const dateRange = readSearchDateRange(searchDateRange.value);
-  const timeRange = readSearchTimeRange(searchTimeRange.value);
-
-  if (dateRange === null) {
-    searchSummary.textContent = 'Use a date range like 10/3 - 10/8. Each date can be m/d, m/d/yy, or m/d/yyyy.';
-    return;
-  }
-
-  if (timeRange === null) {
-    searchSummary.textContent = 'Use a time range like 9 AM - 9 PM or 9:10 AM - 5:30 PM. Times without AM/PM are treated as AM.';
-    return;
-  }
-
-  if (dateRange.specified && dateRange.start > dateRange.end) {
-    searchSummary.textContent = 'Start date must be on or before End date.';
-    return;
-  }
-
-  if (!dateRange.specified && !timeRange.specified) {
-    searchSummary.textContent = 'Enter a date range, a time range, or both.';
+  const { dateRange, timeRange, error } = readSearchPeriod(searchPeriod.value);
+  if (error) {
+    searchSummary.textContent = error;
     return;
   }
 
