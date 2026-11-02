@@ -73,7 +73,7 @@ There are no release-specific JavaScript override files. New behavior belongs in
 
 `TaskList.csproj` contains the single authoritative application version in its `<Version>` property. The .NET SDK derives the assembly/file/informational versions from that value, so they are not repeated as separate manually maintained properties.
 
-The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build for the browser's About/version label.
+The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build for the browser's About/version label. It rewrites the file only when the version changes, so building does not leave the committed copy modified.
 
 Frontend asset URLs no longer carry release-number query strings. The service worker uses a stable shell-cache name and network-first requests with `cache: 'no-store'`, updating the cached copy after a successful network response and using cache only as an offline fallback. That keeps frontend freshness independent of manually duplicated release numbers.
 
@@ -81,8 +81,16 @@ Frontend asset URLs no longer carry release-number query strings. The service wo
 
 ```powershell
 dotnet restore
+dotnet run
+```
+
+Without configuration, TaskList listens on loopback only, at `http://127.0.0.1:8711`. To choose another address, pass `--urls` (or set the standard `ASPNETCORE_URLS` environment variable). For example, to accept LAN connections:
+
+```powershell
 dotnet run --urls "http://0.0.0.0:8711"
 ```
+
+When Task Scheduler launches `TaskList.exe` directly, add the same `--urls "http://0.0.0.0:8711"` argument if other devices need to connect.
 
 The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`.
 
@@ -119,7 +127,7 @@ Task Scheduler can therefore launch `TaskList.exe` directly rather than using `c
 
 On first launch, TaskList prints a random setup token in the server console. The setup screen requires that token plus a new password of at least 8 characters and password confirmation.
 
-The plaintext password is never stored. `auth.json` contains a random salt and PBKDF2-SHA256 password hash.
+The plaintext password is never stored. `auth.json` contains a random salt and a PBKDF2-SHA256 password hash using 600,000 iterations, and records its iteration count. Hashes created by earlier releases with 210,000 iterations still verify; after the next successful login, TaskList re-hashes the password with 600,000 iterations and replaces `auth.json` by writing a temporary file and renaming it. A wrong password never changes the file.
 
 After login, ASP.NET Core issues an HttpOnly, SameSite=Strict authentication cookie. Login and first-run setup are rate-limited per source IP to 5 attempts per minute.
 
@@ -287,7 +295,7 @@ Each date accepts `m/d`, `m/d/yy`, or `m/d/yyyy`; dates without a year use the c
 Canonical task links use the task's Universal ID:
 
 ```text
-http://tasklist.lehighradio.com:8711/task/1643
+http://127.0.0.1:8711/task/1643
 ```
 
 TaskList resolves the correct list and visible task ID, switches to **All**, scrolls to the task, and briefly highlights it. Deep links survive authentication redirects.
@@ -430,7 +438,7 @@ The shell cache contains the login/main frontend files, shared theme and milesto
 
 TaskList is a single-user application.
 
-- Passwords are stored only as salted PBKDF2-SHA256 hashes.
+- Passwords are stored only as salted PBKDF2-SHA256 hashes with 600,000 iterations.
 - Authentication cookies are HttpOnly and SameSite=Strict.
 - Use HTTPS when the application crosses an untrusted network.
 - Prefer LAN/VPN/private reverse-proxy access when possible.
@@ -443,7 +451,14 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.6.11
+## Current release: v1.7.0
+
+### v1.7.0
+
+- Listen on `http://127.0.0.1:8711` by default instead of ASP.NET's port 5000; `--urls` and `ASPNETCORE_URLS` still choose another address, matching TaskList Stats.
+- Hash new passwords with 600,000 PBKDF2-SHA256 iterations and upgrade 210,000-iteration hashes after the next successful login, replacing `auth.json` atomically.
+- Generate `wwwroot/version.js` with its trailing semicolon and without a byte-order mark, and only when the version changes, so builds no longer modify the committed file.
+- Verified default/`--urls`/`ASPNETCORE_URLS` addresses, first-run setup, legacy-hash login and upgrade, unchanged hash on a wrong password, restart, and the login rate limit against the running app.
 
 ### v1.6.11
 

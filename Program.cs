@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+// Loopback unless --urls, ASPNETCORE_URLS, or an appsettings "urls" value chooses another address.
+if (string.IsNullOrEmpty(builder.Configuration["urls"])) builder.WebHost.UseUrls("http://127.0.0.1:8711");
 var consoleLogPath = Path.Combine(builder.Environment.ContentRootPath, "logs", "console.log");
 builder.Logging.AddProvider(new SingleFileLoggerProvider(consoleLogPath, 10 * 1024 * 1024));
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -57,6 +59,7 @@ Directory.CreateDirectory(dataDir);
 var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
+const int PasswordIterations = 600_000;
 Onboarding.Initialize(dataDir, databasePath);
 var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
 InitializeDatabase(connectionString);
@@ -115,7 +118,12 @@ app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context)
 app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context) =>
 {
     if (!PasswordConfigured(authPath)) return Results.Conflict(new { error = "No password has been configured yet." });
-    if (string.IsNullOrEmpty(request.Password) || !VerifyPassword(authPath, request.Password)) return Results.Unauthorized();
+    if (string.IsNullOrEmpty(request.Password) || !VerifyPassword(authPath, request.Password, out var needsRehash)) return Results.Unauthorized();
+    if (needsRehash)
+    {
+        SavePassword(authPath, request.Password);
+        app.Logger.LogInformation("Upgraded the saved password hash to {Iterations} PBKDF2 iterations.", PasswordIterations);
+    }
     await SignInOwner(context);
     return Results.Ok(new { authenticated = true });
 }).RequireRateLimiting("auth");
@@ -851,20 +859,25 @@ static bool PasswordConfigured(string authPath) => File.Exists(authPath);
 static string? ValidateNewPassword(string? password, string? confirmation) { if (string.IsNullOrEmpty(password) || password.Length < 8) return "Password must be at least 8 characters long."; if (password != confirmation) return "Passwords do not match."; return null; }
 static void SavePassword(string authPath, string password)
 {
-    const int iterations = 210_000;
     var salt = RandomNumberGenerator.GetBytes(16);
-    var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
-    File.WriteAllText(authPath, JsonSerializer.Serialize(new PasswordFile(1, iterations, Convert.ToBase64String(salt), Convert.ToBase64String(hash))));
+    var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, PasswordIterations, HashAlgorithmName.SHA256, 32);
+    // Write beside the target and rename, so an interrupted rehash cannot leave a truncated auth.json.
+    var temporaryPath = authPath + ".tmp";
+    File.WriteAllText(temporaryPath, JsonSerializer.Serialize(new PasswordFile(1, PasswordIterations, Convert.ToBase64String(salt), Convert.ToBase64String(hash))));
+    File.Move(temporaryPath, authPath, overwrite: true);
 }
-static bool VerifyPassword(string authPath, string password)
+static bool VerifyPassword(string authPath, string password, out bool needsRehash)
 {
+    needsRehash = false;
     try
     {
         var auth = JsonSerializer.Deserialize<PasswordFile>(File.ReadAllText(authPath));
         if (auth is null || auth.Version != 1 || auth.Iterations < 1) return false;
         var salt = Convert.FromBase64String(auth.Salt); var expected = Convert.FromBase64String(auth.Hash);
         var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, auth.Iterations, HashAlgorithmName.SHA256, expected.Length);
-        return CryptographicOperations.FixedTimeEquals(actual, expected);
+        if (!CryptographicOperations.FixedTimeEquals(actual, expected)) return false;
+        needsRehash = auth.Iterations < PasswordIterations;
+        return true;
     }
     catch { return false; }
 }

@@ -5,7 +5,7 @@
     <RootNamespace>TaskList</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.6.11</Version>
+    <Version>1.7.0</Version>
     <Product>TaskList</Product>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
@@ -16,8 +16,8 @@
   <Target Name="GenerateWebVersion" BeforeTargets="Build">
     <WriteLinesToFile
       File="$(MSBuildProjectDirectory)/wwwroot/version.js"
-      Lines="window.TASKLIST_VERSION = '$(Version)';"
+      Lines="window.TASKLIST_VERSION = '$(Version)'%3B"
       Overwrite="true"
-      Encoding="UTF-8" />
+      WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>
