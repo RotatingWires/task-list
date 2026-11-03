@@ -138,7 +138,7 @@ button { cursor: pointer; }
   align-items: center;
 }
 
-.menubar-menus { display: flex; align-items: center; }
+.menubar-menus { display: flex; align-items: center; gap: 1px; }
 .bulk-controls { display: flex; align-items: center; justify-self: center; gap: 10px; white-space: nowrap; }
 .bulk-controls[hidden] { display: none; }
 .task-selection-check { margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--theme-title); }

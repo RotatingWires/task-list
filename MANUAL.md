@@ -451,7 +451,11 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.7.1
+## Current release: v1.7.2
+
+### v1.7.2
+
+- Space the File, View, and Help menubar buttons 1px apart, matching TaskList Stats.
 
 ### v1.7.1
 
