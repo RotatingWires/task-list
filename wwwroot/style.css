@@ -92,9 +92,42 @@ button { cursor: pointer; }
 }
 .title-buttons {
   justify-self: end;
-  letter-spacing: 4px;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
+/* Equal boxes keep the drawn window controls aligned regardless of font glyph metrics. */
+.title-buttons > span {
+  position: relative;
+  width: 11px;
+  height: 11px;
+}
+.title-minimize::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+}
+.title-maximize {
+  border: 1px solid currentColor;
+  border-top-width: 2px;
+}
+.title-close::before,
+.title-close::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+.title-close::after { transform: rotate(-45deg); }
 
 .menubar {
   padding: 2px 4px;

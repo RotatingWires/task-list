@@ -1,7 +1,10 @@
 
-/* Hold activation protects Complete and Reopen from accidental mobile taps. */
+/* Hold activation protects Complete and Reopen from accidental mobile taps.
+   Isolation keeps the label's z-index inside the button so it scrolls under
+   the sticky table header. */
 .task-primary-action.hold-action {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   touch-action: none;
   -webkit-touch-callout: none;

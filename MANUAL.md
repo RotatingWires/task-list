@@ -221,7 +221,7 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action; Done and Cancelled tasks use **Reopen**. Both actions must be held for **800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke either action directly. Mouse/pen and keyboard holds use the same duration. While held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. Complete and Reopen share the same handler, progress styling, and `TASK_ACTION_HOLD_MS` constant in `wwwroot/tasks.js`. **Edit** stays directly accessible.
+Open tasks use **Complete** as the primary action; Done and Cancelled tasks use **Reopen**. Both actions must be held for **800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke either action directly. Mouse/pen and keyboard holds use the same duration. While held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. Complete and Reopen share the same handler, progress styling, and `TASK_ACTION_HOLD_MS` constant in `wwwroot/tasks.js`. The button isolates its progress and label layers, so the label scrolls beneath the sticky column headers. **Edit** stays directly accessible.
 
 
 The attached More menu contains actions such as:
@@ -451,7 +451,12 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.7.0
+## Current release: v1.7.1
+
+### v1.7.1
+
+- Draw the title-bar minimize, maximize, and close symbols with CSS in equal-size boxes so they line up; the old `_` sat on the text baseline below the other two. TaskList Stats and NewsReview use the same markup and styles.
+- Keep Complete/Reopen labels beneath the sticky Actions header while the task list scrolls; the hold-progress label no longer competes with the header's stacking order.
 
 ### v1.7.0
 
