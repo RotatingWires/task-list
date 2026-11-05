@@ -2,7 +2,7 @@
   'use strict';
 
   const numberFormat = new Intl.NumberFormat();
-  const confettiColors = ['#ff3b30', '#ffcc00', '#34c759', '#0a84ff', '#bf5af2', '#ff9f0a'];
+  const CONFETTI_COLOR_COUNT = 6; // --confetti-1 ... --confetti-6 in theme.css
   let checking = null;
   let checkRequested = false;
   let waitingNotices = [];
@@ -114,7 +114,7 @@
       piece.style.setProperty('--delay', `${Math.random() * 0.45}s`);
       piece.style.setProperty('--duration', `${2.4 + Math.random() * 1.4}s`);
       piece.style.setProperty('--spin', `${360 + Math.floor(Math.random() * 900)}deg`);
-      piece.style.setProperty('--confetti-color', confettiColors[index % confettiColors.length]);
+      piece.style.setProperty('--confetti-color', `var(--confetti-${(index % CONFETTI_COLOR_COUNT) + 1})`);
       layer.append(piece);
     }
 

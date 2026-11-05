@@ -14,24 +14,24 @@
 }
 
 .milestone-dialog::backdrop {
-  background: rgba(0, 0, 0, .32);
+  background: var(--milestone-backdrop);
 }
 
 .milestone-shell {
   overflow: hidden;
-  color: var(--theme-text, #000);
-  background: var(--theme-face, #c0c0c0);
-  border-top: 2px solid var(--theme-light-edge, #fff);
-  border-left: 2px solid var(--theme-light-edge, #fff);
-  border-right: 2px solid var(--theme-black, #000);
-  border-bottom: 2px solid var(--theme-black, #000);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, .38);
+  color: var(--ink);
+  background: var(--face);
+  border-top: 2px solid var(--light-edge);
+  border-left: 2px solid var(--light-edge);
+  border-right: 2px solid var(--black);
+  border-bottom: 2px solid var(--black);
+  box-shadow: 3px 3px 0 var(--milestone-shadow);
 }
 
 .milestone-dialog-title {
   margin: 3px;
-  background: var(--theme-title, #000080);
-  color: var(--theme-title-text, #fff);
+  background: var(--title);
+  color: var(--title-text);
 }
 
 .milestone-body {
@@ -43,10 +43,10 @@
 
 .milestone-star {
   margin: 1px 0 6px;
-  color: #e2ab00;
+  color: var(--milestone-star);
   font-size: 42px;
   line-height: 1;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, .25);
+  text-shadow: 1px 1px 0 var(--milestone-star-shadow);
 }
 
 .milestone-kicker {
@@ -63,12 +63,12 @@
 
 .milestone-notice-card {
   padding: 10px;
-  color: var(--theme-text, #000);
-  background: var(--theme-surface, #fff);
-  border-top: 2px solid var(--theme-dark-edge, #404040);
-  border-left: 2px solid var(--theme-dark-edge, #404040);
-  border-right: 2px solid var(--theme-light-edge, #fff);
-  border-bottom: 2px solid var(--theme-light-edge, #fff);
+  color: var(--ink);
+  background: var(--surface);
+  border-top: 2px solid var(--dark-edge);
+  border-left: 2px solid var(--dark-edge);
+  border-right: 2px solid var(--light-edge);
+  border-bottom: 2px solid var(--light-edge);
 }
 
 .milestone-notice-title {
@@ -83,7 +83,7 @@
 
 .milestone-notice-when {
   margin-top: 6px;
-  color: var(--theme-muted, #666);
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }

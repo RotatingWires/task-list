@@ -16,7 +16,7 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  background: var(--theme-row-hover);
+  background: var(--row-hover);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 80ms linear;
@@ -36,24 +36,23 @@
 /* Task-specific control refinements kept separate from the general Win95 shell. */
 
 #moveDialog .move-list-button {
-  background: #d4d0c8;
-  outline: 1px solid #404040;
+  background: var(--label-surface);
+  outline: 1px solid var(--dark-edge);
   box-shadow:
-    inset 1px 1px 0 #fff,
-    inset -1px -1px 0 #808080,
-    2px 2px 0 #000;
+    inset 1px 1px 0 var(--light-edge),
+    inset -1px -1px 0 var(--shadow),
+    2px 2px 0 var(--black);
 }
 
 #moveDialog .move-list-button:active,
 #moveDialog .move-list-button[aria-expanded="true"] {
   box-shadow:
-    inset 1px 1px 0 #808080,
-    inset -1px -1px 0 #fff,
-    1px 1px 0 #000;
+    inset 1px 1px 0 var(--shadow),
+    inset -1px -1px 0 var(--mid-edge);
 }
 
 #moveDialog .move-list-dropdown {
-  box-shadow: 2px 2px 0 #000;
+  box-shadow: 2px 2px 0 var(--black);
 }
 
 /* Task Information metric explanations support hover/focus and tap help. */
@@ -69,13 +68,13 @@
   z-index: 1000;
   max-width: min(360px, calc(100vw - 20px));
   padding: 7px 9px;
-  background: #ffffe1;
-  color: #000;
-  border-top: 2px solid #fff;
-  border-left: 2px solid #fff;
-  border-right: 2px solid #404040;
-  border-bottom: 2px solid #404040;
-  box-shadow: 1px 1px 0 #000;
+  background: var(--note);
+  color: var(--ink);
+  border-top: 2px solid var(--light-edge);
+  border-left: 2px solid var(--light-edge);
+  border-right: 2px solid var(--dark-edge);
+  border-bottom: 2px solid var(--dark-edge);
+  box-shadow: 1px 1px 0 var(--black);
   font: 13px Tahoma, "MS Sans Serif", Arial, sans-serif;
   line-height: 1.4;
   white-space: pre-line;

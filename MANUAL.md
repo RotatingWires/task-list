@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.3
+# TaskList v1.7.4
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -62,7 +62,7 @@ wwwroot/
   theme.js             persistent Light/Dark theme selection and startup theme application
   login.js             login/setup behavior
   style.css            general Win95-style application/login/search layout
-  theme.css            shared Light/Dark Win95 theme tokens and dark-theme styling
+  theme.css            Light/Dark color tokens; the only stylesheet with color values
   task-controls.css    task-specific Move/action control styling
   sw.js                network-first service worker
   manifest.webmanifest PWA metadata
@@ -145,7 +145,7 @@ When TaskList creates a fresh database, it records a pending reminder outside SQ
 
 Use **View → Theme** to choose either **Light** or **Dark**. The choice is stored in `localStorage` and applies to both the main TaskList UI and the login/setup screen.
 
-The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Theme styling is centralized in `wwwroot/theme.css`, and `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
+The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Every color is a token in `wwwroot/theme.css`, defined once for Light and once for Dark with the token names TaskList Stats, NewsReview, and SpendTracker also use; `style.css`, `task-controls.css`, `milestones.css`, and the scripts contain no color values except the two browser `theme-color` values `theme.js` writes to the page metadata. `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
 
 There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
 
@@ -455,7 +455,13 @@ With the adjacent TaskList Stats checkout and Node on PATH, the Python suite als
 
 ## Release notes
 
-Current release: **v1.7.3**.
+Current release: **v1.7.4**.
+
+### v1.7.4
+
+- Move every color into `wwwroot/theme.css` as Light/Dark tokens, using the token names shared with TaskList Stats, NewsReview, and SpendTracker (`--face`, `--surface`, `--ink`, `--muted`, `--light-edge`, `--dark-edge`, `--title`, `--link`, and so on). The theme-only rules that used to repaint `style.css` and `task-controls.css` now live in the rules they belong to, so each color is set once; rules that were always overridden are removed.
+- `milestones.css` uses the tokens directly instead of fallback colors, and the confetti colors are `--confetti-1` through `--confetti-6`.
+- The look is unchanged: every view, menu, and dialog renders identically in both themes on desktop and phone widths. A few dark-theme spots that never had their own dark value keep their light colors as `--classic-*` tokens.
 
 ### v1.7.3
 
