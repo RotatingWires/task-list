@@ -17,4 +17,4 @@ The SQL suite includes 12 seeded sequences of 100 mixed operations, checking rel
 
 Run SQL checks with `python3 -m unittest discover -s tests -v`, TL frontend checks with `node tests/frontend.test.cjs`, and Stats frontend checks with the same Node command from its repository. The cross-app check requires the adjacent Stats checkout and Node on PATH, or `TASKLIST_TEST_NODE` pointing to Node.
 
-Existing history is still the startup baseline, so upgrades do not replay old celebrations. Popups still use the documented atomic consume-before-display API: a lost consume response or closing a page after consumption can prevent display. Tests cover application state and SQL behavior, rather than a live NAS deployment.
+Existing history is still the startup baseline, so upgrades do not replay old celebrations. Popups still use the documented atomic consume-before-display API: a lost consume response or closing a page after consumption can prevent display. Tests cover application state and SQL behavior, rather than a live deployment.
