@@ -6,9 +6,9 @@ import re
 import sqlite3
 
 ROOT = Path(__file__).resolve().parents[1]
-PROGRAM = (ROOT / "Program.cs").read_text()
-NOTIFICATIONS = (ROOT / "MilestoneNotifications.cs").read_text()
-TRANSFER = (ROOT / "DataTransfer.cs").read_text()
+PROGRAM = (ROOT / "src" / "Program.cs").read_text()
+NOTIFICATIONS = (ROOT / "src" / "MilestoneNotifications.cs").read_text()
+TRANSFER = (ROOT / "src" / "DataTransfer.cs").read_text()
 
 
 def raw_sql(text):

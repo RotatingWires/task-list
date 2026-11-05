@@ -25,15 +25,17 @@ It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. The
 <img width="2560" height="1305" alt="image" src="https://github.com/user-attachments/assets/63054a38-1d9d-4096-b846-4f9f0c479273" />
 
 
-TaskList intentionally keeps a small source tree. Frontend code is split by responsibility rather than by release version.
+TaskList keeps a small source tree: the C# server code lives in `src/`, and frontend code in `wwwroot/` is split by responsibility rather than by release version.
 
 ```text
 TaskList.csproj        .NET project, dependencies, and authoritative release version
-Program.cs             server, authentication, SQLite schema, event-log triggers, and API
-DataTransfer.cs        authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
-Onboarding.cs          first-run backup reminder state and authenticated acknowledgement
-MilestoneNotifications.cs
+src/
+  Program.cs           server, authentication, SQLite schema, event-log triggers, and API
+  DataTransfer.cs      authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
+  Onboarding.cs        first-run backup reminder state and authenticated acknowledgement
+  MilestoneNotifications.cs
                        pending milestone queue, counter triggers, schema migration, and consume API
+  SingleFileLogger.cs  console/file logging with in-place 10 MiB truncation
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
@@ -451,7 +453,11 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.7.2
+## Current release: v1.7.3
+
+### v1.7.3
+
+- Move the C# server sources into `src/`. `TaskList.csproj`, `wwwroot/`, `tests/`, and every build, run, and test command stay where they were; behavior is unchanged.
 
 ### v1.7.2
 
