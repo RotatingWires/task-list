@@ -1,0 +1,28 @@
+name: Tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      # TaskList Stats sits next to TaskList so the cross-app milestone parity test can run.
+      - uses: actions/checkout@v4
+        with:
+          path: task-list
+      - uses: actions/checkout@v4
+        with:
+          repository: RotatingWires/task-list-stats
+          path: task-list-stats
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: dotnet build TaskList.csproj --nologo
+        working-directory: task-list
+      - run: python3 -m unittest discover -s tests -v
+        working-directory: task-list
+      - run: node tests/frontend.test.cjs
+        working-directory: task-list

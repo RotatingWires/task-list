@@ -455,6 +455,8 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
+GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Python and Node suites on every push and pull request, with TaskList Stats checked out alongside so the cross-app milestone parity test runs too.
+
 ## Release notes
 
 Current release: **v1.7.5**.
