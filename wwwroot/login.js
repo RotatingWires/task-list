@@ -42,9 +42,20 @@ async function request(url, options = {}) {
   throw new Error(message);
 }
 
+async function frontendReleaseVersion() {
+  try {
+    const response = await fetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
+    if (!response.ok) return '';
+    const body = await response.json();
+    return body.version || '';
+  } catch {
+    return '';
+  }
+}
+
 async function initialize() {
-  if (window.TASKLIST_VERSION)
-    titleAppName.textContent = `TaskList v${window.TASKLIST_VERSION}`;
+  const version = await frontendReleaseVersion();
+  if (version) titleAppName.textContent = `TaskList v${version}`;
 
   try {
     const status = await request('/api/auth/status');

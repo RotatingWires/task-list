@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.4
+# TaskList v1.7.5
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -49,7 +49,7 @@ data/                  runtime/private data
 wwwroot/
   index.html           main application shell and dialogs
   login.html           login / first-run password setup
-  version.js           frontend release version, regenerated from TaskList.csproj during build
+  version.json         frontend release version, regenerated from TaskList.csproj during build
   app.js               shared DOM/state/API/helpers
   tasks.js             task rendering, actions, edit/subtask/move and Task Information metrics
   bulk.js              persistent selection mode, bulk toolbar, confirmations and execution
@@ -75,7 +75,9 @@ There are no release-specific JavaScript override files. New behavior belongs in
 
 `TaskList.csproj` contains the single authoritative application version in its `<Version>` property. The .NET SDK derives the assembly/file/informational versions from that value, so they are not repeated as separate manually maintained properties.
 
-The `GenerateWebVersion` MSBuild target writes `wwwroot/version.js` from `$(Version)` before each build for the browser's About/version label. It rewrites the file only when the version changes, so building does not leave the committed copy modified.
+The `GenerateWebVersion` MSBuild target writes `wwwroot/version.json` from `$(Version)` before each build; the login page and About label fetch it, as in TaskList Stats and SpendTracker. It rewrites the file only when the version changes, so building does not leave the committed copy modified.
+
+The project is framework-dependent and not tied to one operating system: `dotnet build` and `dotnet run` work on Windows, Linux, and macOS, and the build includes the SQLite native library for each of them.
 
 Frontend asset URLs no longer carry release-number query strings. The service worker uses a stable shell-cache name and network-first requests with `cache: 'no-store'`, updating the cached copy after a successful network response and using cache only as an offline fallback. That keeps frontend freshness independent of manually duplicated release numbers.
 
@@ -455,7 +457,12 @@ With the adjacent TaskList Stats checkout and Node on PATH, the Python suite als
 
 ## Release notes
 
-Current release: **v1.7.4**.
+Current release: **v1.7.5**.
+
+### v1.7.5
+
+- Build and run on Windows, Linux, and macOS again: `TaskList.csproj` no longer pins the `win-x64` runtime, which made `dotnet run` fail to load SQLite on other systems.
+- Replace the generated `wwwroot/version.js` global with `wwwroot/version.json`, fetched by the login page and About label like TaskList Stats and SpendTracker.
 
 ### v1.7.4
 

@@ -2,7 +2,7 @@ const CACHE = 'task-list-shell';
 const SHELL = [
   '/login.html',
   '/login.js',
-  '/version.js',
+  '/version.json',
   '/theme.js',
   '/style.css',
   '/task-controls.css',

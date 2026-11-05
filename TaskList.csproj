@@ -5,18 +5,16 @@
     <RootNamespace>TaskList</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.7.4</Version>
+    <Version>1.7.5</Version>
     <Product>TaskList</Product>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>false</SelfContained>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
   </ItemGroup>
   <Target Name="GenerateWebVersion" BeforeTargets="Build">
     <WriteLinesToFile
-      File="$(MSBuildProjectDirectory)/wwwroot/version.js"
-      Lines="window.TASKLIST_VERSION = '$(Version)'%3B"
+      File="$(MSBuildProjectDirectory)/wwwroot/version.json"
+      Lines="{&quot;version&quot;:&quot;$(Version)&quot;}"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
   </Target>

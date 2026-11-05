@@ -169,8 +169,19 @@ function applyAppVersion(version) {
   if (aboutVersion) aboutVersion.textContent = label;
 }
 
-function loadAppVersion() {
-  applyAppVersion(window.TASKLIST_VERSION);
+async function frontendReleaseVersion() {
+  try {
+    const response = await fetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
+    if (!response.ok) return '';
+    const body = await response.json();
+    return body.version || '';
+  } catch {
+    return '';
+  }
+}
+
+async function loadAppVersion() {
+  applyAppVersion(await frontendReleaseVersion());
 }
 
 function clearDeepLink() {
