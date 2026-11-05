@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.11
+# TaskList v1.7.3
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -24,7 +24,7 @@ If you have a backup, use **File → Import/Export...** before creating tasks: r
 
 Runtime data lives in `data/task-list.db`; the password hash is in `data/auth.json`. Use **File → Import/Export...** to download a backup.
 
-## Security notes
+## Security and privacy
 
 TaskList is a single-user application.
 

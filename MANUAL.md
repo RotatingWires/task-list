@@ -1,13 +1,13 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.6.11
+# TaskList v1.7.3
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
 It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. There is no Node.js build step or frontend framework.
 
-## Stack
+## Technology stack
 
 - ASP.NET Core / C# minimal API
 - .NET 10
@@ -436,7 +436,7 @@ TaskList uses a network-first service worker for same-origin application assets.
 
 The shell cache contains the login/main frontend files, shared theme and milestone files, generated version file, manifest, and icons. Cached files are used only as an offline fallback when a network request fails.
 
-## Security notes
+## Security and privacy
 
 TaskList is a single-user application.
 
@@ -453,7 +453,9 @@ Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
-## Current release: v1.7.3
+## Release notes
+
+Current release: **v1.7.3**.
 
 ### v1.7.3
 
