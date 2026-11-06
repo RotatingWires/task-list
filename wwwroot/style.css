@@ -156,10 +156,18 @@ button { cursor: pointer; }
   border: 1px solid transparent;
   padding: 4px 10px;
 }
-.menubar-menus > button:active,
-.menu-wrap > button:active,
-.menu-wrap > button[aria-expanded="true"] {
-  border: 1px dotted var(--black);
+/* Menu bar buttons highlight like NewsReview's top bar: on mouse hover, and while their menu is open. */
+.menubar-menus > button[aria-expanded="true"],
+.menubar-menus > .menu-wrap > button[aria-expanded="true"] {
+  background: var(--title);
+  color: var(--title-text);
+}
+@media (hover: hover) and (pointer: fine) {
+  .menubar-menus > button:hover,
+  .menubar-menus > .menu-wrap > button:hover {
+    background: var(--title);
+    color: var(--title-text);
+  }
 }
 
 .menu-wrap { position: relative; }
@@ -204,7 +212,7 @@ button { cursor: pointer; }
   font-size: 0;
   line-height: 1;
 }
-.menu-dropdown button[aria-checked="true"] .menu-check::before {
+.menu-dropdown button[role="menuitemradio"][aria-checked="true"] .menu-check::before {
   content: "";
   width: 8px;
   height: 8px;
@@ -212,6 +220,19 @@ button { cursor: pointer; }
   background: currentColor;
   display: block;
 }
+/* On/off options show a box with a check mark, as in SpendTracker. */
+.menu-dropdown button[role="menuitemcheckbox"] .menu-check::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: 1px solid currentColor;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.menu-dropdown button[role="menuitemcheckbox"][aria-checked="true"] .menu-check::before { content: "✓"; }
 
 .titlebar,
 .menubar,
@@ -1198,6 +1219,7 @@ html.mouse-hover-capable .task-table tbody tr:not(.subtask-row):hover:not(.task-
 .manage-lists-footer {
   justify-content: space-between;
 }
+.manage-lists-actions { display: flex; gap: 6px; }
 
 /* Compact one-click primary task actions with an attached More menu. */
 .task-split-group {

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.6
+# TaskList v1.7.7
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -217,7 +217,7 @@ Deleting an item also deletes all descendants. Parent/root status controls which
 
 ## Lists and archives
 
-Each list has its own visible task-number sequence. Lists can be created, edited, archived, restored, or deleted.
+Each list has its own visible task-number sequence. Lists can be created, edited, archived, restored, or deleted. **File > Manage Lists...** has **Archives...** and **Create a List...** at the bottom left; the new list opens right away.
 
 Archived lists are hidden from the normal File list picker, search scope, and Move destinations, but their tasks remain in the database. Universal-ID deep links can still locate tasks in archived lists.
 
@@ -243,7 +243,7 @@ On mouse/trackpad devices, task rows highlight on real hover so the controls at 
 
 ## Bulk actions
 
-**File > Select...**, below Import/Export..., toggles selection mode and closes the menu. A circle marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selecting or deselecting a root task also selects or deselects every descendant, at every depth. Subtasks can still be toggled individually. The toolbar and dialog counts include all selected descendants. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
+**File > Select...**, below Import/Export..., toggles selection mode and closes the menu. A check box (✓ when on), as in SpendTracker, marks the enabled option, and the preference survives reloads. Click a row or its checkbox to select tasks and subtasks; keyboard users can focus a row and press Space or Enter. Selecting or deselecting a root task also selects or deselects every descendant, at every depth. Subtasks can still be toggled individually. The toolbar and dialog counts include all selected descendants. Selected rows keep the same Light/Dark color as row hover, including on touchscreens. Selection applies to the current list and view; switching either clears the selection.
 
 Press **Escape** to exit selection mode and clear selected tasks and the range anchor. The disabled preference is saved. If a dialog is open, Escape dismisses that dialog first; selection mode remains active until you press Escape again. Selection cannot be changed while a bulk action is running.
 
@@ -459,7 +459,13 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.6**.
+Current release: **v1.7.7**.
+
+### v1.7.7
+
+- **Create a List...** moved from the File menu into **Manage Lists**, after **Archives...**.
+- **File > Select...** shows a check box like SpendTracker's instead of a radio dot.
+- File, View, and Help highlight in the title color on mouse hover and while their menu is open, like NewsReview's top bar.
 
 ### v1.7.6
 

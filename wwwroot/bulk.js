@@ -48,7 +48,8 @@ document.addEventListener('keydown', event => {
 
 function selectionMenuCommand() {
   const button = menuCommand('Select...', () => setSelectionMode(!selectionMode));
-  button.setAttribute('role', 'menuitemradio');
+  // An on/off option, so it uses a check box like SpendTracker's Select... rather than a radio dot.
+  button.setAttribute('role', 'menuitemcheckbox');
   button.setAttribute('aria-checked', String(selectionMode));
   button.disabled = bulkBusy;
   button.firstElementChild.className = 'menu-check';

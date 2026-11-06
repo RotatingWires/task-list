@@ -68,7 +68,6 @@ function renderFileMenu() {
 
   fileDropdown.append(
     menuCommand('Refresh', refreshApp),
-    menuCommand('Create a List...', openCreateList),
     menuCommand('Manage Lists...', openManageLists),
     menuCommand('Search...', openSearch),
     menuCommand('Import/Export...', openTransfer),
@@ -168,6 +167,7 @@ listForm.addEventListener('submit', async event => {
       currentView = 'open';
       updateViewMenu();
       await loadTasks();
+      if (manageListsDialog.open) renderManageLists();
       setStatus('List created.');
     }
   } catch (error) {
@@ -357,5 +357,7 @@ async function deleteList(list) {
 }
 
 openArchivesButton.addEventListener('click', openArchives);
+// Lists are created from Manage Lists, next to Archives, so the File menu keeps only everyday commands.
+document.querySelector('#createListButton').addEventListener('click', openCreateList);
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 closeArchives.addEventListener('click', () => archivesDialog.close());
