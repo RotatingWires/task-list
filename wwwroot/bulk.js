@@ -134,7 +134,7 @@ function bulkActionItems(action, items) {
 function updateBulkToolbar() {
   bulkControls.hidden = !selectionMode;
   const selected = selectedTaskItems();
-  selectedTaskCount.textContent = `Selected tasks: ${selected.length}`;
+  selectedTaskCount.textContent = `Selected: ${selected.length}`;
   if (!selectionMode) {
     bulkActions.replaceChildren();
     return;

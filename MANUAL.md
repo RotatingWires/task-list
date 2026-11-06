@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.5
+# TaskList v1.7.6
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -249,7 +249,7 @@ Press **Escape** to exit selection mode and clear selected tasks and the range a
 
 Shift-click a row or its checkbox to select the inclusive range from the last normally clicked row, in the current visible order. Existing selections stay selected. Roots in the range include their descendants. Repeated Shift-clicks keep the same anchor until a normal click; switching lists/views or turning selection mode off resets it.
 
-The menu bar shows **Selected tasks: N** and the same split action button used on individual tasks. Its primary Complete/Reopen action uses the same 800 ms hold. The attached menu offers Complete, Reopen, Cancel, Move..., and Delete. Every bulk action opens a confirmation dialog listing the selection and effects. Move first shows the selected tasks/subtasks and asks for a destination, then confirms. Both Move dialogs use the same selection preview as the other bulk confirmations (the first 12 items, followed by the remaining count).
+The menu bar shows **Selected: N** and the same split action button used on individual tasks. Its primary Complete/Reopen action uses the same 800 ms hold. The attached menu offers Complete, Reopen, Cancel, Move..., and Delete. Every bulk action opens a confirmation dialog listing the selection and effects. Move first shows the selected tasks/subtasks and asks for a destination, then confirms. Both Move dialogs use the same selection preview as the other bulk confirmations (the first 12 items, followed by the remaining count).
 
 Complete affects selected Open items; Reopen and Cancel skip items already in the requested state. Status changes apply only to selected items. Moving or deleting includes descendants; selecting both a parent and child processes that subtree once. Moving a selected subtask without its ancestor makes it a top-level task in the destination. Delete preserves recorded history for Stats.
 
@@ -459,7 +459,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.5**.
+Current release: **v1.7.6**.
+
+### v1.7.6
+
+- Selection mode's menu-bar count reads **Selected: N**, matching SpendTracker.
 
 ### v1.7.5
 
