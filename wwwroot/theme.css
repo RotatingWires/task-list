@@ -16,7 +16,7 @@
   --divider: #c8c8c8;
   --subtask-divider: #d0d0d0;
   --info-divider: #808080;
-  --muted: #666;
+  --muted: #555;
   --muted-strong: #444;
   --placeholder: #777;
   --link: #000080;
@@ -27,7 +27,7 @@
   --error: #800000;
   --status-open: #e02d04;
   --status-closed: #02bd34;
-  --backdrop: rgba(0, 0, 0, .35);
+  --backdrop: #0007;
 
   --milestone-backdrop: rgba(0, 0, 0, .32);
   --milestone-shadow: rgba(0, 0, 0, .38);
