@@ -71,14 +71,17 @@ function renderFileMenu() {
     menuCommand('Manage Lists...', openManageLists),
     menuCommand('Search...', openSearch),
     menuCommand('Import/Export...', openTransfer),
-    menuCommand('Fresh Start...', openFreshStart),
     selectionMenuCommand()
   );
 
   const accountSeparator = document.createElement('div');
   accountSeparator.className = 'menu-separator';
   accountSeparator.setAttribute('role', 'separator');
-  fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut));
+  // Fresh Start sits below Log Out, apart from everyday commands, because it permanently clears data.
+  const freshStartSeparator = document.createElement('div');
+  freshStartSeparator.className = 'menu-separator';
+  freshStartSeparator.setAttribute('role', 'separator');
+  fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut), freshStartSeparator, menuCommand('Fresh Start...', openFreshStart));
 }
 
 function refreshApp() {

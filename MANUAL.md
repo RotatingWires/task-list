@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.9
+# TaskList v1.7.10
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -356,7 +356,7 @@ Source reference: https://community.obsidian.md/plugins/obsidian-tasks-plugin
 
 ## Fresh start
 
-**File > Fresh Start...**, after Import/Export..., clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start: tick the items to clear, type `RESET SELECTED`, and choose **Clear Selected**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
+**File > Fresh Start...**, at the bottom of the File menu below Log Out so it is kept apart from everyday commands, clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start and uses the same dialog size, frame, title bar with a close button, footer, and **Reset selected data** button, with Win95 check boxes like SpendTracker's: tick the items to clear, type `RESET SELECTED`, and choose **Reset selected data**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
 
 | Choice | What is cleared |
 | --- | --- |
@@ -481,7 +481,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.9**.
+Current release: **v1.7.10**.
+
+### v1.7.10
+
+- **Fresh Start...** moves to the bottom of the File menu, below Log Out.
+- The Fresh Start dialog matches NewsReview's Fresh start dialog (size, frame, title bar with ×, footer, and a **Reset selected data** button) and uses Win95 check boxes like SpendTracker's.
 
 ### v1.7.9
 

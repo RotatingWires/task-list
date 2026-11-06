@@ -108,24 +108,25 @@
     <div class="dialog-buttons"><button type="button" id="closeTransfer">OK</button></div>
   </dialog>
 
-  <dialog id="freshStartDialog" class="retro-dialog scroll-dialog" aria-labelledby="freshStartTitle">
-    <div id="freshStartTitle" class="dialog-title">Fresh Start</div>
-    <div class="dialog-body transfer-body">
-      <p>Only the selected items are cleared, then the database is compacted to free disk space. This cannot be undone in TaskList; use File &gt; Import/Export... to download an export first if you might want them back.</p>
-      <fieldset class="fresh-start-options"><legend>Choose what to clear</legend>
-        <label><input type="checkbox" data-fresh-start="finishedTasks"> <span><strong>Finished tasks</strong> <span data-fresh-count="finishedTasks"></span><br>Done and cancelled tasks and subtasks in every list, when none of their subtasks are still open.</span></label>
-        <label><input type="checkbox" data-fresh-start="archivedLists"> <span><strong>Archived lists</strong> <span data-fresh-count="archivedLists"></span><br>Every archived list and its tasks.</span></label>
-        <label><input type="checkbox" data-fresh-start="everything"> <span><strong>Every list and task</strong> <span data-fresh-count="everything"></span><br>Leaves one empty Tasks list.</span></label>
-        <label><input type="checkbox" data-fresh-start="deletedTaskHistory" checked> <span><strong>History of deleted tasks</strong> <span data-fresh-count="deletedTaskHistory"></span><br>Recorded events for tasks that no longer exist, and the saved names of deleted lists.</span></label>
-        <label><input type="checkbox" data-fresh-start="allHistory"> <span><strong>All task history</strong> <span data-fresh-count="allHistory"></span><br>Keeps only each remaining task's current dates. TaskList Stats loses past trends.</span></label>
-        <label><input type="checkbox" data-fresh-start="recoveryBackups" checked> <span><strong>Pre-restore recovery backups</strong> <span data-fresh-count="recoveryBackups"></span><br>ZIPs the server saved in data/backups before each restore.</span></label>
-      </fieldset>
-      <p class="move-note">Removed tasks are recorded as Deleted in history, like a normal delete, unless history is cleared too. Clearing history restarts milestone progress from the history that remains. Universal IDs and task numbers are never reused. Your password, logs, and browser preferences are kept. <span id="freshStartSize"></span></p>
-      <label for="freshStartConfirmation">Type RESET SELECTED to confirm</label>
-      <input id="freshStartConfirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40">
-      <div id="freshStartError" class="login-error" role="alert"></div>
+  <dialog id="freshStartDialog" class="fresh-start-dialog" aria-labelledby="freshStartTitle">
+    <div class="fresh-start-layout">
+      <div class="fresh-start-heading"><h2 id="freshStartTitle">Fresh Start</h2><button type="button" id="freshStartClose" aria-label="Close">×</button></div>
+      <div class="fresh-start-body">
+        <p>Only the selected items will be cleared, then the database is compacted to free disk space. This cannot be undone in TaskList. Use File &gt; Import/Export... to download an export first if you might want to restore them.</p>
+        <fieldset class="fresh-start-options"><legend>Choose what to clear</legend>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="finishedTasks"> <span><strong>Finished tasks</strong> <span data-fresh-count="finishedTasks"></span><br>Done and cancelled tasks and subtasks in every list, when none of their subtasks are still open.</span></label>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="archivedLists"> <span><strong>Archived lists</strong> <span data-fresh-count="archivedLists"></span><br>Every archived list and its tasks.</span></label>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="everything"> <span><strong>Every list and task</strong> <span data-fresh-count="everything"></span><br>Leaves one empty Tasks list.</span></label>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="deletedTaskHistory" checked> <span><strong>History of deleted tasks</strong> <span data-fresh-count="deletedTaskHistory"></span><br>Recorded events for tasks that no longer exist, and the saved names of deleted lists.</span></label>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="allHistory"> <span><strong>All task history</strong> <span data-fresh-count="allHistory"></span><br>Keeps only each remaining task's current dates. TaskList Stats loses past trends.</span></label>
+          <label><input type="checkbox" class="retro-check" data-fresh-start="recoveryBackups" checked> <span><strong>Pre-restore recovery backups</strong> <span data-fresh-count="recoveryBackups"></span><br>ZIPs the server saved in data/backups before each restore.</span></label>
+        </fieldset>
+        <p class="fresh-start-note">Removed tasks are recorded as Deleted in history, like a normal delete, unless history is cleared too. Clearing history restarts milestone progress from the history that remains. Universal IDs and task numbers are never reused. Your password, logs, and browser preferences are kept. <span id="freshStartSize"></span></p>
+        <label class="fresh-start-confirm">Type RESET SELECTED to confirm<input id="freshStartConfirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40"></label>
+        <p id="freshStartError" class="fresh-start-error" role="alert"></p>
+      </div>
+      <div class="fresh-start-actions"><button type="button" id="freshStartSubmit" class="danger">Reset selected data</button><button type="button" id="freshStartCancel">Cancel</button></div>
     </div>
-    <div class="dialog-buttons"><button type="button" id="freshStartSubmit">Clear Selected</button><button type="button" id="freshStartCancel">Cancel</button></div>
   </dialog>
 
   <dialog id="editDialog" class="retro-dialog">

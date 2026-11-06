@@ -419,10 +419,60 @@ button:active {
 .transfer-body p,
 .first-run-body p { margin: 0; }
 .first-run-dialog { font-size: 16px; }
-.fresh-start-options { display: grid; gap: 8px; margin: 0; padding: 8px 10px 10px; border: 1px solid var(--info-divider); }
-.fresh-start-options legend { padding: 0 4px; }
-.fresh-start-options label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; line-height: 1.4; }
-.fresh-start-options input { margin: 3px 0 0; accent-color: var(--title); }
+/* Fresh Start copies NewsReview's Fresh start dialog: size, frame, title bar, footer, and Win95 check boxes. */
+.fresh-start-dialog {
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 3px;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--face);
+  border: 3px solid;
+  border-color: var(--light-edge) var(--dark-edge) var(--dark-edge) var(--light-edge);
+  border-radius: 0;
+  box-shadow: 2px 2px var(--black);
+}
+.fresh-start-dialog::backdrop { background: var(--backdrop); }
+.fresh-start-layout { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 36px); }
+.fresh-start-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; background: var(--title); padding: 3px; }
+.fresh-start-heading h2 { margin: 0; padding: 2px 4px; font-size: 15px; color: var(--title-text); }
+.fresh-start-heading button { min-height: 24px; padding: 0 6px; font-size: 17px; }
+.fresh-start-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 12px; display: grid; gap: 12px; line-height: 1.4; }
+.fresh-start-body p { margin: 0; }
+.fresh-start-options { display: grid; gap: 10px; min-width: 0; margin: 0; border: 1px solid var(--shadow); }
+.fresh-start-options label { display: flex; align-items: flex-start; gap: 6px; }
+.fresh-start-options .retro-check { margin-top: 3px; }
+.fresh-start-note { color: var(--muted); }
+.fresh-start-confirm { display: flex; flex-direction: column; gap: 4px; }
+.fresh-start-confirm input { width: 100%; box-sizing: border-box; }
+.fresh-start-error { color: var(--error); font-size: 13px; }
+.fresh-start-error:empty { display: none; }
+.fresh-start-actions { display: flex; flex-shrink: 0; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--shadow); }
+.fresh-start-actions .danger, .fresh-start-actions .danger:disabled { color: var(--error); font-weight: 700; }
+/* A Win95 check box like SpendTracker's: a sunken white square holding a check mark. */
+input.retro-check {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  background: var(--surface);
+  border: 1px solid;
+  border-color: var(--shadow) var(--light-edge) var(--light-edge) var(--shadow);
+  border-radius: 0;
+  box-shadow: inset 1px 1px 0 var(--dark-edge);
+}
+input.retro-check:checked::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  clip-path: polygon(0 40%, 35% 72%, 100% 0, 100% 28%, 35% 100%, 0 68%);
+}
+input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset: 2px; }
 .info-grid {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);

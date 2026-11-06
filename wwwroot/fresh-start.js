@@ -7,6 +7,7 @@ const freshStartError = document.querySelector('#freshStartError');
 const freshStartSize = document.querySelector('#freshStartSize');
 const freshStartSubmit = document.querySelector('#freshStartSubmit');
 const freshStartCancel = document.querySelector('#freshStartCancel');
+const freshStartClose = document.querySelector('#freshStartClose');
 let freshStartBusy = false;
 
 function formatBytes(bytes) {
@@ -55,10 +56,12 @@ function setFreshStartBusy(busy) {
   freshStartBusy = busy;
   freshStartSubmit.disabled = busy;
   freshStartCancel.disabled = busy;
+  freshStartClose.disabled = busy;
   appWindow.inert = busy;
 }
 
 freshStartCancel.addEventListener('click', () => freshStartDialog.close());
+freshStartClose.addEventListener('click', () => freshStartDialog.close());
 freshStartDialog.addEventListener('cancel', event => {
   if (freshStartBusy) event.preventDefault();
 });
