@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.8
+# TaskList v1.7.9
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -35,6 +35,8 @@ src/
   Onboarding.cs        first-run backup reminder state and authenticated acknowledgement
   MilestoneNotifications.cs
                        pending milestone queue, counter triggers, schema migration, and consume API
+  FreshStart.cs        selective Fresh start: summary, clearing chosen data, recovery-backup removal, compaction
+  TaskEventBackfill.cs legacy history events for current tasks, shared by startup and Fresh start
   SingleFileLogger.cs  console/file logging with in-place 10 MiB truncation
 README.md              setup, architecture, behavior, security, and release notes
 
@@ -54,6 +56,7 @@ wwwroot/
   tasks.js             task rendering, actions, edit/subtask/move and Task Information metrics
   bulk.js              persistent selection mode, bulk toolbar, confirmations and execution
   transfer.js          Import/Export dialog, downloads, ZIP restore and Markdown upload
+  fresh-start.js       Fresh Start dialog: stored-data summary, choices, confirmation, and refresh
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
   ui.js                menus, navigation, startup/first-run reminder, deep links, PWA registration
@@ -329,7 +332,7 @@ The ZIP excludes `auth.json`, the login password, authentication cookies/keys, l
 
 Choose a TaskList export ZIP in the file picker, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
 
-Before replacing data, the server creates `data/backups/before-restore-<UTC timestamp>-<unique ID>.zip` containing the previous database. These private recovery files remain until you delete them manually. Copy one from the server and use the same Import button to restore it if needed. The server must be able to create that recovery file before restoration proceeds.
+Before replacing data, the server creates `data/backups/before-restore-<UTC timestamp>-<unique ID>.zip` containing the previous database. These private recovery files remain until you delete them manually or with **File > Fresh Start...**. Copy one from the server and use the same Import button to restore it if needed. The server must be able to create that recovery file before restoration proceeds.
 
 Restore copies known TaskList data tables in one SQLite transaction and keeps the running application's schema and triggers. Imported triggers/code are never installed or executed. Existing triggers are suspended inside the transaction while data is copied, then restored before commit; this avoids generating duplicate history or milestone notices. If copying or validation fails, changes and trigger changes roll back together. Existing queued milestone notices in the backup remain pending.
 
@@ -350,6 +353,23 @@ Import preserves arbitrary checklist nesting. Root groups are imported bottom-up
 Source reference: https://community.obsidian.md/plugins/obsidian-tasks-plugin
 
 `➕ YYYY-MM-DD` becomes Created and `✅ YYYY-MM-DD` becomes Completed. Missing source dates are stored as `Unknown` where applicable. Imported items use `Unknown` for Last updated when the source has no update timestamp.
+
+## Fresh start
+
+**File > Fresh Start...**, after Import/Export..., clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start: tick the items to clear, type `RESET SELECTED`, and choose **Clear Selected**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
+
+| Choice | What is cleared |
+| --- | --- |
+| Finished tasks | Done and Cancelled tasks and subtasks in every list, but only when none of their subtasks are still Open; a finished task with an open subtask stays with its whole tree. |
+| Archived lists | Every archived list and its tasks. Active lists are untouched. |
+| Every list and task | All lists and tasks. One empty **Tasks** list is created so TaskList always has an active list. |
+| History of deleted tasks | Recorded events for tasks that no longer exist, plus the saved names of deleted lists that no remaining event uses. History for current tasks stays. |
+| All task history | Every recorded event. Each remaining task then gets one legacy event per date it still has (Created, and Completed/Cancelled/Reopened where set), the same events TaskList records at startup for tasks with no history. |
+| Pre-restore recovery backups | The `before-restore-*.zip` files in `data/backups/`. |
+
+Removed tasks get Deleted events, exactly like a normal delete, unless the same Fresh start also clears history. Universal IDs, list task numbers, and subtask numbers are never reused afterwards. Clearing history changes the server's history revision, so TaskList Stats reloads its event history, and it rebuilds milestone counters from the history that remains, as startup and restore do; milestone progress therefore restarts from that history. Rebuilt legacy events never queue milestone notices.
+
+The database part runs in one SQLite transaction, so a failure changes nothing. Compaction (SQLite `VACUUM`, then a WAL checkpoint) runs afterwards; if it fails, the data is still cleared and the freed pages are reused for new data. The status bar reports what was removed and how much space was freed. Your password, logs, and browser preferences are kept. Fresh start cannot be undone in TaskList, so download an export first if you might want the data back. It is not a secure disk wipe.
 
 ## HTTP endpoints
 
@@ -411,6 +431,8 @@ Creation Location headers identify the created resource path; there are no stand
 | POST | `/api/import/backup` | Raw TaskList export ZIP; `Content-Type: application/zip`. | Validates the backup, saves a private recovery ZIP and replaces lists/tasks/history atomically, keeping current schema/triggers and monotonic ID allocations. Returns `{restored: true, totals, recoveryBackup}`; `totals` has `lists`, `archivedLists`, `tasks`, `subtasks`, `events`, and `recoveryBackup` is the saved filename under `data/backups/`. Clears a pending first-run reminder after success. See Import and export for format/size limits and restore behavior. |
 | GET | `/api/onboarding` | None. | `{importReminderPending}`: whether this fresh server database still has its backup reminder pending. Cache-Control is no-store. |
 | POST | `/api/onboarding/acknowledge` | None. | Dismisses the backup reminder for this server. Returns 204; repeated acknowledgements are safe. Only reminder state changes. |
+| GET | `/api/fresh-start` | None. | What Fresh start could clear: `{finishedTasks, archivedLists, archivedListTasks, lists, tasks, deletedTaskEvents, events, recoveryBackups, recoveryBackupBytes, databaseBytes}`. |
+| POST | `/api/fresh-start` | `{confirmation: "RESET SELECTED", selections}`; `selections` maps any of `finishedTasks`, `archivedLists`, `everything`, `deletedTaskHistory`, `allHistory`, `recoveryBackups` to true/false, with at least one true. | Clears the selected data and compacts the database. Returns `{removedTasks, removedLists, removedEvents, removedBackups, freedBytes, compacted, warning}`; `warning` is null unless compaction or a backup deletion failed. 400 for a missing confirmation or unknown option, 409 while the database is busy. See Fresh start. |
 
 Most results are JSON; export is a ZIP and 204 responses have no body. Validation errors usually include `{error: "message"}`. Common status codes are 400 for invalid input, 401 for missing/expired authentication or incorrect credentials, 404 for missing lists/items, 409 for setup conflicts or a busy backup restore, 429 for the auth cooldown, and 413 when a hosting upload limit rejects the request. Some errors have an empty body. No direct history-query or ZIP-merge endpoint is provided; recorded history is included in the database export.
 
@@ -451,7 +473,7 @@ TaskList is a single-user application.
 
 ## Development checks
 
-Run `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node tests/frontend.test.cjs` for frontend tests. SQL fixtures execute the schema, triggers, and operation SQL from the C# source against disposable databases. Cases cover moves, renames, status changes, imports, deletion, restore/rollback, IDs, counters, and 1,200 seeded mixed operations. JavaScript tests exercise the actual selection/bulk-action and milestone-check code with DOM fixtures. Python and Node are test tools, not TaskList runtime dependencies.
+Run `dotnet build` and then `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node tests/frontend.test.cjs` for frontend tests. SQL fixtures execute the schema, triggers, and operation SQL from the C# source against disposable databases. Cases cover moves, renames, status changes, imports, deletion, restore/rollback, IDs, counters, and 1,200 seeded mixed operations. `tests/test_fresh_start.py` starts the built TaskList against a throwaway data folder and checks every Fresh start choice: validation, open trees kept, Deleted events, history clears surviving a restart with unchanged milestone counters, the Stats history revision, recovery-backup removal, compaction, and IDs never being reused; it is skipped until TaskList has been built. JavaScript tests exercise the actual selection/bulk-action and milestone-check code with DOM fixtures. Python and Node are test tools, not TaskList runtime dependencies.
 
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
@@ -459,7 +481,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.8**.
+Current release: **v1.7.9**.
+
+### v1.7.9
+
+- Add **File > Fresh Start...**, like NewsReview's: choose what to clear (finished tasks, archived lists, every list and task, history of deleted tasks, all task history, or pre-restore recovery backups), type `RESET SELECTED`, and the database is compacted afterwards to free disk space.
+- Move the legacy history backfill into `TaskEventBackfill.cs` so startup and Fresh start share it.
 
 ### v1.7.8
 

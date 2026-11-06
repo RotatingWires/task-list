@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROGRAM = (ROOT / "src" / "Program.cs").read_text()
 NOTIFICATIONS = (ROOT / "src" / "MilestoneNotifications.cs").read_text()
 TRANSFER = (ROOT / "src" / "DataTransfer.cs").read_text()
+BACKFILL = (ROOT / "src" / "TaskEventBackfill.cs").read_text()
 
 
 def raw_sql(text):
@@ -66,7 +67,7 @@ class SqlApp:
         execute(self.connection, raw_sql(initialize)[0])
         item_triggers = PROGRAM.split("static void EnsureTaskEventSchema(", 1)[1]
         execute(self.connection, item_triggers.split('using var triggers = Sql(connection, """', 1)[1].split('"""', 1)[0])
-        execute(self.connection, raw_sql(initialize)[1])
+        execute(self.connection, raw_sql(BACKFILL)[0])
         self.rebuild()
 
     @contextmanager

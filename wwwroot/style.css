@@ -419,6 +419,10 @@ button:active {
 .transfer-body p,
 .first-run-body p { margin: 0; }
 .first-run-dialog { font-size: 16px; }
+.fresh-start-options { display: grid; gap: 8px; margin: 0; padding: 8px 10px 10px; border: 1px solid var(--info-divider); }
+.fresh-start-options legend { padding: 0 4px; }
+.fresh-start-options label { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; line-height: 1.4; }
+.fresh-start-options input { margin: 3px 0 0; accent-color: var(--title); }
 .info-grid {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.8
+# TaskList v1.7.9
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -24,6 +24,8 @@ If you have a backup, use **File → Import/Export...** before creating tasks: r
 
 Runtime data lives in `data/task-list.db`; the password hash is in `data/auth.json`. Use **File → Import/Export...** to download a backup.
 
+To free disk space later, **File → Fresh Start...** clears only what you pick (finished tasks, archived lists, everything, old history, or pre-restore recovery backups) and compacts the database. Download a backup first if you might want that data back.
+
 ## Security and privacy
 
 TaskList is a single-user application.
@@ -39,4 +41,4 @@ The quickstart uses plain HTTP on loopback. HTTP does not encrypt passwords, ses
 
 Exports and pre-restore recovery ZIPs are unencrypted and contain private task/history data. Store them privately. The first-run setup token is printed only to the interactive console, not the runtime log; passwords are not logged.
 
-See the manual for [authentication](MANUAL.md#login-and-api-authentication), [backup and restore](MANUAL.md#import-and-export), and [all features](MANUAL.md#nested-subtasks).
+See the manual for [authentication](MANUAL.md#login-and-api-authentication), [backup and restore](MANUAL.md#import-and-export), [Fresh start](MANUAL.md#fresh-start), and [all features](MANUAL.md#nested-subtasks).

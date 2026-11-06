@@ -71,6 +71,7 @@ function renderFileMenu() {
     menuCommand('Manage Lists...', openManageLists),
     menuCommand('Search...', openSearch),
     menuCommand('Import/Export...', openTransfer),
+    menuCommand('Fresh Start...', openFreshStart),
     selectionMenuCommand()
   );
 
