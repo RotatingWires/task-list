@@ -34,7 +34,6 @@ async function loadLists(preferredId = null) {
 function updateListTitle() {
   const list = currentList();
   titleListName.textContent = list ? list.name : '';
-  document.title = list ? `TaskList — ${list.name}` : 'TaskList';
 }
 
 function renderFileMenu() {
