@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.13
+# TaskList v1.7.14
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -481,7 +481,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.13**.
+Current release: **v1.7.14**.
+
+### v1.7.14
+
+- The room above the title bar on phones is the `--ios-top-offset` variable (20px), shared with TaskList Stats, NewsReview, and SpendTracker.
 
 ### v1.7.13
 

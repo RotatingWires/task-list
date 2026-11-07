@@ -4,6 +4,8 @@
   font-size: 14px;
   color: var(--ink);
   background: var(--desktop);
+  /* The least room above the title bar on phones, the same in TaskList, TaskList Stats, NewsReview, and SpendTracker. */
+  --ios-top-offset: 20px;
 }
 
 * { box-sizing: border-box; }
@@ -1156,11 +1158,11 @@ button:disabled {
 
   body:not(.login-page) {
     background: var(--face);
-    padding-top: max(env(safe-area-inset-top), 20px);
+    padding-top: max(env(safe-area-inset-top), var(--ios-top-offset));
   }
 
   body:not(.login-page) .window {
-    height: calc(100dvh - max(env(safe-area-inset-top), 20px) - env(safe-area-inset-bottom));
+    height: calc(100dvh - max(env(safe-area-inset-top), var(--ios-top-offset)) - env(safe-area-inset-bottom));
   }
 
   /* Login/setup is a compact dialog-like window, not the full-height app shell. */
