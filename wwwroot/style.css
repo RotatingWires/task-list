@@ -1358,3 +1358,8 @@ select:focus-visible,
   outline: 1px dotted currentColor;
   outline-offset: 2px;
 }
+
+/* Phones leave the version out of the title bar, where it would be cut off; the About box still shows it. */
+@media (max-width: 650px) {
+  .title-version { display: none; }
+}

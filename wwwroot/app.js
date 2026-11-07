@@ -165,7 +165,8 @@ function jsonApi(url, method, body, checkMilestones = true) {
 function applyAppVersion(version) {
   if (!version) return;
   const label = `TaskList v${version}`;
-  if (titleAppName) titleAppName.textContent = label;
+  // The version is its own span so phones can hide it from the title bar.
+  if (titleAppName) titleAppName.replaceChildren('TaskList', Object.assign(document.createElement('span'), { className: 'title-version', textContent: ` v${version}` }));
   if (aboutVersion) aboutVersion.textContent = label;
 }
 

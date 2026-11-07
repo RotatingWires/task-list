@@ -55,7 +55,7 @@ async function frontendReleaseVersion() {
 
 async function initialize() {
   const version = await frontendReleaseVersion();
-  if (version) titleAppName.textContent = `TaskList v${version}`;
+  if (version) titleAppName.replaceChildren('TaskList', Object.assign(document.createElement('span'), { className: 'title-version', textContent: ` v${version}` }));
 
   try {
     const status = await request('/api/auth/status');
