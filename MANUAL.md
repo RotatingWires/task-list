@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.11
+# TaskList v1.7.12
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -481,7 +481,13 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.11**.
+Current release: **v1.7.12**.
+
+### v1.7.12
+
+- Adding a task or subtask, deleting, and moving update the list in the browser from the server's answer instead of loading the whole list again; anything unexpected still reloads it.
+- The server compresses its responses (Brotli or gzip), so data, scripts, and styles cross the network several times smaller.
+- favicon.ico holds compressed PNG images: 960 bytes instead of 15 KB.
 
 ### v1.7.11
 

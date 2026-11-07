@@ -427,11 +427,14 @@ newTaskForm.addEventListener('submit', async event => {
 
   setStatus('Adding task...');
   try {
-    await jsonApi(`/api/lists/${currentListId}/tasks`, 'POST', { title, description: '' });
+    const created = await jsonApi(`/api/lists/${currentListId}/tasks`, 'POST', { title, description: '' });
     newTaskTitle.value = '';
     currentView = 'open';
     updateViewMenu();
-    await Promise.all([loadTasks(), refreshListCounts()]);
+    tasks.unshift(created);
+    renderTasks();
+    setStatus('Ready');
+    await refreshListCounts();
     newTaskTitle.focus();
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -440,6 +443,28 @@ newTaskForm.addEventListener('submit', async event => {
 
 function itemEndpoint(item) {
   return `/api/lists/${item.listId}/items/${encodeURIComponent(item.displayId)}`;
+}
+
+/*
+ * Adding, deleting, and moving change the task list in the browser from the server's answer instead of loading the
+ * whole list again. The server orders root tasks newest first and subtasks oldest first, so a new task goes on top
+ * and a new subtask at the end of its parent. Anything unexpected falls back to loading the list.
+ */
+function findItemSlot(items, universalId) {
+  for (const [index, item] of items.entries()) {
+    if (item.universalId === universalId) return { items, index, item };
+    const found = findItemSlot(item.subtasks ?? [], universalId);
+    if (found) return found;
+  }
+  return null;
+}
+
+async function removeItemLocally(universalId) {
+  const slot = findItemSlot(tasks, universalId);
+  if (!slot) return loadTasks();
+  slot.items.splice(slot.index, 1);
+  renderTasks();
+  setStatus('Ready');
 }
 
 function applyUpdatedItem(items, updatedItem) {
@@ -522,8 +547,15 @@ subtaskForm.addEventListener('submit', async event => {
 
   setStatus(`Adding subtask to #${parent.displayId}...`);
   try {
-    await jsonApi(`/api/lists/${parent.listId}/items/${encodeURIComponent(parent.displayId)}/subtasks`, 'POST', { title, description });
-    await loadTasks();
+    const created = await jsonApi(`/api/lists/${parent.listId}/items/${encodeURIComponent(parent.displayId)}/subtasks`, 'POST', { title, description });
+    const slot = parent.listId === currentListId ? findItemSlot(tasks, parent.universalId) : null;
+    if (!slot) {
+      await loadTasks();
+      return;
+    }
+    (slot.item.subtasks ??= []).push(created);
+    renderTasks();
+    setStatus('Ready');
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
@@ -642,7 +674,7 @@ moveForm.addEventListener('submit', async event => {
     moveDialog.close();
     movingItem = null;
     moveTargetListId = null;
-    await Promise.all([loadTasks(), refreshListCounts()]);
+    await Promise.all([removeItemLocally(item.universalId), refreshListCounts()]);
     setStatus(`Moved Universal ID ${result.universalId} to ${targetList.name} as #${result.displayId}.`);
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -812,7 +844,7 @@ async function deleteItem(item) {
   setStatus(`Deleting #${item.displayId}...`);
   try {
     await api(itemEndpoint(item), { method: 'DELETE' });
-    await Promise.all([loadTasks(), refreshListCounts()]);
+    await Promise.all([removeItemLocally(item.universalId), refreshListCounts()]);
   } catch (error) {
     setStatus(`Error: ${error.message}`);
   }
