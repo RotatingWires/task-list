@@ -20,9 +20,9 @@ const SHELL = [
   '/manifest.webmanifest',
   '/favicon.ico',
   '/icons/favicon.svg',
-  '/icons/home-192.png',
-  '/icons/home-512.png',
-  '/icons/home-180.png'
+  '/icons/touch-192.png',
+  '/icons/touch-512.png',
+  '/icons/touch-180.png'
 ];
 
 self.addEventListener('install', event => {

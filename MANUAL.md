@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.16
+# TaskList v1.7.17
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -481,7 +481,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.16**.
+Current release: **v1.7.17**.
+
+### v1.7.17
+
+- The Home Screen icons leave a margin around the window, like NewsReview's, so iOS's rounded corners no longer cut off its frame and title bar. They have new file names (touch-180.png, touch-192.png, touch-512.png) so iOS downloads them; remove the app from your Home Screen and add it again to update it.
 
 ### v1.7.16
 
