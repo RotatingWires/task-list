@@ -269,6 +269,12 @@ select {
   outline: none;
 }
 
+/* Phones zoom into a text box whose text is under 16px, so touch screens get 16px boxes; the rest of the page keeps
+   its size. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]), textarea { font-size: 16px; }
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--placeholder);
