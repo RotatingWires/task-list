@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.20
+# TaskList v1.7.21
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -43,6 +43,7 @@ README.md              setup, architecture, behavior, security, and release note
 data/                  runtime/private data
   task-list.db         SQLite database
   auth.json            salted password hash
+  keys/                sign-in cookie keys when there is no Windows profile key ring (Linux, Task Scheduler)
   backups/             private recovery ZIPs created before full restores
   import-reminder.pending
                        first-run reminder marker, removed when acknowledged or a ZIP is restored
@@ -481,7 +482,14 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.20**.
+Current release: **v1.7.21**.
+
+### v1.7.21
+
+- Startup logs the version and data folder, the database settings, and where the sign-in keys are, in the same three lines as the other apps.
+- Without a Windows profile key ring (Linux, Task Scheduler), sign-in keys now live in data/keys like NewsReview, so a systemd service with ProtectHome stays signed in. Expect to log in once after updating.
+- The login page words wrong-password and too-many-attempts messages itself; setup conflicts say "A password is already configured."
+- `/api/auth/status` includes `version`, like the other apps.
 
 ### v1.7.20
 

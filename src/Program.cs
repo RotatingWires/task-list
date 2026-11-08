@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
 using System.Globalization;
+using System.Reflection;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -15,6 +17,22 @@ var builder = WebApplication.CreateBuilder(args);
 if (string.IsNullOrEmpty(builder.Configuration["urls"])) builder.WebHost.UseUrls("http://127.0.0.1:8711");
 var consoleLogPath = Path.Combine(builder.Environment.ContentRootPath, "logs", "console.log");
 builder.Logging.AddProvider(new SingleFileLoggerProvider(consoleLogPath, 10 * 1024 * 1024));
+// Session-cookie keys must outlive restarts, or every restart signs you out. On Windows with a loaded user profile
+// (signed in and started from a terminal), they stay in that profile's ASP.NET key ring. Otherwise (Linux, including
+// services under systemd ProtectHome, and Windows Task Scheduler without a loaded profile) they live in data/keys;
+// Windows then uses machine-scope DPAPI, since user-scope DPAPI fails when the profile isn't loaded. Same as NewsReview.
+var keysDirectory = Path.Combine(builder.Environment.ContentRootPath, "data", "keys");
+var profileKeyRing = OperatingSystem.IsWindows()
+    && Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) is { Length: > 0 } localAppData
+    && Directory.Exists(localAppData);
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("TaskList");
+if (!profileKeyRing)
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
+    if (OperatingSystem.IsWindows()) dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
+}
+var keyLocation = profileKeyRing ? "this Windows profile's ASP.NET key ring" : keysDirectory;
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -71,13 +89,14 @@ var databasePath = Path.Combine(dataDir, "task-list.db");
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
 const int PasswordIterations = 600_000;
+var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 Onboarding.Initialize(dataDir, databasePath);
 var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
 InitializeDatabase(connectionString);
 MilestoneNotifications.Initialize(connectionString);
-app.Logger.LogInformation(
-    "SQLite performance settings: journal_mode={JournalMode}, synchronous=NORMAL, busy_timeout=5000 ms.",
-    journalMode);
+app.Logger.LogInformation("TaskList v{Version}, data folder {DataDirectory}.", appVersion, dataDir);
+app.Logger.LogInformation("Database ready: journal_mode={JournalMode}, synchronous=NORMAL, busy_timeout=5000 ms.", journalMode);
+app.Logger.LogInformation("Sign-in keys: {Location}.", keyLocation);
 
 string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
 if (setupToken is not null)
@@ -143,12 +162,13 @@ app.UseStaticFiles();
 
 app.MapGet("/api/auth/status", (HttpContext context) => Results.Ok(new
 {
+    version = appVersion,
     configured = PasswordConfigured(authPath),
     authenticated = context.User.Identity?.IsAuthenticated == true
 }));
 app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context) =>
 {
-    if (PasswordConfigured(authPath)) return Results.Conflict(new { error = "A password has already been configured." });
+    if (PasswordConfigured(authPath)) return Results.Conflict(new { error = "A password is already configured." });
     if (setupToken is null) return Results.Conflict(new { error = "No setup token is active. Restart TaskList to generate a new one." });
     if (!SetupTokenMatches(setupToken, request.SetupToken)) return Results.Json(new { error = "Invalid setup token." }, statusCode: StatusCodes.Status401Unauthorized);
     var passwordError = ValidateNewPassword(request.Password, request.ConfirmPassword);

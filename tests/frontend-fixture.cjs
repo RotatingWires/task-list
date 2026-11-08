@@ -64,7 +64,7 @@ function fixture(files = ['milestones.js']) {
     matchMedia: () => ({ matches: true, addEventListener() {} }),
     localStorage: { getItem: () => null, setItem() {} },
     location: { pathname: '/', search: '' }, navigator: {},
-    setTimeout, clearTimeout,
+    setTimeout, clearTimeout, AbortSignal,
     closeFileMenu() {}, closeViewMenu() {},
   });
   context.window = context;

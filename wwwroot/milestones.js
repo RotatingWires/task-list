@@ -207,10 +207,11 @@
 
   async function consumePendingMilestones() {
     try {
-      const response = await timedFetch('/api/milestones/consume', {
+      const response = await fetch('/api/milestones/consume', {
         method: 'POST',
         credentials: 'same-origin',
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: AbortSignal.timeout(30000)
       });
       if (!response.ok) return [];
       const notices = await response.json();
