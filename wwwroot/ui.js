@@ -1,6 +1,7 @@
 'use strict';
 
 const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
+const retroFontChoice = document.querySelector('#retroFontChoice');
 const firstRunDialog = document.querySelector('#firstRunDialog');
 const firstRunImport = document.querySelector('#firstRunImport');
 const firstRunContinue = document.querySelector('#firstRunContinue');
@@ -63,6 +64,7 @@ function updateThemeMenu() {
   const selected = window.TaskTheme?.getPreference?.() ?? 'light';
   for (const choice of themeChoices)
     choice.setAttribute('aria-checked', choice.dataset.themeChoice === selected ? 'true' : 'false');
+  retroFontChoice.setAttribute('aria-checked', window.TaskTheme?.getRetroFont?.() ? 'true' : 'false');
 }
 
 fileMenu.addEventListener('click', event => {
@@ -94,6 +96,13 @@ for (const choice of themeChoices) {
     closeViewMenu();
   });
 }
+
+retroFontChoice.addEventListener('click', event => {
+  event.stopPropagation();
+  window.TaskTheme?.setRetroFont?.(!window.TaskTheme.getRetroFont());
+  updateThemeMenu();
+  closeViewMenu();
+});
 
 window.addEventListener('task-theme-change', updateThemeMenu);
 

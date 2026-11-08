@@ -75,7 +75,7 @@
   border-right: 2px solid var(--dark-edge);
   border-bottom: 2px solid var(--dark-edge);
   box-shadow: 1px 1px 0 var(--black);
-  font: 13px Tahoma, "MS Sans Serif", Arial, sans-serif;
+  font: 13px var(--ui-font);
   line-height: 1.4;
   white-space: pre-line;
   pointer-events: none;

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.26
+# TaskList v1.7.27
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -42,3 +42,7 @@ The quickstart uses plain HTTP on loopback. HTTP does not encrypt passwords, ses
 Exports and pre-restore recovery ZIPs are unencrypted and contain private task/history data. Store them privately. The first-run setup token is printed only to the interactive console, not the runtime log; passwords are not logged.
 
 See the manual for [authentication](MANUAL.md#login-and-api-authentication), [backup and restore](MANUAL.md#import-and-export), [Fresh start](MANUAL.md#fresh-start), and [all features](MANUAL.md#nested-subtasks).
+
+## Credits
+
+**View → Use Retro Font** uses [W95FA](https://fontsarena.com/w95fa-by-alina-sava/) by Alina Sava, bundled in `wwwroot/fonts/` under the SIL Open Font License 1.1 (`wwwroot/fonts/OFL.txt`).

@@ -1,6 +1,6 @@
 /* Windows 95-style UI and responsive layout for TaskList. Colors come from theme.css. */
 :root {
-  font-family: Tahoma, "MS Sans Serif", Arial, sans-serif;
+  font-family: var(--ui-font);
   font-size: 14px;
   color: var(--ink);
   background: var(--desktop);

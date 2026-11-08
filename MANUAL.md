@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.26
+# TaskList v1.7.27
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -168,6 +168,8 @@ Use **View → Theme** to choose either **Light** or **Dark**. The choice is sto
 The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Every color is a token in `wwwroot/theme.css`, defined once for Light and once for Dark with the token names TaskList Stats, NewsReview, and SpendTracker also use; `style.css`, `task-controls.css`, `milestones.css`, and the scripts contain no color values except the two browser `theme-color` values `theme.js` writes to the page metadata. `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
 
 There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
+
+**View → Use Retro Font** switches the whole app, including the login page and chart labels, to W95FA, an open-source recreation of the Windows 95 MS Sans Serif font bundled in `wwwroot/fonts`, so the interface looks the same on Windows, Linux, macOS, Android, and iOS without installing fonts. It is off by default and saved per browser, separately for each app.
 
 Help opens About directly. Its 16px text and 1.5 line spacing match TaskList Stats Help, with about.lehighradio.com and the application version at the bottom.
 
@@ -500,7 +502,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.26**.
+Current release: **v1.7.27**.
+
+### v1.7.27
+
+- **View → Use Retro Font**: the whole app, login page and chart labels included, can use W95FA, an open-source recreation of the Windows 95 font bundled with the app (SIL Open Font License, `wwwroot/fonts/OFL.txt`), so it looks the same on Windows, Linux, macOS, Android, and iOS. Off by default; saved per browser.
 
 ### v1.7.26
 
