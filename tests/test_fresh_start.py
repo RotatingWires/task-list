@@ -156,8 +156,8 @@ class FreshStartTests(ServerTestCase):
     def test_everything_and_recovery_backups_free_space_without_reusing_ids(self):
         for index in range(80):
             self.task(f"Task {index}", description="x" * 2000)
-        archive = self.call("GET", "/api/export")
-        self.call("POST", "/api/import/backup", raw=archive, content_type="application/zip")
+        archive = self.call("GET", "/api/backup")
+        self.call("POST", "/api/restore", raw=archive, content_type="application/zip")
         summary = self.call("GET", "/api/fresh-start")
         self.assertEqual(summary["recoveryBackups"], 1)
         highest = self.scalar("SELECT MAX(id) FROM universal_ids")

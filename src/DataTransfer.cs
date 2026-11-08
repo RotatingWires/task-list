@@ -26,8 +26,8 @@ static class DataTransfer
 
     public static void MapEndpoints(RouteGroupBuilder api, string connectionString, string dataDir, ILogger logger)
     {
-        api.MapGet("/export", (HttpContext context) => Export(context, connectionString, logger));
-        api.MapPost("/import/backup", (HttpContext context) => Restore(context, connectionString, dataDir, logger))
+        api.MapGet("/backup", (HttpContext context) => Export(context, connectionString, logger));
+        api.MapPost("/restore", (HttpContext context) => Restore(context, connectionString, dataDir, logger))
             .WithMetadata(new RequestSizeLimitAttribute(MaxArchiveBytes));
     }
 

@@ -93,7 +93,7 @@ class BackupCheckTests(test_fresh_start.ServerTestCase):
     """Exports carry a checksum and schema version like SpendTracker and NewsReview; older exports still restore."""
 
     def export(self):
-        with zipfile.ZipFile(io.BytesIO(self.call("GET", "/api/export"))) as archive:
+        with zipfile.ZipFile(io.BytesIO(self.call("GET", "/api/backup"))) as archive:
             return json.loads(archive.read("manifest.json")), archive.read("tasklist.db")
 
     def restore(self, manifest, database, name="tasklist.db"):
@@ -101,7 +101,7 @@ class BackupCheckTests(test_fresh_start.ServerTestCase):
         with zipfile.ZipFile(output, "w") as archive:
             archive.writestr("manifest.json", json.dumps(manifest))
             archive.writestr(name, database)
-        return self.call("POST", "/api/import/backup", raw=output.getvalue(), content_type="application/zip")
+        return self.call("POST", "/api/restore", raw=output.getvalue(), content_type="application/zip")
 
     def test_export_records_checksum_and_schema_version(self):
         manifest, database = self.export()

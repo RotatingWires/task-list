@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.24
+# TaskList v1.7.25
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -446,8 +446,8 @@ Creation Location headers identify the created resource path; there are no stand
 
 | Method | Endpoint | Request | Result |
 | --- | --- | --- | --- |
-| GET | `/api/export` | None. | Downloads `application/zip` with a timestamped filename in Content-Disposition. Contains `tasklist.db` and `manifest.json`; uses a consistent online database snapshot. Cache-Control is no-store. |
-| POST | `/api/import/backup` | Raw TaskList export ZIP; `Content-Type: application/zip`. | Validates the backup, saves a private recovery ZIP and replaces lists/tasks/history atomically, keeping current schema/triggers and monotonic ID allocations. Returns `{restored: true, totals, recoveryBackup}`; `totals` has `lists`, `archivedLists`, `tasks`, `subtasks`, `events`, and `recoveryBackup` is the saved filename under `data/backups/`. Clears a pending first-run reminder after success. See Import and export for format/size limits and restore behavior. |
+| GET | `/api/backup` | None. | Downloads `application/zip` with a timestamped filename in Content-Disposition. Contains `tasklist.db` and `manifest.json`; uses a consistent online database snapshot. Cache-Control is no-store. |
+| POST | `/api/restore` | Raw TaskList export ZIP; `Content-Type: application/zip`. | Validates the backup, saves a private recovery ZIP and replaces lists/tasks/history atomically, keeping current schema/triggers and monotonic ID allocations. Returns `{restored: true, totals, recoveryBackup}`; `totals` has `lists`, `archivedLists`, `tasks`, `subtasks`, `events`, and `recoveryBackup` is the saved filename under `data/backups/`. Clears a pending first-run reminder after success. See Import and export for format/size limits and restore behavior. |
 | GET | `/api/onboarding` | None. | `{importReminderPending}`: whether this fresh server database still has its backup reminder pending. Cache-Control is no-store. |
 | POST | `/api/onboarding/acknowledge` | None. | Dismisses the backup reminder for this server. Returns 204; repeated acknowledgements are safe. Only reminder state changes. |
 | GET | `/api/fresh-start` | None. | What Fresh start could clear: `{finishedTasks, archivedLists, archivedListTasks, lists, tasks, deletedTaskEvents, events, recoveryBackups, recoveryBackupBytes, databaseBytes}`. |
@@ -500,7 +500,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.24**.
+Current release: **v1.7.25**.
+
+### v1.7.25
+
+- Backup addresses match SpendTracker and NewsReview: `GET /api/backup` downloads a backup ZIP and `POST /api/restore` restores one (formerly `/api/export` and `/api/import/backup`).
 
 ### v1.7.24
 
