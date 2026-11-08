@@ -112,6 +112,8 @@ var databasePath = DatabaseFiles.Locate(dataDir, "tasklist.db", "task-list.db", 
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
 const int PasswordIterations = 600_000;
+// Enforced here as well as by the page's maxlength, like SpendTracker.
+const int MaxListNameLength = 100, MaxListDescriptionLength = 1000, MaxTaskTitleLength = 500, MaxTaskDescriptionLength = 4000;
 var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 Onboarding.Initialize(dataDir, databasePath);
 var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
@@ -275,6 +277,8 @@ api.MapPost("/lists", async (CreateListRequest request) =>
     var name = request.Name?.Trim();
     if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "List name is required." });
     var description = request.Description?.Trim() ?? string.Empty;
+    if ((TooLong("List name", name, MaxListNameLength) ?? TooLong("List description", description, MaxListDescriptionLength)) is { } listError)
+        return Results.BadRequest(new { error = listError });
     var now = DateTimeOffset.UtcNow.ToString("O");
     await using var connection = await OpenConnection(connectionString);
     if (await ListNameExists(connection, name, null)) return Results.BadRequest(new { error = "A list with that name already exists." });
@@ -293,6 +297,10 @@ api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
     var name = request.Name is null ? existing.Name : request.Name.Trim();
     if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "List name cannot be empty." });
     var description = request.Description is null ? existing.Description : request.Description.Trim();
+    // Only values being changed are checked, so older long text never blocks other edits.
+    if ((TooLong("List name", request.Name is null ? "" : name, MaxListNameLength)
+        ?? TooLong("List description", request.Description is null ? "" : description, MaxListDescriptionLength)) is { } listError)
+        return Results.BadRequest(new { error = listError });
     if (await ListNameExists(connection, name, id)) return Results.BadRequest(new { error = "A list with that name already exists." });
     await ExecuteAsync(connection, "UPDATE lists SET name = $name, description = $description WHERE id = $id;", ("$name", name), ("$description", description), ("$id", id));
     return Results.Ok(existing with { Name = name, Description = description });
@@ -374,6 +382,8 @@ api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest 
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title)) return Results.BadRequest(new { error = "Task title is required." });
     var description = request.Description?.Trim() ?? string.Empty;
+    if ((TooLong("Task title", title, MaxTaskTitleLength) ?? TooLong("Description", description, MaxTaskDescriptionLength)) is { } taskError)
+        return Results.BadRequest(new { error = taskError });
     var now = DateTimeOffset.UtcNow.ToString("O");
     await using var connection = await OpenConnection(connectionString);
     await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
@@ -402,6 +412,8 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", async (long listI
     if (string.IsNullOrWhiteSpace(title)) return Results.BadRequest(new { error = "Subtask title is required." });
     if (!IsValidDisplayId(displayId)) return Results.BadRequest(new { error = "Invalid task ID." });
     var description = request.Description?.Trim() ?? string.Empty;
+    if ((TooLong("Subtask title", title, MaxTaskTitleLength) ?? TooLong("Description", description, MaxTaskDescriptionLength)) is { } subtaskError)
+        return Results.BadRequest(new { error = subtaskError });
     var now = DateTimeOffset.UtcNow.ToString("O");
     await using var connection = await OpenConnection(connectionString);
     var parent = await GetItem(connection, listId, displayId);
@@ -537,6 +549,7 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
         var completedMatch = completedDate.Match(rawTitle);
         var title = completedDate.Replace(createdDate.Replace(rawTitle, string.Empty), string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(title)) continue;
+        if (TooLong("Task title", title, MaxTaskTitleLength) is { } importError) return Results.BadRequest(new { error = importError });
         var indent = IndentWidth(match.Groups["indent"].Value);
         var done = match.Groups["state"].Value != " ";
         var node = new ImportNode(new ImportItem(title, done ? "Done" : "Open", createdMatch.Success ? createdMatch.Groups["date"].Value : "Unknown", done ? completedMatch.Success ? completedMatch.Groups["date"].Value : "Unknown" : null, indent), []);
@@ -568,6 +581,9 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
 
 app.MapFallbackToFile("index.html").RequireAuthorization();
 app.Run();
+
+static string? TooLong(string label, string value, int maxLength) =>
+    value.Length > maxLength ? $"{label} must be {maxLength} characters or fewer." : null;
 
 static void InitializeDatabase(string connectionString)
 {
@@ -873,6 +889,10 @@ static UpdateValues BuildUpdatedValues(string oldTitle, string oldDescription, s
     var title = request.Title is null ? oldTitle : request.Title.Trim();
     if (string.IsNullOrWhiteSpace(title)) return UpdateValues.WithError("Task title cannot be empty.");
     var description = request.Description is null ? oldDescription : request.Description.Trim();
+    // Only values being changed are checked, so older long text never blocks a status change.
+    if ((TooLong("Task title", request.Title is null ? "" : title, MaxTaskTitleLength)
+        ?? TooLong("Description", request.Description is null ? "" : description, MaxTaskDescriptionLength)) is { } lengthError)
+        return UpdateValues.WithError(lengthError);
     var status = request.Status is null ? oldStatus : NormalizeStatus(request.Status);
     if (status is null) return UpdateValues.WithError("Status must be Open, Done, or Cancelled.");
     if (title == oldTitle && description == oldDescription && status == oldStatus) return new(title, description, status, oldUpdatedAt, oldCompletedAt, oldCancelledAt, oldReopenedAt, null);

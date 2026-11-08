@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.23
+# TaskList v1.7.24
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -392,6 +392,8 @@ The database part runs in one SQLite transaction, so a failure changes nothing. 
 
 Paths below are relative to the TaskList server URL. JSON uses camelCase property names. Send JSON bodies with `Content-Type: application/json`; Markdown and ZIP imports send raw file bytes/text, not multipart form data. `{id}` and `{listId}` are numeric list IDs from list responses. `{displayId}` is the list-local visible task ID, such as `75` or `75.1.2`, **not** the Universal ID.
 
+The server enforces the same text limits as the page, like SpendTracker: task and subtask titles 500 characters, task descriptions 4,000, list names 100, and list descriptions 1,000 (including Markdown-imported titles). Longer values return 400 with `{ error }`; edits only check the fields they change, so older long text never blocks a status change.
+
 All `/api/` endpoints require the `TaskList.Auth` cookie except auth status, initial password setup and login. The cookie is HttpOnly and SameSite=Strict, lasts 30 days, and uses sliding expiration. Setup/login share a limit of 5 attempts per source IP per minute. API writes apply immediately: holds and confirmation dialogs are browser UI behavior rather than requirements enforced on direct API requests.
 
 ### Authentication
@@ -498,7 +500,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.23**.
+Current release: **v1.7.24**.
+
+### v1.7.24
+
+- The server enforces the page's text limits (task titles 500, descriptions 4,000, list names 100, list descriptions 1,000), like SpendTracker.
 
 ### v1.7.23
 
