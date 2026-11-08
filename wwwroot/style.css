@@ -444,7 +444,6 @@ button:active {
 .fresh-start-layout { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 36px); }
 .fresh-start-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; background: var(--title); padding: 3px; }
 .fresh-start-heading h2 { margin: 0; padding: 2px 4px; font-size: 15px; color: var(--title-text); }
-.fresh-start-heading button { min-height: 24px; padding: 0 6px; font-size: 17px; }
 .fresh-start-body { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 12px; display: grid; gap: 12px; line-height: 1.4; }
 .fresh-start-body p { margin: 0; }
 .fresh-start-options { display: grid; gap: 10px; min-width: 0; margin: 0; border: 1px solid var(--shadow); }
