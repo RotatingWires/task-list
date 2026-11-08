@@ -1,54 +1,10 @@
-const CACHE = 'task-list-shell';
-const SHELL = [
-  '/login.html',
-  '/login.js',
-  '/version.json',
-  '/theme.js',
-  '/style.css',
-  '/task-controls.css',
-  '/theme.css',
-  '/milestones.css',
-  '/app.js',
-  '/tasks.js',
-  '/bulk.js',
-  '/transfer.js',
-  '/fresh-start.js',
-  '/lists.js',
-  '/search.js',
-  '/milestones.js',
-  '/ui.js',
-  '/manifest.webmanifest',
-  '/favicon.ico',
-  '/icons/favicon.svg',
-  '/icons/touch-192.png',
-  '/icons/touch-512.png',
-  '/icons/touch-180.png'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
-  self.skipWaiting();
-});
-
+// TaskList keeps no offline copy, like NewsReview: without a connection the browser shows its own offline page, which
+// makes a connection problem obvious. A browser still running the worker from an earlier release picks up this one,
+// which deletes that release's cache and then removes itself.
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', event => {
-  const request = event.request;
-  const url = new URL(request.url);
-
-  if (url.pathname.startsWith('/api/')) return;
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-
-  event.respondWith(
-    fetch(request, { cache: 'no-store' }).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE).then(cache => cache.put(request, copy));
-      return response;
-    }).catch(() => caches.match(request).then(hit => hit || caches.match(url.pathname)))
-  );
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) await caches.delete(key);
+    await self.registration.unregister();
+  })());
 });

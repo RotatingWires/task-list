@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.27
+# TaskList v1.7.28
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -14,7 +14,7 @@ It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. The
 - SQLite via `Microsoft.Data.Sqlite`
 - Plain HTML, CSS, and JavaScript
 - Built-in ASP.NET Core cookie authentication and rate limiting
-- Service worker + web manifest for PWA behavior
+- Web manifest for adding to a phone's home screen (no offline copy, like NewsReview)
 - No React, Node.js, npm, Electron, Bootstrap, Entity Framework, or ORM
 
 ## Project layout
@@ -60,7 +60,7 @@ wwwroot/
   fresh-start.js       Fresh Start dialog: stored-data summary, choices, confirmation, and refresh
   lists.js             list selection, creation, management, archives
   search.js            keyword/date-time search and Search list filtering
-  ui.js                menus, navigation, startup/first-run reminder, deep links, PWA registration
+  ui.js                menus, navigation, startup/first-run reminder, deep links, removal of the old offline service worker
   milestones.js        pending milestone consumption/dialog/confetti behavior
   milestones.css       responsive Light/Dark milestone celebration styling
   theme.js             persistent Light/Dark theme selection and startup theme application
@@ -68,7 +68,7 @@ wwwroot/
   style.css            general Win95-style application/login/search layout
   theme.css            Light/Dark color tokens; the only stylesheet with color values
   task-controls.css    task-specific Move/action control styling
-  sw.js                network-first service worker
+  sw.js                removes the offline cache earlier releases installed
   manifest.webmanifest PWA metadata
   icons/               PWA/favicon assets
 ```
@@ -83,7 +83,7 @@ The `GenerateWebVersion` MSBuild target writes `wwwroot/version.json` from `$(Ve
 
 The project is framework-dependent and not tied to one operating system: `dotnet build` and `dotnet run` work on Windows, Linux, and macOS, and the build includes the SQLite native library for each of them.
 
-Frontend asset URLs no longer carry release-number query strings. The service worker uses a stable shell-cache name and network-first requests with `cache: 'no-store'`, updating the cached copy after a successful network response and using cache only as an offline fallback. That keeps frontend freshness independent of manually duplicated release numbers.
+Frontend asset URLs carry no release-number query strings. The server marks pages and scripts `Cache-Control: no-cache`, so the browser checks each with the server on every load and always runs the current release.
 
 ## Run
 
@@ -477,9 +477,7 @@ In task, subtask, and list description boxes:
 
 ## PWA behavior
 
-TaskList uses a network-first service worker for same-origin application assets. API requests are never cached by the service worker.
-
-The shell cache contains the login/main frontend files, shared theme and milestone files, generated version file, manifest, and icons. Cached files are used only as an offline fallback when a network request fails.
+TaskList keeps no offline copy of its pages, like NewsReview: without a connection the browser shows its own offline page, which makes a connection problem obvious instead of opening a stale app that cannot reach its data. It can still be added to a phone's home screen from the web manifest. `sw.js` only removes the service worker and cache that releases before v1.7.28 installed.
 
 ## Security and privacy
 
@@ -502,7 +500,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.27**.
+Current release: **v1.7.28**.
+
+### v1.7.28
+
+- No offline copy, like NewsReview: without a connection the browser shows its own offline page instead of a stale app. The old service worker and its cache are removed automatically.
+- One `theme.js` shared word for word with the other three apps: the page marks its theme with `data-theme`, and it loads at the top of every page, login included, so it never flashes the wrong theme.
 
 ### v1.7.27
 

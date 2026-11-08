@@ -61,10 +61,10 @@ function closeViewMenu() {
 }
 
 function updateThemeMenu() {
-  const selected = window.TaskTheme?.getPreference?.() ?? 'light';
+  const selected = window.AppTheme?.getPreference?.() ?? 'light';
   for (const choice of themeChoices)
     choice.setAttribute('aria-checked', choice.dataset.themeChoice === selected ? 'true' : 'false');
-  retroFontChoice.setAttribute('aria-checked', window.TaskTheme?.getRetroFont?.() ? 'true' : 'false');
+  retroFontChoice.setAttribute('aria-checked', window.AppTheme?.getRetroFont?.() ? 'true' : 'false');
 }
 
 fileMenu.addEventListener('click', event => {
@@ -91,7 +91,7 @@ for (const choice of viewChoices)
 for (const choice of themeChoices) {
   choice.addEventListener('click', event => {
     event.stopPropagation();
-    window.TaskTheme?.setPreference?.(choice.dataset.themeChoice);
+    window.AppTheme?.setPreference?.(choice.dataset.themeChoice);
     updateThemeMenu();
     closeViewMenu();
   });
@@ -99,12 +99,12 @@ for (const choice of themeChoices) {
 
 retroFontChoice.addEventListener('click', event => {
   event.stopPropagation();
-  window.TaskTheme?.setRetroFont?.(!window.TaskTheme.getRetroFont());
+  window.AppTheme?.setRetroFont?.(!window.AppTheme.getRetroFont());
   updateThemeMenu();
   closeViewMenu();
 });
 
-window.addEventListener('task-theme-change', updateThemeMenu);
+window.addEventListener('theme-change', updateThemeMenu);
 
 document.addEventListener('click', event => {
   if (!event.target.closest('.menu-wrap')) {
@@ -123,9 +123,9 @@ document.addEventListener('keydown', event => {
 aboutMenu.addEventListener('click', () => aboutDialog.showModal());
 closeAbout.addEventListener('click', () => aboutDialog.close());
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+// No offline copy, like NewsReview: remove the service worker and cache that earlier releases installed.
+navigator.serviceWorker?.getRegistrations().then(registrations => registrations.forEach(registration => registration.unregister())).catch(() => {});
+window.caches?.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(() => {});
 
 function initializeMouseHoverDetection() {
   const root = document.documentElement;

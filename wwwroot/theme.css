@@ -53,7 +53,7 @@
   --classic-shadow: #808080;
 }
 
-:root[data-theme-effective="dark"] {
+:root[data-theme="dark"] {
   --ink: #f1f1f1;
   --desktop: #002f2f;
   --face: #303030;
