@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.22
+# TaskList v1.7.23
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -196,6 +196,8 @@ When a pre-v1.5 database first runs under v1.5+, TaskList backfills the older Cr
 
 TaskList expects the current recursive `items` schema. The old pre-v1.1 `tasks`/`subtasks` migration path has been removed.
 
+The database records its schema version in `PRAGMA user_version` (currently 1), like SpendTracker and NewsReview. TaskList refuses to start with a database from a newer version, logging why and leaving the file untouched, and refuses backups from a newer schema.
+
 ## Milestone celebrations
 
 TaskList alone owns live milestone dialogs and confetti. It keeps a persistent pending-notification queue in its SQLite database. TaskList Stats stays read-only and provides a separate permanent Milestones analysis tab. The notification rules mirror those analytical milestone families:
@@ -335,7 +337,7 @@ Download Export creates one `task-list-YYYYMMDD-HHMMSS.zip` containing:
 | File | Contents |
 | --- | --- |
 | `tasklist.db` | A standalone SQLite snapshot of the complete TaskList database, including its schema and all application tables. |
-| `manifest.json` | Format/version marker, TaskList version, UTC export time, and counts for lists, archived lists, root tasks, subtasks, and recorded history events. |
+| `manifest.json` | Format/version marker, TaskList version, UTC export time, counts for lists, archived lists, root tasks, subtasks, and recorded history events, the database schema version, and the database's SHA-256 checksum. |
 
 The database includes every active and archived list; all tasks/subtasks and descriptions, hierarchy, statuses and dates; visible and Universal IDs and allocation counters; recorded Created/Completed/Cancelled/Reopened/Deleted events; saved deleted-list names; and pending milestone notices/counters. It preserves what TaskList has already recorded and cannot reconstruct missing historical data. Deleted tasks remain historical records rather than becoming live tasks.
 
@@ -345,7 +347,7 @@ The ZIP excludes `auth.json`, the login password, authentication cookies/keys, l
 
 ### Restore a TaskList ZIP
 
-Choose a TaskList export ZIP in the file picker, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
+Choose a TaskList export ZIP in the file picker, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, schema version, checksum (exports from v1.7.23 on; older exports have none and still restore), database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
 
 Before replacing data, the server creates `data/backups/before-restore-<UTC timestamp>-<unique ID>.zip` containing the previous database. These private recovery files remain until you delete them manually or with **File > Fresh Start...**. Copy one from the server and use the same Import button to restore it if needed. The server must be able to create that recovery file before restoration proceeds.
 
@@ -496,7 +498,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.22**.
+Current release: **v1.7.23**.
+
+### v1.7.23
+
+- The database records its schema version in `PRAGMA user_version` (1), like SpendTracker and NewsReview. A database or backup from a newer schema is refused, and startup stops with a clear log message instead of changing the file.
+- Exports include the schema version and a SHA-256 checksum of the database, checked on restore; older exports without them still restore.
 
 ### v1.7.22
 

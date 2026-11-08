@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
+using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -68,6 +69,9 @@ static class DataTransfer
                 throw new InvalidDataException("This is not a supported TaskList backup. Backups from newer TaskList versions require an update first.");
 
             using var source = OpenDatabase(databasePath, SqliteOpenMode.ReadOnly);
+            using (var versionCommand = Command(source, "PRAGMA user_version;"))
+                if (Convert.ToInt32(versionCommand.ExecuteScalar(), CultureInfo.InvariantCulture) > DatabaseSchema.Version)
+                    throw new InvalidDataException("This backup was made by a newer TaskList version. Update TaskList first.");
             ValidateDatabase(source);
             var totals = ReadTotals(source);
 
@@ -168,8 +172,15 @@ static class DataTransfer
             standalone.ExecuteNonQuery();
         }
         BackupTotals totals;
-        using (var snapshot = OpenDatabase(snapshotPath, SqliteOpenMode.ReadOnly)) totals = ReadTotals(snapshot);
-        var manifest = new BackupManifest(Format, 1, AppVersion, DateTimeOffset.UtcNow, totals);
+        int schemaVersion;
+        using (var snapshot = OpenDatabase(snapshotPath, SqliteOpenMode.ReadOnly))
+        {
+            totals = ReadTotals(snapshot);
+            using var version = Command(snapshot, "PRAGMA user_version;");
+            schemaVersion = Convert.ToInt32(version.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+        // Like SpendTracker and NewsReview: the schema number and a checksum of the database, checked on restore.
+        var manifest = new BackupManifest(Format, 1, AppVersion, DateTimeOffset.UtcNow, totals, schemaVersion, await Sha256Of(snapshotPath, cancellationToken));
         try
         {
             await using var output = File.Create(zipPath);
@@ -201,7 +212,16 @@ static class DataTransfer
         await using (var input = databaseEntry.Open())
         await using (var output = File.Create(databasePath))
             await CopyLimited(input, output, MaxDatabaseBytes, cancellationToken);
+        // Exports before v1.7.23 have no checksum; newer ones must match it.
+        if (manifest.Sha256 is not null && !string.Equals(manifest.Sha256, await Sha256Of(databasePath, cancellationToken), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("The backup database does not match its checksum; the file may be damaged.");
         return manifest;
+    }
+
+    private static async Task<string> Sha256Of(string path, CancellationToken cancellationToken)
+    {
+        await using var input = File.OpenRead(path);
+        return Convert.ToHexStringLower(await System.Security.Cryptography.SHA256.HashDataAsync(input, cancellationToken));
     }
 
     private static void ValidateDatabase(SqliteConnection source)
@@ -376,5 +396,5 @@ static class DataTransfer
     }
     private sealed record TableSpec(string Name, string Columns);
     private sealed record BackupTotals(long Lists, long ArchivedLists, long Tasks, long Subtasks, long Events);
-    private sealed record BackupManifest(string Format, int FormatVersion, string ApplicationVersion, DateTimeOffset ExportedAt, BackupTotals Totals);
+    private sealed record BackupManifest(string Format, int FormatVersion, string ApplicationVersion, DateTimeOffset ExportedAt, BackupTotals Totals, int? SchemaVersion = null, string? Sha256 = null);
 }

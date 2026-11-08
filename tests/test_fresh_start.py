@@ -21,7 +21,9 @@ PASSWORD = "fresh-start-test"
 
 
 @unittest.skipUnless(DLL.exists() and shutil.which("dotnet"), "build TaskList first: dotnet build")
-class FreshStartTests(unittest.TestCase):
+class ServerTestCase(unittest.TestCase):
+    """A signed-in TaskList server in a temporary folder, shared with the data-folder tests."""
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp(prefix="task-list-fresh-start-"))
         self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
@@ -92,6 +94,8 @@ class FreshStartTests(unittest.TestCase):
     def counters(self):
         return dict(self.query("SELECT scope_key, total FROM milestone_notification_counters"))
 
+
+class FreshStartTests(ServerTestCase):
     def test_rejects_missing_confirmation_or_unknown_options(self):
         self.task("Keep me", status="Done")
         for body in [{"confirmation": "reset selected", "selections": {"finishedTasks": True}},

@@ -115,7 +115,17 @@ const int PasswordIterations = 600_000;
 var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 Onboarding.Initialize(dataDir, databasePath);
 var journalMode = ConfigureDatabaseJournal(connectionString, databasePath);
-InitializeDatabase(connectionString);
+try
+{
+    InitializeDatabase(connectionString);
+}
+catch (InvalidOperationException error)
+{
+    // A database this version cannot use: say why and stop, without touching the file. Same as SpendTracker.
+    app.Logger.LogError("{Error}", error.Message);
+    Environment.ExitCode = 1;
+    return;
+}
 MilestoneNotifications.Initialize(connectionString);
 app.Logger.LogInformation("TaskList v{Version}, data folder {DataDirectory}.", appVersion, dataDir);
 app.Logger.LogInformation("Database ready: journal_mode={JournalMode}, synchronous=NORMAL, busy_timeout=5000 ms.", journalMode);
@@ -564,6 +574,13 @@ static void InitializeDatabase(string connectionString)
     using var connection = new SqliteConnection(connectionString);
     connection.Open();
     ApplyConnectionPragmas(connection);
+    // PRAGMA user_version numbers the schema, like NewsReview and SpendTracker. Version 1 is everything up to v1.7.23,
+    // brought up to date by the checks below; later changes add numbered steps after them.
+    int schemaVersion;
+    using (var versionCommand = Sql(connection, "PRAGMA user_version;"))
+        schemaVersion = Convert.ToInt32(versionCommand.ExecuteScalar(), CultureInfo.InvariantCulture);
+    if (schemaVersion > DatabaseSchema.Version)
+        throw new InvalidOperationException($"tasklist.db uses schema version {schemaVersion}, but this TaskList build only understands version {DatabaseSchema.Version}. Update TaskList before opening this database.");
     using (var command = Sql(connection, """
         CREATE TABLE IF NOT EXISTS lists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -643,6 +660,12 @@ static void InitializeDatabase(string connectionString)
     }
 
     TaskEventBackfill.Run(connection, null);
+
+    if (schemaVersion < DatabaseSchema.Version)
+    {
+        using var stamp = Sql(connection, $"PRAGMA user_version = {DatabaseSchema.Version};");
+        stamp.ExecuteNonQuery();
+    }
 
     using var ensureDefault = Sql(connection, """
         INSERT INTO lists (name, description, next_task_number, created_at)
@@ -969,4 +992,10 @@ record TaskItem(long UniversalId, long ListId, string DisplayId, string? ParentD
 record UpdateValues(string? Title, string? Description, string? Status, string? UpdatedAt, string? CompletedAt, string? CancelledAt, string? ReopenedAt, string? Error)
 {
     public static UpdateValues WithError(string error) => new(null, null, null, null, null, null, null, error);
+}
+
+/// <summary>The schema number in PRAGMA user_version; startup and restores refuse anything newer.</summary>
+static class DatabaseSchema
+{
+    public const int Version = 1;
 }
