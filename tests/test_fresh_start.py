@@ -83,7 +83,7 @@ class FreshStartTests(unittest.TestCase):
         return display_id
 
     def query(self, sql):
-        with closing(sqlite3.connect(self.root / "data" / "task-list.db")) as connection:
+        with closing(sqlite3.connect(self.root / "data" / "tasklist.db")) as connection:
             return connection.execute(sql).fetchall()
 
     def scalar(self, sql):

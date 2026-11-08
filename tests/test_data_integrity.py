@@ -222,7 +222,7 @@ class DataIntegrityTests(unittest.TestCase):
 
     def test_read_only_deferred_snapshot_keeps_revision_and_events_consistent_during_restore(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory, "task-list.db")
+            path = Path(directory, "tasklist.db")
             app = SqlApp(path)
             self.addCleanup(app.close)
             app.connection.execute("PRAGMA journal_mode=WAL")

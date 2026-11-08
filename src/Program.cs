@@ -12,7 +12,32 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 
-var builder = WebApplication.CreateBuilder(args);
+// TaskList options are read here; everything else (such as --urls) goes to ASP.NET Core. Same as NewsReview.
+if (args is ["--version"])
+{
+    Console.WriteLine(Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0");
+    return;
+}
+if (args is ["backup", .. var backupArgs])
+{
+    var defaultDatabase = File.Exists(Path.Combine("data", "tasklist.db")) || !File.Exists(Path.Combine("data", "task-list.db"))
+        ? Path.Combine("data", "tasklist.db") : Path.Combine("data", "task-list.db");
+    Environment.ExitCode = DatabaseFiles.BackupCommand("TaskList", defaultDatabase, backupArgs);
+    return;
+}
+var hostArgs = new List<string>();
+string? dataDirectoryArgument = null;
+for (var i = 0; i < args.Length; i++)
+{
+    if (args[i] == "--data-dir" && i + 1 < args.Length) dataDirectoryArgument = args[++i];
+    else hostArgs.Add(args[i]);
+}
+
+var builder = WebApplication.CreateBuilder(hostArgs.ToArray());
+// --data-dir, then the TaskList:DataDirectory setting, then TASKLIST_DATA_DIR, then data/ next to the app.
+var dataDir = Path.GetFullPath(dataDirectoryArgument ?? builder.Configuration["TaskList:DataDirectory"]
+    ?? Environment.GetEnvironmentVariable("TASKLIST_DATA_DIR") ?? Path.Combine(builder.Environment.ContentRootPath, "data"));
+Directory.CreateDirectory(dataDir);
 // Loopback unless --urls, ASPNETCORE_URLS, or an appsettings "urls" value chooses another address.
 if (string.IsNullOrEmpty(builder.Configuration["urls"])) builder.WebHost.UseUrls("http://127.0.0.1:8711");
 var consoleLogPath = Path.Combine(builder.Environment.ContentRootPath, "logs", "console.log");
@@ -21,7 +46,7 @@ builder.Logging.AddProvider(new SingleFileLoggerProvider(consoleLogPath, 10 * 10
 // (signed in and started from a terminal), they stay in that profile's ASP.NET key ring. Otherwise (Linux, including
 // services under systemd ProtectHome, and Windows Task Scheduler without a loaded profile) they live in data/keys;
 // Windows then uses machine-scope DPAPI, since user-scope DPAPI fails when the profile isn't loaded. Same as NewsReview.
-var keysDirectory = Path.Combine(builder.Environment.ContentRootPath, "data", "keys");
+var keysDirectory = Path.Combine(dataDir, "keys");
 var profileKeyRing = OperatingSystem.IsWindows()
     && Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) is { Length: > 0 } localAppData
     && Directory.Exists(localAppData);
@@ -83,9 +108,7 @@ builder.Services.AddResponseCompression(options =>
 
 var app = builder.Build();
 app.UseResponseCompression();
-var dataDir = Path.Combine(app.Environment.ContentRootPath, "data");
-Directory.CreateDirectory(dataDir);
-var databasePath = Path.Combine(dataDir, "task-list.db");
+var databasePath = DatabaseFiles.Locate(dataDir, "tasklist.db", "task-list.db", app.Logger);
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
 const int PasswordIterations = 600_000;

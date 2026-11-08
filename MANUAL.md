@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.21
+# TaskList v1.7.22
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -41,7 +41,7 @@ src/
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
-  task-list.db         SQLite database
+  tasklist.db         SQLite database
   auth.json            salted password hash
   keys/                sign-in cookie keys when there is no Windows profile key ring (Linux, Task Scheduler)
   backups/             private recovery ZIPs created before full restores
@@ -100,7 +100,21 @@ dotnet run --urls "http://0.0.0.0:8711"
 
 When Task Scheduler launches `TaskList.exe` directly, add the same `--urls "http://0.0.0.0:8711"` argument if other devices need to connect.
 
-The database is stored at `data\task-list.db` and authentication settings are stored at `data\auth.json`.
+The database is stored at `data\tasklist.db` and authentication settings are stored at `data\auth.json`. Releases before v1.7.22 named the database `task-list.db`; TaskList renames it on its first start (if another program, such as a running TaskList Stats on Windows, has it open, TaskList keeps the old name for that run and logs a warning). Exports made before v1.7.22 still restore.
+
+To keep the data somewhere else, pass `--data-dir`, set `TaskList:DataDirectory` in an `appsettings.json`, or set `TASKLIST_DATA_DIR`.
+
+| Environment variable | Purpose |
+| --- | --- |
+| `TASKLIST_DATA_DIR` | Data folder, overridden by `--data-dir` |
+| `ASPNETCORE_URLS` | Listening address, like `--urls`; default `http://127.0.0.1:8711` |
+
+| Command-line option | Purpose |
+| --- | --- |
+| `--urls URL` | Listening address, for example `http://0.0.0.0:8711` for LAN access |
+| `--data-dir PATH` | Data folder (database, password, sign-in keys, recovery backups) |
+| `--version` | Print the version and exit |
+| `backup --output FILE [--database FILE]` | Consistent SQLite copy of `data/tasklist.db` (or `--database`), checked with `PRAGMA integrity_check`; refuses to overwrite an existing file |
 
 ### SQLite performance settings
 
@@ -320,7 +334,7 @@ Download Export creates one `task-list-YYYYMMDD-HHMMSS.zip` containing:
 
 | File | Contents |
 | --- | --- |
-| `task-list.db` | A standalone SQLite snapshot of the complete TaskList database, including its schema and all application tables. |
+| `tasklist.db` | A standalone SQLite snapshot of the complete TaskList database, including its schema and all application tables. |
 | `manifest.json` | Format/version marker, TaskList version, UTC export time, and counts for lists, archived lists, root tasks, subtasks, and recorded history events. |
 
 The database includes every active and archived list; all tasks/subtasks and descriptions, hierarchy, statuses and dates; visible and Universal IDs and allocation counters; recorded Created/Completed/Cancelled/Reopened/Deleted events; saved deleted-list names; and pending milestone notices/counters. It preserves what TaskList has already recorded and cannot reconstruct missing historical data. Deleted tasks remain historical records rather than becoming live tasks.
@@ -428,7 +442,7 @@ Creation Location headers identify the created resource path; there are no stand
 
 | Method | Endpoint | Request | Result |
 | --- | --- | --- | --- |
-| GET | `/api/export` | None. | Downloads `application/zip` with a timestamped filename in Content-Disposition. Contains `task-list.db` and `manifest.json`; uses a consistent online database snapshot. Cache-Control is no-store. |
+| GET | `/api/export` | None. | Downloads `application/zip` with a timestamped filename in Content-Disposition. Contains `tasklist.db` and `manifest.json`; uses a consistent online database snapshot. Cache-Control is no-store. |
 | POST | `/api/import/backup` | Raw TaskList export ZIP; `Content-Type: application/zip`. | Validates the backup, saves a private recovery ZIP and replaces lists/tasks/history atomically, keeping current schema/triggers and monotonic ID allocations. Returns `{restored: true, totals, recoveryBackup}`; `totals` has `lists`, `archivedLists`, `tasks`, `subtasks`, `events`, and `recoveryBackup` is the saved filename under `data/backups/`. Clears a pending first-run reminder after success. See Import and export for format/size limits and restore behavior. |
 | GET | `/api/onboarding` | None. | `{importReminderPending}`: whether this fresh server database still has its backup reminder pending. Cache-Control is no-store. |
 | POST | `/api/onboarding/acknowledge` | None. | Dismisses the backup reminder for this server. Returns 204; repeated acknowledgements are safe. Only reminder state changes. |
@@ -482,7 +496,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.21**.
+Current release: **v1.7.22**.
+
+### v1.7.22
+
+- The database is now `tasklist.db` (no hyphen). An existing `task-list.db` is renamed on first start; exports made before this release still restore.
+- Command-line options like NewsReview: `--data-dir PATH`, `--version`, and `backup --output FILE`. The data folder can also come from `TaskList:DataDirectory` or `TASKLIST_DATA_DIR`.
 
 ### v1.7.21
 

@@ -174,7 +174,7 @@ static class DataTransfer
         {
             await using var output = File.Create(zipPath);
             using var archive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
-            archive.CreateEntryFromFile(snapshotPath, "task-list.db", CompressionLevel.Optimal);
+            archive.CreateEntryFromFile(snapshotPath, "tasklist.db", CompressionLevel.Optimal);
             await using var manifestOutput = archive.CreateEntry("manifest.json").Open();
             await JsonSerializer.SerializeAsync(manifestOutput, manifest, JsonOptions, cancellationToken);
         }
@@ -184,11 +184,13 @@ static class DataTransfer
     private static async Task<BackupManifest> ExtractArchive(string zipPath, string databasePath, CancellationToken cancellationToken)
     {
         using var archive = ZipFile.OpenRead(zipPath);
+        // Exports before v1.7.22 named the database task-list.db.
+        var databaseName = archive.GetEntry("tasklist.db") is null ? "task-list.db" : "tasklist.db";
         if (archive.Entries.Count != 2 || archive.Entries.Count(entry => entry.FullName == "manifest.json") != 1 ||
-            archive.Entries.Count(entry => entry.FullName == "task-list.db") != 1)
-            throw new InvalidDataException("Choose a TaskList export ZIP containing manifest.json and task-list.db.");
+            archive.Entries.Count(entry => entry.FullName == databaseName) != 1)
+            throw new InvalidDataException("Choose a TaskList export ZIP containing manifest.json and tasklist.db.");
         var manifestEntry = archive.GetEntry("manifest.json")!;
-        var databaseEntry = archive.GetEntry("task-list.db")!;
+        var databaseEntry = archive.GetEntry(databaseName)!;
         if (manifestEntry.Length > MaxManifestBytes || databaseEntry.Length > MaxDatabaseBytes)
             throw new InvalidDataException("Backup contents exceed the import size limits (1 GiB database).");
         using var manifestBytes = new MemoryStream();

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.21
+# TaskList v1.7.22
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -22,7 +22,7 @@ TaskList listens on **http://127.0.0.1:8711** unless `--urls` (or `ASPNETCORE_UR
 
 If you have a backup, use **File → Import/Export...** before creating tasks: restoring a ZIP replaces all current lists, tasks, and history. Otherwise choose **Start Fresh**. Create a list (**File → Manage Lists... → Create a List...**) and start adding tasks.
 
-Runtime data lives in `data/task-list.db`; the password hash is in `data/auth.json`. Use **File → Import/Export...** to download a backup.
+Runtime data lives in `data/tasklist.db`; the password hash is in `data/auth.json`. Use **File → Import/Export...** to download a backup.
 
 To free disk space later, **File → Fresh Start...** clears only what you pick (finished tasks, archived lists, everything, old history, or pre-restore recovery backups) and compacts the database. Download a backup first if you might want that data back.
 
