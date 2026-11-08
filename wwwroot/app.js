@@ -129,8 +129,21 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
+const REQUEST_TIMEOUT_MS = 30000;
+
+/** fetch that gives up after 30 seconds, like NewsReview, instead of waiting forever on a stopped server. */
+async function timedFetch(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  try {
+    return await fetch(url, timeoutMs ? { ...options, signal: AbortSignal.timeout(timeoutMs) } : options);
+  } catch (error) {
+    if (error.name === 'TimeoutError') throw new Error('The server did not respond within 30 seconds. Check that it is running.');
+    throw error;
+  }
+}
+
 async function apiResponse(url, options = {}) {
-  const response = await fetch(url, { credentials: 'same-origin', ...options });
+  const { timeout = REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
+  const response = await timedFetch(url, { credentials: 'same-origin', ...fetchOptions }, timeout);
   if (response.status === 401) {
     window.location.replace('/login.html');
     throw new Error('Your session has expired.');
@@ -172,7 +185,7 @@ function applyAppVersion(version) {
 
 async function frontendReleaseVersion() {
   try {
-    const response = await fetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
+    const response = await timedFetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
     if (!response.ok) return '';
     const body = await response.json();
     return body.version || '';

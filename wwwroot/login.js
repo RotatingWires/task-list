@@ -1,5 +1,17 @@
 'use strict';
 
+const REQUEST_TIMEOUT_MS = 30000;
+
+/** fetch that gives up after 30 seconds, like NewsReview, instead of waiting forever on a stopped server. */
+async function timedFetch(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  try {
+    return await fetch(url, timeoutMs ? { ...options, signal: AbortSignal.timeout(timeoutMs) } : options);
+  } catch (error) {
+    if (error.name === 'TimeoutError') throw new Error('The server did not respond within 30 seconds. Check that it is running.');
+    throw error;
+  }
+}
+
 const authForm = document.querySelector('#authForm');
 const password = document.querySelector('#password');
 const setupTokenGroup = document.querySelector('#setupTokenGroup');
@@ -27,7 +39,7 @@ function loginReturnUrl() {
 }
 
 async function request(url, options = {}) {
-  const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
+  const response = await timedFetch(url, { credentials: 'same-origin', cache: 'no-store', ...options });
   if (response.ok) return response.status === 204 ? null : response.json();
 
   let message = response.status === 401
@@ -44,7 +56,7 @@ async function request(url, options = {}) {
 
 async function frontendReleaseVersion() {
   try {
-    const response = await fetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
+    const response = await timedFetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
     if (!response.ok) return '';
     const body = await response.json();
     return body.version || '';

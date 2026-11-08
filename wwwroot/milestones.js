@@ -207,7 +207,7 @@
 
   async function consumePendingMilestones() {
     try {
-      const response = await fetch('/api/milestones/consume', {
+      const response = await timedFetch('/api/milestones/consume', {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store'

@@ -43,7 +43,7 @@ exportData.addEventListener('click', async () => {
   setStatus('Creating export...');
   let downloadUrl = null;
   try {
-    const response = await apiResponse('/api/export', { cache: 'no-store' });
+    const response = await apiResponse('/api/export', { cache: 'no-store', timeout: 0 });
     if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('application/zip'))
       throw new Error('The server did not return a ZIP export. Rebuild and restart TaskList if it has just been updated.');
     downloadUrl = URL.createObjectURL(await response.blob());
@@ -103,7 +103,7 @@ transferFile.addEventListener('change', async () => {
     }
     setStatus(backup ? 'Restoring backup...' : `Importing into ${listName}...`);
     const result = backup
-      ? await api('/api/import/backup', { method: 'POST', headers: { 'Content-Type': 'application/zip' }, body: file }, false)
+      ? await api('/api/import/backup', { method: 'POST', headers: { 'Content-Type': 'application/zip' }, body: file, timeout: 0 }, false)
       : await api(`/api/lists/${listId}/import/markdown`, {
           method: 'POST', headers: { 'Content-Type': 'text/markdown; charset=utf-8' }, body: await file.text()
         }, false);

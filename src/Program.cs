@@ -94,6 +94,38 @@ if (setupToken is not null)
     Console.WriteLine();
 }
 
+// Browser hardening: API replies are never stored, and pages and scripts are checked for changes on every load.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers.CacheControl = context.Request.Path.StartsWithSegments("/api") ? "no-store" : "no-cache";
+        headers.XContentTypeOptions = "nosniff";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+// Cross-origin writes are refused before rate limiting, so they never use up login attempts.
+app.Use(async (context, next) =>
+{
+    if (!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method))
+    {
+        var origin = context.Request.Headers.Origin.ToString();
+        var sameOrigin = origin.Length == 0
+            || (Uri.TryCreate(origin, UriKind.Absolute, out var originUri)
+                && string.Equals(originUri.Authority, context.Request.Host.Value, StringComparison.OrdinalIgnoreCase));
+        if (context.Request.Headers["Sec-Fetch-Site"] == "cross-site" || !sameOrigin)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsJsonAsync(new { error = "Cross-origin writes are not allowed." });
+            return;
+        }
+    }
+    await next();
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
