@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.38
+# TaskList v1.7.39
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -505,13 +505,21 @@ TaskList is a single-user application.
 
 Run `dotnet build` and then `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node tests/frontend.test.cjs` for frontend tests. SQL fixtures execute the schema, triggers, and operation SQL from the C# source against disposable databases. Cases cover moves, renames, status changes, imports, deletion, restore/rollback, IDs, counters, and 1,200 seeded mixed operations. `tests/test_fresh_start.py` starts the built TaskList against a throwaway data folder and checks every Fresh start choice: validation, open trees kept, Deleted events, history clears surviving a restart with unchanged milestone counters, the Stats history revision, recovery-backup removal, compaction, and IDs never being reused; it is skipped until TaskList has been built. JavaScript tests exercise the actual selection/bulk-action and milestone-check code with DOM fixtures. Python and Node are test tools, not TaskList runtime dependencies.
 
+`tests/server.py` (the same file in TaskList, TaskList Stats, and SpendTracker) builds the app and starts the real server on a temporary data folder; `tests/test_sign_in.py` (also the same in all three) checks first-run setup, login, logout, and the saved password file. `tests/test_api.py` runs lists, tasks, subtasks, and error replies against that server.
+
 With the adjacent TaskList Stats checkout and Node on PATH, the Python suite also compares actual TL trigger output against Stats' milestone code across six mixed datasets up to 11,000 creations. `TASKLIST_TEST_NODE` can select another Node executable. See [the audit coverage](tests/AUDIT.md).
 
 GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Python and Node suites on every push and pull request, with TaskList Stats checked out alongside so the cross-app milestone parity test runs too.
 
 ## Release notes
 
-Current release: **v1.7.38**.
+Current release: **v1.7.39**.
+
+### v1.7.39
+
+- Tests start the real server on a temporary data folder with `tests/server.py`, and `tests/test_sign_in.py` checks setup, login, logout, and the password file; both files are the same in TaskList, TaskList Stats, and SpendTracker.
+- An unknown API address answers 404 `{ "error": "Not found" }` like NewsReview, instead of the app page (GET) or 405 (POST).
+- New `tests/test_api.py` runs lists, tasks, and subtasks against that server; until now the tests only ran SQL taken from the source.
 
 ### v1.7.38
 

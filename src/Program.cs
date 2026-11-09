@@ -578,6 +578,8 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     return Results.Ok(new { imported = tasksImported + subtasksImported, tasksImported, subtasksImported });
 });
 
+// An unknown API address answers 404 like NewsReview, instead of the page or 405.
+app.MapFallback("/api/{**path}", () => Results.Json(new { error = "Not found" }, statusCode: StatusCodes.Status404NotFound)).RequireAuthorization();
 app.MapFallbackToFile("index.html").RequireAuthorization();
 app.Run();
 
