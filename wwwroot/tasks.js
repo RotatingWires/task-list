@@ -1,19 +1,22 @@
-'use strict';
-
 /* Task rendering and actions: edit, subtasks, move, and the Task Information metrics. */
+import { $, $$, PRIMARY_STATUS_ACTION, actionButton, api, cancelEdit, cancelMove, cancelSubtask, clearDeepLink, confirmAction, currentListId, currentView, editDescription, editDialog, editForm, editTaskId, editTitle, editingItem, el, emptyState, findItemByDisplayId, formatDate, infoCancelled, infoCompleted, infoCreated, infoDescription, infoDialog, infoParentTask, infoParentTaskRow, infoReopened, infoStatus, infoTaskId, infoTitle, infoUniversalId, infoUpdated, jsonApi, lists, moveDialog, moveForm, moveListButton, moveListDropdown, moveListLabel, moveNote, moveSelectedTasks, moveTargetListId, moveTaskId, movingItem, newTaskForm, newTaskTitle, pendingDeepLinkDisplayId, scrollAndHighlightTask, setCurrentView, setEditingItem, setMoveTargetListId, setMovingItem, setPendingDeepLinkDisplayId, setStatus, setSubtaskParent, setTasks, subtaskDescription, subtaskDialog, subtaskForm, subtaskParent, subtaskParentId, subtaskTitle, taskCount, taskList, tasks, viewChoices } from './app.js';
+import { bulkMoveItems, clearTaskSelection, configureTaskSelection, pruneTaskSelection, requestBulkAction, selectedSubtreeRoots, selectedTaskSummary, selectionMode, setBulkMoveItems, updateBulkToolbar } from './bulk.js';
+import { refreshListCounts } from './lists.js';
+import { closeViewMenu } from './ui.js';
+
 const TASK_ACTION_HOLD_MS = 800;
 
-async function loadTasks() {
+export async function loadTasks() {
   if (!currentListId) return;
 
   setStatus('Loading...');
   try {
-    tasks = await api(`/api/lists/${currentListId}/tasks`);
+    setTasks(await api(`/api/lists/${currentListId}/tasks`));
     renderTasks();
     setStatus('Ready');
     if (pendingDeepLinkDisplayId) {
       const displayId = pendingDeepLinkDisplayId;
-      pendingDeepLinkDisplayId = null;
+      setPendingDeepLinkDisplayId(null);
       scrollAndHighlightTask(displayId, true);
     }
   } catch (error) {
@@ -21,13 +24,13 @@ async function loadTasks() {
   }
 }
 
-function tasksForCurrentView() {
+export function tasksForCurrentView() {
   if (currentView === 'open') return tasks.filter(task => task.status === 'Open');
   if (currentView === 'done') return tasks.filter(task => task.status === 'Done');
   return tasks;
 }
 
-function renderTasks() {
+export function renderTasks() {
   const visibleTasks = tasksForCurrentView();
   taskList.replaceChildren();
   emptyState.hidden = visibleTasks.length > 0;
@@ -52,7 +55,7 @@ function appendTaskTree(item, depth) {
     appendTaskTree(child, depth + 1);
 }
 
-function countDescendants(item) {
+export function countDescendants(item) {
   return (item.subtasks ?? []).reduce((sum, child) => sum + 1 + countDescendants(child), 0);
 }
 
@@ -146,7 +149,7 @@ function createTaskRow(item, depth) {
   return row;
 }
 
-function closeTaskActionMenus(except = null) {
+export function closeTaskActionMenus(except = null) {
   for (const menu of $$('.task-action-dropdown:not([hidden])')) {
     if (menu === except) continue;
     menu.hidden = true;
@@ -363,7 +366,7 @@ function createTaskSplitAction(item) {
     `More actions for task #${item.displayId}`, Boolean(primaryStatus));
 }
 
-function createSplitAction(primaryLabel, activatePrimary, actions, menuLabel, hold = true, disabled = false) {
+export function createSplitAction(primaryLabel, activatePrimary, actions, menuLabel, hold = true, disabled = false) {
   const group = el('div', 'task-split-group');
 
   const primary = el('button');
@@ -415,7 +418,7 @@ newTaskForm.addEventListener('submit', async event => {
   try {
     const created = await jsonApi(`/api/lists/${currentListId}/tasks`, 'POST', { title, description: '' });
     newTaskTitle.value = '';
-    currentView = 'open';
+    setCurrentView('open');
     updateViewMenu();
     tasks.unshift(created);
     renderTasks();
@@ -427,7 +430,7 @@ newTaskForm.addEventListener('submit', async event => {
   }
 });
 
-function itemEndpoint(item) {
+export function itemEndpoint(item) {
   return `/api/lists/${item.listId}/items/${encodeURIComponent(item.displayId)}`;
 }
 
@@ -453,7 +456,7 @@ async function removeItemLocally(universalId) {
   setStatus('Ready');
 }
 
-function applyUpdatedItem(items, updatedItem) {
+export function applyUpdatedItem(items, updatedItem) {
   for (const item of items) {
     if (item.universalId === updatedItem.universalId) {
       const subtasks = item.subtasks ?? [];
@@ -482,7 +485,7 @@ async function updateItem(item, changes) {
 }
 
 function openEdit(item) {
-  editingItem = item;
+  setEditingItem(item);
   editTaskId.textContent = `#${item.displayId}`;
   editTitle.value = item.title;
   editDescription.value = item.description ?? '';
@@ -501,16 +504,16 @@ editForm.addEventListener('submit', async event => {
   const item = editingItem;
   const description = editDescription.value.trim();
   editDialog.close();
-  editingItem = null;
+  setEditingItem(null);
   await updateItem(item, { title, description });
 });
 
 cancelEdit.addEventListener('click', () => {
-  editingItem = null;
+  setEditingItem(null);
 });
 
 function openSubtaskDialog(parent) {
-  subtaskParent = parent;
+  setSubtaskParent(parent);
   subtaskParentId.textContent = `#${parent.displayId} - ${parent.title}`;
   subtaskTitle.value = '';
   subtaskDescription.value = '';
@@ -528,7 +531,7 @@ subtaskForm.addEventListener('submit', async event => {
   const parent = subtaskParent;
   const description = subtaskDescription.value.trim();
   subtaskDialog.close();
-  subtaskParent = null;
+  setSubtaskParent(null);
 
   setStatus(`Adding subtask to #${parent.displayId}...`);
   try {
@@ -547,7 +550,7 @@ subtaskForm.addEventListener('submit', async event => {
 });
 
 cancelSubtask.addEventListener('click', () => {
-  subtaskParent = null;
+  setSubtaskParent(null);
 });
 
 function closeMoveListMenu() {
@@ -556,7 +559,7 @@ function closeMoveListMenu() {
 }
 
 function setMoveTargetList(listId) {
-  moveTargetListId = Number(listId);
+  setMoveTargetListId(Number(listId));
   const selectedList = lists.find(list => list.id === moveTargetListId);
   moveListLabel.textContent = selectedList?.name ?? 'Choose a list';
 
@@ -590,15 +593,15 @@ function renderMoveListChoices(destinations) {
   setMoveTargetList(destinations[0]?.id ?? null);
 }
 
-function openMove(item, bulkItems = null) {
+export function openMove(item, bulkItems = null) {
   const destinations = lists.filter(list => list.id !== item.listId);
   if (!destinations.length) {
     setStatus('Create another list before moving tasks.');
     return;
   }
 
-  movingItem = item;
-  bulkMoveItems = bulkItems;
+  setMovingItem(item);
+  setBulkMoveItems(bulkItems);
   moveDialog.querySelector('.dialog-title').textContent = bulkItems ? 'Move Selected Tasks' : 'Move Task';
   moveTaskId.textContent = bulkItems ? `Selected tasks: ${bulkItems.length}` : `Task #${item.displayId} — ${item.title}`;
   moveSelectedTasks.hidden = !bulkItems;
@@ -643,9 +646,9 @@ moveForm.addEventListener('submit', async event => {
   if (bulkMoveItems) {
     const selected = bulkMoveItems;
     moveDialog.close();
-    movingItem = null;
-    bulkMoveItems = null;
-    moveTargetListId = null;
+    setMovingItem(null);
+    setBulkMoveItems(null);
+    setMoveTargetListId(null);
     await requestBulkAction('move', targetListId, selected);
     return;
   }
@@ -653,8 +656,8 @@ moveForm.addEventListener('submit', async event => {
   try {
     const result = await jsonApi(`${itemEndpoint(item)}/move`, 'POST', { targetListId });
     moveDialog.close();
-    movingItem = null;
-    moveTargetListId = null;
+    setMovingItem(null);
+    setMoveTargetListId(null);
     await Promise.all([removeItemLocally(item.universalId), refreshListCounts()]);
     setStatus(`Moved Universal ID ${result.universalId} to ${targetList.name} as #${result.displayId}.`);
   } catch (error) {
@@ -664,9 +667,9 @@ moveForm.addEventListener('submit', async event => {
 
 cancelMove.addEventListener('click', () => {
   closeMoveListMenu();
-  movingItem = null;
-  bulkMoveItems = null;
-  moveTargetListId = null;
+  setMovingItem(null);
+  setBulkMoveItems(null);
+  setMoveTargetListId(null);
 });
 
 moveDialog.addEventListener('close', closeMoveListMenu);
@@ -677,7 +680,7 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape') closeMoveListMenu();
 });
 
-function flattenTaskItems(items, output = []) {
+export function flattenTaskItems(items, output = []) {
   for (const item of items) {
     output.push(item);
     flattenTaskItems(item.subtasks ?? [], output);
@@ -762,7 +765,7 @@ function setInfoDescriptionHighlight(enabled) {
   }, 3200);
 }
 
-function openInfo(item, sourceItems = tasks, highlightDescription = false) {
+export function openInfo(item, sourceItems = tasks, highlightDescription = false) {
   infoTaskId.textContent = `#${item.displayId}`;
 
   if (item.parentDisplayId) {
@@ -829,16 +832,16 @@ async function deleteItem(item) {
   }
 }
 
-function setView(view) {
+export function setView(view) {
   clearTaskSelection();
   clearDeepLink();
-  currentView = view;
+  setCurrentView(view);
   updateViewMenu();
   renderTasks();
   closeViewMenu();
 }
 
-function updateViewMenu() {
+export function updateViewMenu() {
   for (const choice of viewChoices) {
     const selected = choice.dataset.view === currentView;
     choice.setAttribute('aria-checked', selected ? 'true' : 'false');

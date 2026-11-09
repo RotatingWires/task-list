@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.44
+# TaskList v1.7.45
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -43,6 +43,8 @@ It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. The
 - Built-in ASP.NET Core cookie authentication and rate limiting
 - Web manifest for adding to a phone's home screen (no offline copy, like NewsReview)
 - No React, Node.js, npm, Electron, Bootstrap, Entity Framework, or ORM
+
+The frontend is plain HTML, CSS, and JavaScript modules (`<script type="module">`) with no build step, the same in all four apps. Two small files stay classic scripts and are the same word for word in every app: `theme.js`, which has to run before the page draws so it never flashes the wrong theme, and `dropdown.js`.
 
 ## Project layout
 <img width="2558" height="1299" alt="image" src="https://github.com/user-attachments/assets/ca4697ac-a541-4c8b-8f1c-c60aee5d782f" />
@@ -571,7 +573,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.44**.
+Current release: **v1.7.45**.
+
+### v1.7.45
+
+- Code: the scripts are JavaScript modules (`<script type="module">`) with imports and exports, like NewsReview's, instead of classic scripts sharing globals; the app starts once every module has loaded. `theme.js` and `dropdown.js` stay classic scripts, the same in every app, so the theme is applied before the page draws.
 
 ### v1.7.44
 

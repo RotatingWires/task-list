@@ -1,29 +1,37 @@
-'use strict';
-
 /* Lists: choosing, creating, managing, and archiving them. */
-async function loadStats() {
+import { $, api, appendActions, archivedLists, archivesBody, archivesDialog, archivesTitleText, archivesUidTotal, cancelListEdit, clearDeepLink, confirmAction, currentListId, currentView, editingList, el, fileDropdown, highestUniversalId, jsonApi, listDescription, listDialog, listDialogTitle, listForm, listName, lists, manageListsBody, manageListsDialog, manageListsTitleText, manageListsUidTotal, openArchivesButton, setArchivedLists, setCurrentListId, setCurrentView, setEditingList, setHighestUniversalId, setLists, setStatus, titleListName } from './app.js';
+import { loadTasks, updateViewMenu } from './tasks.js';
+import { clearTaskSelection, selectionMenuCommand } from './bulk.js';
+import { openTransfer } from './transfer.js';
+import { openFreshStart } from './fresh-start.js';
+import { openSearch } from './search.js';
+import { closeFileMenu } from './ui.js';
+
+export async function loadStats() {
   const stats = await api('/api/stats');
-  highestUniversalId = Number(stats.highestUniversalId) || 0;
+  setHighestUniversalId(Number(stats.highestUniversalId) || 0);
   manageListsUidTotal.textContent = `${highestUniversalId.toLocaleString()} lifetime entries counting deletions`;
 }
 
-function currentList() {
+export function currentList() {
   return [...lists, ...archivedLists].find(list => list.id === currentListId) ?? null;
 }
 
-async function loadLists(preferredId = null) {
-  [lists, archivedLists] = await Promise.all([
+export async function loadLists(preferredId = null) {
+  const [activeLists, archived] = await Promise.all([
     api('/api/lists'),
     api('/api/lists/archives')
   ]);
+  setLists(activeLists);
+  setArchivedLists(archived);
   if (!lists.length) throw new Error('No active task lists exist.');
 
   const candidate = preferredId ?? currentListId;
   const knownLists = [...lists, ...archivedLists];
   if (!knownLists.some(list => list.id === candidate))
-    currentListId = lists[0].id;
+    setCurrentListId(lists[0].id);
   else
-    currentListId = candidate;
+    setCurrentListId(candidate);
 
   localStorage.setItem('task-list-current-list', String(currentListId));
   renderFileMenu();
@@ -32,12 +40,12 @@ async function loadLists(preferredId = null) {
   if (archivesDialog.open) renderArchives();
 }
 
-function updateListTitle() {
+export function updateListTitle() {
   const list = currentList();
   titleListName.textContent = list ? list.name : '';
 }
 
-function renderFileMenu() {
+export function renderFileMenu() {
   fileDropdown.replaceChildren();
 
   for (const list of lists) {
@@ -99,7 +107,7 @@ async function logOut() {
   }
 }
 
-function menuCommand(label, handler) {
+export function menuCommand(label, handler) {
   const button = el('button');
   button.setAttribute('role', 'menuitem');
   button.append(
@@ -113,9 +121,9 @@ function menuCommand(label, handler) {
 async function selectList(id) {
   clearTaskSelection();
   clearDeepLink();
-  currentListId = id;
+  setCurrentListId(id);
   localStorage.setItem('task-list-current-list', String(id));
-  currentView = 'open';
+  setCurrentView('open');
   updateViewMenu();
   renderFileMenu();
   updateListTitle();
@@ -123,7 +131,7 @@ async function selectList(id) {
   await loadTasks();
 }
 
-async function refreshListCounts() {
+export async function refreshListCounts() {
   try {
     await loadLists(currentListId);
   } catch {}
@@ -131,7 +139,7 @@ async function refreshListCounts() {
 
 function openCreateList() {
   closeFileMenu();
-  editingList = null;
+  setEditingList(null);
   listDialogTitle.textContent = 'Create a List';
   listName.value = '';
   listDescription.value = '';
@@ -140,7 +148,7 @@ function openCreateList() {
 }
 
 function openEditList(list) {
-  editingList = list;
+  setEditingList(list);
   listDialogTitle.textContent = 'Edit List';
   listName.value = list.name;
   listDescription.value = list.description ?? '';
@@ -161,14 +169,14 @@ listForm.addEventListener('submit', async event => {
   try {
     if (wasEditing) {
       await jsonApi(`/api/lists/${wasEditing.id}`, 'PATCH', { name, description });
-      editingList = null;
+      setEditingList(null);
       await loadLists(currentListId);
       if (manageListsDialog.open) renderManageLists();
       setStatus('List updated.');
     } else {
       const created = await jsonApi('/api/lists', 'POST', { name, description });
       await loadLists(created.id);
-      currentView = 'open';
+      setCurrentView('open');
       updateViewMenu();
       await loadTasks();
       if (manageListsDialog.open) renderManageLists();
@@ -181,7 +189,7 @@ listForm.addEventListener('submit', async event => {
 });
 
 cancelListEdit.addEventListener('click', () => {
-  editingList = null;
+  setEditingList(null);
 });
 
 async function openManageLists() {
@@ -239,7 +247,7 @@ async function archiveList(list) {
 
   try {
     await api(`/api/lists/${list.id}/archive`, { method: 'POST' });
-    if (currentListId === list.id) currentListId = null;
+    if (currentListId === list.id) setCurrentListId(null);
     await loadLists(currentListId);
     await loadTasks();
     renderManageLists();
@@ -296,9 +304,9 @@ async function viewArchivedList(list) {
   archivesDialog.close();
   manageListsDialog.close();
   clearDeepLink();
-  currentListId = list.id;
+  setCurrentListId(list.id);
   localStorage.setItem('task-list-current-list', String(currentListId));
-  currentView = 'open';
+  setCurrentView('open');
   updateViewMenu();
   renderFileMenu();
   updateListTitle();
@@ -334,7 +342,7 @@ async function deleteList(list) {
 
   try {
     await api(`/api/lists/${list.id}`, { method: 'DELETE' });
-    if (currentListId === list.id) currentListId = null;
+    if (currentListId === list.id) setCurrentListId(null);
     await loadLists();
     await loadTasks();
     if (manageListsDialog.open) renderManageLists();

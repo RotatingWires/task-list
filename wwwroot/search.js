@@ -1,14 +1,17 @@
-'use strict';
-
 /* File > Search...: keyword and date/time search, and its list filter. */
+import { actionButton, api, clearDeepLink, currentListId, currentView, dateSearchForm, dateSearchPanel, dateSearchTab, el, formatDate, keywordSearchForm, keywordSearchPanel, keywordSearchTab, lists, scrollAndHighlightTask, searchDialog, searchKeyword, searchListFilterButton, searchListFilterDropdown, searchListFilterLabel, searchListFilterValue, searchPeriod, searchResultSet, searchResults, searchSummary, setCurrentListId, setCurrentView, setSearchListFilterValue, setSearchResultSet } from './app.js';
+import { loadTasks, openInfo, updateViewMenu } from './tasks.js';
+import { renderFileMenu, updateListTitle } from './lists.js';
+import { closeFileMenu } from './ui.js';
+
 function closeSearchListFilterMenu() {
   searchListFilterDropdown.hidden = true;
   searchListFilterButton.setAttribute('aria-expanded', 'false');
 }
 
 function resetSearchListFilter() {
-  searchResultSet = [];
-  searchListFilterValue = 'all';
+  setSearchResultSet([]);
+  setSearchListFilterValue('all');
   searchListFilterLabel.textContent = 'All lists';
   searchListFilterDropdown.replaceChildren();
   searchListFilterButton.disabled = true;
@@ -17,8 +20,8 @@ function resetSearchListFilter() {
 
 function prepareSearchRun() {
   const desiredFilter = searchDialog.open ? searchListFilterValue : 'all';
-  searchResultSet = [];
-  searchListFilterValue = 'all';
+  setSearchResultSet([]);
+  setSearchListFilterValue('all');
   searchListFilterLabel.textContent = 'All lists';
   searchListFilterDropdown.replaceChildren();
   searchListFilterButton.disabled = true;
@@ -27,7 +30,7 @@ function prepareSearchRun() {
   return desiredFilter;
 }
 
-function openSearch() {
+export function openSearch() {
   closeFileMenu();
   setSearchTab('keyword');
   searchKeyword.value = '';
@@ -331,7 +334,7 @@ function addSearchListFilterChoice(value, label) {
 
   button.append(check, text);
   button.addEventListener('click', () => {
-    searchListFilterValue = value;
+    setSearchListFilterValue(value);
     searchListFilterLabel.textContent = label;
 
     for (const choice of searchListFilterDropdown.querySelectorAll('[data-value]')) {
@@ -353,7 +356,7 @@ function configureSearchListFilter(results, desiredValue = 'all') {
     counts.set(result.list.id, (counts.get(result.list.id) ?? 0) + 1);
   }
 
-  searchListFilterValue = 'all';
+  setSearchListFilterValue('all');
   searchListFilterLabel.textContent = 'All lists';
   searchListFilterDropdown.replaceChildren();
   addSearchListFilterChoice('all', 'All lists');
@@ -368,7 +371,7 @@ function configureSearchListFilter(results, desiredValue = 'all') {
     const desiredChoice = [...searchListFilterDropdown.querySelectorAll('[data-value]')]
       .find(choice => choice.dataset.value === desiredValue);
     if (desiredChoice) {
-      searchListFilterValue = desiredValue;
+      setSearchListFilterValue(desiredValue);
       searchListFilterLabel.textContent = desiredChoice.querySelector('.menu-label')?.textContent ?? 'All lists';
 
       for (const choice of searchListFilterDropdown.querySelectorAll('[data-value]')) {
@@ -433,7 +436,7 @@ function renderFilteredSearchResults() {
 }
 
 function renderSearchResults(results, summary, desiredFilter = 'all') {
-  searchResultSet = results;
+  setSearchResultSet(results);
   searchSummary.textContent = summary;
   configureSearchListFilter(results, desiredFilter);
   renderFilteredSearchResults();
@@ -458,9 +461,9 @@ document.addEventListener('keydown', event => {
 async function viewSearchResult(result) {
   clearDeepLink();
   searchDialog.close();
-  currentListId = result.list.id;
+  setCurrentListId(result.list.id);
   localStorage.setItem('task-list-current-list', String(currentListId));
-  currentView = 'all';
+  setCurrentView('all');
   updateViewMenu();
   renderFileMenu();
   updateListTitle();

@@ -1,11 +1,16 @@
-'use strict';
-
 /* Selection mode: the bulk toolbar, its confirmations, and running each action. */
-let selectionMode = localStorage.getItem('task-list-selection-mode') === 'true';
+import { $, api, appWindow, confirmAction, currentListId, currentView, el, jsonApi, lists, setStatus, setTasks, taskList, tasks } from './app.js';
+import { applyUpdatedItem, closeTaskActionMenus, countDescendants, createSplitAction, flattenTaskItems, itemEndpoint, openMove, renderTasks, tasksForCurrentView } from './tasks.js';
+import { menuCommand, refreshListCounts, renderFileMenu } from './lists.js';
+import { closeFileMenu, closeViewMenu } from './ui.js';
+
+export let selectionMode = localStorage.getItem('task-list-selection-mode') === 'true';
 const selectedTaskIds = new Set();
 let selectionAnchorId = null;
 let bulkBusy = false;
-let bulkMoveItems = null;
+export let bulkMoveItems = null;
+/** Other modules change bulkMoveItems through this; an imported binding is read-only. */
+export function setBulkMoveItems(value) { return (bulkMoveItems = value); }
 const bulkControls = $('#bulkControls');
 const selectedTaskCount = $('#selectedTaskCount');
 const bulkActions = $('#bulkActions');
@@ -18,12 +23,12 @@ function selectedTaskItems() {
   return visibleTaskItems().filter(item => selectedTaskIds.has(item.universalId));
 }
 
-function clearTaskSelection() {
+export function clearTaskSelection() {
   selectedTaskIds.clear();
   selectionAnchorId = null;
 }
 
-function pruneTaskSelection() {
+export function pruneTaskSelection() {
   const visible = new Set(visibleTaskItems().map(item => item.universalId));
   for (const id of selectedTaskIds) if (!visible.has(id)) selectedTaskIds.delete(id);
   if (!visible.has(selectionAnchorId)) selectionAnchorId = null;
@@ -47,7 +52,7 @@ document.addEventListener('keydown', event => {
   setSelectionMode(false);
 });
 
-function selectionMenuCommand() {
+export function selectionMenuCommand() {
   const button = menuCommand('Select...', () => setSelectionMode(!selectionMode));
   // An on/off option, so it uses a check box like SpendTracker's Select... rather than a radio dot.
   button.setAttribute('role', 'menuitemcheckbox');
@@ -57,7 +62,7 @@ function selectionMenuCommand() {
   return button;
 }
 
-function configureTaskSelection(row, item) {
+export function configureTaskSelection(row, item) {
   row.dataset.universalId = String(item.universalId);
   if (!selectionMode) return;
   row.classList.add('task-selectable');
@@ -112,12 +117,12 @@ function toggleTaskSelection(item, extendRange = false) {
   updateBulkToolbar();
 }
 
-function selectedSubtreeRoots(items) {
+export function selectedSubtreeRoots(items) {
   return items.filter(item => !items.some(parent => parent !== item && parent.listId === item.listId &&
     item.displayId.startsWith(`${parent.displayId}.`)));
 }
 
-function selectedTaskSummary(items) {
+export function selectedTaskSummary(items) {
   const lines = items.slice(0, 12).map(item => `#${item.displayId} — ${item.title}`);
   if (items.length > 12) lines.push(`And ${items.length - 12} more selected tasks/subtasks.`);
   return lines.join('\n');
@@ -133,7 +138,7 @@ function bulkActionItems(action, items) {
   return action === 'move' ? roots.reverse() : roots;
 }
 
-function updateBulkToolbar() {
+export function updateBulkToolbar() {
   bulkControls.hidden = !selectionMode;
   const selected = selectedTaskItems();
   selectedTaskCount.textContent = `Selected: ${selected.length}`;
@@ -154,7 +159,7 @@ function updateBulkToolbar() {
     'More actions for selected tasks', true, bulkBusy || !selected.length));
 }
 
-async function requestBulkAction(action, targetListId = null, selected = selectedTaskItems()) {
+export async function requestBulkAction(action, targetListId = null, selected = selectedTaskItems()) {
   if (bulkBusy || !selected.length) return;
   const items = bulkActionItems(action, selected);
   if (!items.length) return;
@@ -207,7 +212,7 @@ async function requestBulkAction(action, targetListId = null, selected = selecte
   } finally {
     if (confirmed && (structural || failure)) {
       try {
-        tasks = await api(`/api/lists/${currentListId}/tasks`);
+        setTasks(await api(`/api/lists/${currentListId}/tasks`));
         await refreshListCounts();
       } catch (error) {
         failure = `${failure ? `${failure} ` : ''}Could not refresh the task list: ${error.message}`;

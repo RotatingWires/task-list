@@ -1,6 +1,9 @@
-'use strict';
-
 /* Menus, navigation, startup and the first-run reminder, and deep links. */
+import { $, aboutDialog, aboutMenu, api, appWindow, currentListId, currentView, deepLinkUniversalId, el, fileDropdown, fileMenu, hasDeepLink, infoDialog, loadAppVersion, pendingDeepLinkDisplayId, resolveUniversalLocation, setCurrentListId, setCurrentView, setPendingDeepLinkDisplayId, setStatus, viewChoices, viewDropdown, viewMenu } from './app.js';
+import { loadTasks, setView, updateViewMenu } from './tasks.js';
+import { openTransfer } from './transfer.js';
+import { loadLists, renderFileMenu, updateListTitle } from './lists.js';
+
 const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
 const retroFontChoice = $('#retroFontChoice');
 const firstRunDialog = $('#firstRunDialog');
@@ -51,12 +54,12 @@ firstRunDialog.addEventListener('close', () => {
   importReminderResolve = null;
 });
 
-function closeFileMenu() {
+export function closeFileMenu() {
   fileDropdown.hidden = true;
   fileMenu.setAttribute('aria-expanded', 'false');
 }
 
-function closeViewMenu() {
+export function closeViewMenu() {
   viewDropdown.hidden = true;
   viewMenu.setAttribute('aria-expanded', 'false');
 }
@@ -210,13 +213,13 @@ async function start() {
     if (hasDeepLink) {
       const target = await resolveUniversalLocation(deepLinkUniversalId);
       if (target) {
-        currentListId = target.listId;
+        setCurrentListId(target.listId);
         localStorage.setItem('task-list-current-list', String(target.listId));
-        currentView = 'all';
+        setCurrentView('all');
         updateViewMenu();
         renderFileMenu();
         updateListTitle();
-        pendingDeepLinkDisplayId = target.displayId;
+        setPendingDeepLinkDisplayId(target.displayId);
       } else {
         deepLinkError = `Task with Universal ID ${deepLinkUniversalId} was not found.`;
       }
@@ -236,4 +239,5 @@ async function start() {
   } catch {}
 }
 
-start();
+// Start once every module has run: module scripts all finish before DOMContentLoaded.
+document.addEventListener('DOMContentLoaded', start);

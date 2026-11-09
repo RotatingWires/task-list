@@ -70,7 +70,8 @@ class BrowserTests(unittest.TestCase):
         expect(page.locator("#taskList")).to_contain_text("Bravo edited")
 
         # A subtask from the Add Subtask dialog.
-        page.evaluate("openSubtaskDialog(tasks.find(task => task.title === 'Alpha task'))")
+        page.locator("tr", has_text="Alpha task").locator(".task-action-arrow").click()
+        page.get_by_role("menuitem", name="Add Subtask").click()
         page.fill("#subtaskTitle", "Alpha child")
         page.locator("#subtaskForm button[type=submit]").click()
         expect(page.locator("#taskList")).to_contain_text("Alpha child")

@@ -1,9 +1,7 @@
-'use strict';
-
 /* Shared state, DOM references, API calls, and helpers for the other scripts. */
 // $ and $$ take CSS selectors, the same helpers as TaskList Stats, NewsReview, and SpendTracker.
 /** Creates an element with an optional class and text; buttons get type="button". The same helper in every app. */
-function el(tag, className = '', text = '') {
+export function el(tag, className = '', text = '') {
   const node = document.createElement(tag);
   if (tag === 'button') node.type = 'button';
   if (className) node.className = className;
@@ -11,26 +9,26 @@ function el(tag, className = '', text = '') {
   return node;
 }
 
-const $ = selector => document.querySelector(selector);
-const $$ = selector => [...document.querySelectorAll(selector)];
+export const $ = selector => document.querySelector(selector);
+export const $$ = selector => [...document.querySelectorAll(selector)];
 
-const taskList = $('#taskList');
-const emptyState = $('#emptyState');
+export const taskList = $('#taskList');
+export const emptyState = $('#emptyState');
 const statusText = $('#statusText');
-const taskCount = $('#taskCount');
-const appWindow = $('main.window');
-const newTaskForm = $('#newTaskForm');
-const newTaskTitle = $('#newTaskTitle');
+export const taskCount = $('#taskCount');
+export const appWindow = $('main.window');
+export const newTaskForm = $('#newTaskForm');
+export const newTaskTitle = $('#newTaskTitle');
 
-const fileMenu = $('#fileMenu');
-const fileDropdown = $('#fileDropdown');
-const viewMenu = $('#viewMenu');
-const viewDropdown = $('#viewDropdown');
-const viewChoices = [...viewDropdown.querySelectorAll('[data-view]')];
-const aboutMenu = $('#aboutMenu');
-const aboutDialog = $('#aboutDialog');
+export const fileMenu = $('#fileMenu');
+export const fileDropdown = $('#fileDropdown');
+export const viewMenu = $('#viewMenu');
+export const viewDropdown = $('#viewDropdown');
+export const viewChoices = [...viewDropdown.querySelectorAll('[data-view]')];
+export const aboutMenu = $('#aboutMenu');
+export const aboutDialog = $('#aboutDialog');
 const titleAppName = $('.title-app-name');
-const titleListName = $('#titleListName');
+export const titleListName = $('#titleListName');
 const aboutVersion = $('#aboutVersion');
 
 const confirmDialog = $('#confirmDialog');
@@ -40,95 +38,123 @@ const confirmDialogDetail = $('#confirmDialogDetail');
 const confirmDialogCancel = $('#confirmDialogCancel');
 const confirmDialogAccept = $('#confirmDialogAccept');
 
-const editDialog = $('#editDialog');
-const editForm = $('#editForm');
-const editTaskId = $('#editTaskId');
-const editTitle = $('#editTitle');
-const editDescription = $('#editDescription');
-const cancelEdit = $('#cancelEdit');
+export const editDialog = $('#editDialog');
+export const editForm = $('#editForm');
+export const editTaskId = $('#editTaskId');
+export const editTitle = $('#editTitle');
+export const editDescription = $('#editDescription');
+export const cancelEdit = $('#cancelEdit');
 
-const subtaskDialog = $('#subtaskDialog');
-const subtaskForm = $('#subtaskForm');
-const subtaskParentId = $('#subtaskParentId');
-const subtaskTitle = $('#subtaskTitle');
-const subtaskDescription = $('#subtaskDescription');
-const cancelSubtask = $('#cancelSubtask');
+export const subtaskDialog = $('#subtaskDialog');
+export const subtaskForm = $('#subtaskForm');
+export const subtaskParentId = $('#subtaskParentId');
+export const subtaskTitle = $('#subtaskTitle');
+export const subtaskDescription = $('#subtaskDescription');
+export const cancelSubtask = $('#cancelSubtask');
 
-const moveDialog = $('#moveDialog');
-const moveForm = $('#moveForm');
-const moveTaskId = $('#moveTaskId');
-const moveSelectedTasks = $('#moveSelectedTasks');
-const moveListButton = $('#moveListButton');
-const moveListLabel = $('#moveListLabel');
-const moveListDropdown = $('#moveListDropdown');
-const moveNote = $('#moveNote');
-const cancelMove = $('#cancelMove');
+export const moveDialog = $('#moveDialog');
+export const moveForm = $('#moveForm');
+export const moveTaskId = $('#moveTaskId');
+export const moveSelectedTasks = $('#moveSelectedTasks');
+export const moveListButton = $('#moveListButton');
+export const moveListLabel = $('#moveListLabel');
+export const moveListDropdown = $('#moveListDropdown');
+export const moveNote = $('#moveNote');
+export const cancelMove = $('#cancelMove');
 
-const infoDialog = $('#infoDialog');
-const infoTaskId = $('#infoTaskId');
-const infoParentTaskRow = $('#infoParentTaskRow');
-const infoParentTask = $('#infoParentTask');
-const infoUniversalId = $('#infoUniversalId');
-const infoTitle = $('#infoTitle');
-const infoDescription = $('#infoDescription');
-const infoStatus = $('#infoStatus');
-const infoCreated = $('#infoCreated');
-const infoUpdated = $('#infoUpdated');
-const infoCompleted = $('#infoCompleted');
-const infoCancelled = $('#infoCancelled');
-const infoReopened = $('#infoReopened');
+export const infoDialog = $('#infoDialog');
+export const infoTaskId = $('#infoTaskId');
+export const infoParentTaskRow = $('#infoParentTaskRow');
+export const infoParentTask = $('#infoParentTask');
+export const infoUniversalId = $('#infoUniversalId');
+export const infoTitle = $('#infoTitle');
+export const infoDescription = $('#infoDescription');
+export const infoStatus = $('#infoStatus');
+export const infoCreated = $('#infoCreated');
+export const infoUpdated = $('#infoUpdated');
+export const infoCompleted = $('#infoCompleted');
+export const infoCancelled = $('#infoCancelled');
+export const infoReopened = $('#infoReopened');
 
-const listDialog = $('#listDialog');
-const listForm = $('#listForm');
-const listDialogTitle = $('#listDialogTitle');
-const listName = $('#listName');
-const listDescription = $('#listDescription');
-const cancelListEdit = $('#cancelListEdit');
-const manageListsDialog = $('#manageListsDialog');
-const manageListsBody = $('#manageListsBody');
-const manageListsTitleText = $('#manageListsTitleText');
-const manageListsUidTotal = $('#manageListsUidTotal');
-const openArchivesButton = $('#openArchives');
-const archivesDialog = $('#archivesDialog');
-const archivesBody = $('#archivesBody');
-const archivesTitleText = $('#archivesTitleText');
-const archivesUidTotal = $('#archivesUidTotal');
+export const listDialog = $('#listDialog');
+export const listForm = $('#listForm');
+export const listDialogTitle = $('#listDialogTitle');
+export const listName = $('#listName');
+export const listDescription = $('#listDescription');
+export const cancelListEdit = $('#cancelListEdit');
+export const manageListsDialog = $('#manageListsDialog');
+export const manageListsBody = $('#manageListsBody');
+export const manageListsTitleText = $('#manageListsTitleText');
+export const manageListsUidTotal = $('#manageListsUidTotal');
+export const openArchivesButton = $('#openArchives');
+export const archivesDialog = $('#archivesDialog');
+export const archivesBody = $('#archivesBody');
+export const archivesTitleText = $('#archivesTitleText');
+export const archivesUidTotal = $('#archivesUidTotal');
 
-const searchDialog = $('#searchDialog');
-const keywordSearchTab = $('#keywordSearchTab');
-const dateSearchTab = $('#dateSearchTab');
-const keywordSearchPanel = $('#keywordSearchPanel');
-const dateSearchPanel = $('#dateSearchPanel');
-const keywordSearchForm = $('#keywordSearchForm');
-const dateSearchForm = $('#dateSearchForm');
-const searchKeyword = $('#searchKeyword');
-const searchPeriod = $('#searchPeriod');
-const searchSummary = $('#searchSummary');
-const searchListFilterButton = $('#searchListFilterButton');
-const searchListFilterLabel = $('#searchListFilterLabel');
-const searchListFilterDropdown = $('#searchListFilterDropdown');
-const searchResults = $('#searchResults');
+export const searchDialog = $('#searchDialog');
+export const keywordSearchTab = $('#keywordSearchTab');
+export const dateSearchTab = $('#dateSearchTab');
+export const keywordSearchPanel = $('#keywordSearchPanel');
+export const dateSearchPanel = $('#dateSearchPanel');
+export const keywordSearchForm = $('#keywordSearchForm');
+export const dateSearchForm = $('#dateSearchForm');
+export const searchKeyword = $('#searchKeyword');
+export const searchPeriod = $('#searchPeriod');
+export const searchSummary = $('#searchSummary');
+export const searchListFilterButton = $('#searchListFilterButton');
+export const searchListFilterLabel = $('#searchListFilterLabel');
+export const searchListFilterDropdown = $('#searchListFilterDropdown');
+export const searchResults = $('#searchResults');
 
-let lists = [];
-let archivedLists = [];
-let tasks = [];
-let editingItem = null;
-let subtaskParent = null;
-let movingItem = null;
-let moveTargetListId = null;
-let editingList = null;
-let currentView = 'open';
-let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
-let highestUniversalId = 0;
-let searchResultSet = [];
-let searchListFilterValue = 'all';
+export let lists = [];
+/** Other modules change lists through this; an imported binding is read-only. */
+export function setLists(value) { return (lists = value); }
+export let archivedLists = [];
+/** Other modules change archivedLists through this; an imported binding is read-only. */
+export function setArchivedLists(value) { return (archivedLists = value); }
+export let tasks = [];
+/** Other modules change tasks through this; an imported binding is read-only. */
+export function setTasks(value) { return (tasks = value); }
+export let editingItem = null;
+/** Other modules change editingItem through this; an imported binding is read-only. */
+export function setEditingItem(value) { return (editingItem = value); }
+export let subtaskParent = null;
+/** Other modules change subtaskParent through this; an imported binding is read-only. */
+export function setSubtaskParent(value) { return (subtaskParent = value); }
+export let movingItem = null;
+/** Other modules change movingItem through this; an imported binding is read-only. */
+export function setMovingItem(value) { return (movingItem = value); }
+export let moveTargetListId = null;
+/** Other modules change moveTargetListId through this; an imported binding is read-only. */
+export function setMoveTargetListId(value) { return (moveTargetListId = value); }
+export let editingList = null;
+/** Other modules change editingList through this; an imported binding is read-only. */
+export function setEditingList(value) { return (editingList = value); }
+export let currentView = 'open';
+/** Other modules change currentView through this; an imported binding is read-only. */
+export function setCurrentView(value) { return (currentView = value); }
+export let currentListId = Number(localStorage.getItem('task-list-current-list')) || null;
+/** Other modules change currentListId through this; an imported binding is read-only. */
+export function setCurrentListId(value) { return (currentListId = value); }
+export let highestUniversalId = 0;
+/** Other modules change highestUniversalId through this; an imported binding is read-only. */
+export function setHighestUniversalId(value) { return (highestUniversalId = value); }
+export let searchResultSet = [];
+/** Other modules change searchResultSet through this; an imported binding is read-only. */
+export function setSearchResultSet(value) { return (searchResultSet = value); }
+export let searchListFilterValue = 'all';
+/** Other modules change searchListFilterValue through this; an imported binding is read-only. */
+export function setSearchListFilterValue(value) { return (searchListFilterValue = value); }
 
 const deepLinkMatch = /^\/task\/(\d+)\/?$/.exec(location.pathname);
-const deepLinkUniversalId = deepLinkMatch ? Number(deepLinkMatch[1]) : null;
-const hasDeepLink = Number.isSafeInteger(deepLinkUniversalId) && deepLinkUniversalId > 0;
-let pendingDeepLinkDisplayId = null;
+export const deepLinkUniversalId = deepLinkMatch ? Number(deepLinkMatch[1]) : null;
+export const hasDeepLink = Number.isSafeInteger(deepLinkUniversalId) && deepLinkUniversalId > 0;
+export let pendingDeepLinkDisplayId = null;
+/** Other modules change pendingDeepLinkDisplayId through this; an imported binding is read-only. */
+export function setPendingDeepLinkDisplayId(value) { return (pendingDeepLinkDisplayId = value); }
 
-const PRIMARY_STATUS_ACTION = {
+export const PRIMARY_STATUS_ACTION = {
   Open: ['Complete', 'Done'],
   Done: ['Reopen', 'Open'],
   Cancelled: ['Reopen', 'Open']
@@ -140,7 +166,7 @@ document.addEventListener('click', event => {
   if (button && !button.disabled) document.getElementById(button.dataset.close)?.close(button.value || 'cancel');
 });
 
-function setStatus(message) {
+export function setStatus(message) {
   statusText.textContent = message;
 }
 
@@ -156,7 +182,7 @@ async function timedFetch(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   }
 }
 
-async function apiResponse(url, options = {}) {
+export async function apiResponse(url, options = {}) {
   const { timeout = REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
   const response = await timedFetch(url, { credentials: 'same-origin', ...fetchOptions }, timeout);
   if (response.status === 401) {
@@ -174,7 +200,7 @@ async function apiResponse(url, options = {}) {
   return response;
 }
 
-async function api(url, options = {}, checkMilestones = true) {
+export async function api(url, options = {}, checkMilestones = true) {
   const method = (options.method ?? 'GET').toUpperCase();
   const response = await apiResponse(url, options);
   const result = response.status === 204 ? null : await response.json();
@@ -182,7 +208,7 @@ async function api(url, options = {}, checkMilestones = true) {
   return result;
 }
 
-function jsonApi(url, method, body, checkMilestones = true) {
+export function jsonApi(url, method, body, checkMilestones = true) {
   return api(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
@@ -209,11 +235,11 @@ async function frontendReleaseVersion() {
   }
 }
 
-async function loadAppVersion() {
+export async function loadAppVersion() {
   applyAppVersion(await frontendReleaseVersion());
 }
 
-function clearDeepLink() {
+export function clearDeepLink() {
   if (!/^\/task\/\d+\/?$/.test(location.pathname)) return;
   history.replaceState(null, '', '/');
 }
@@ -227,7 +253,7 @@ function findUniversal(items, universalId) {
   return null;
 }
 
-function findItemByDisplayId(items, displayId) {
+export function findItemByDisplayId(items, displayId) {
   for (const item of items) {
     if (item.displayId === displayId) return item;
     const nested = findItemByDisplayId(item.subtasks ?? [], displayId);
@@ -236,7 +262,7 @@ function findItemByDisplayId(items, displayId) {
   return null;
 }
 
-async function resolveUniversalLocation(universalId) {
+export async function resolveUniversalLocation(universalId) {
   for (const list of [...lists, ...archivedLists]) {
     const listTasks = await api(`/api/lists/${list.id}/tasks`);
     const item = findUniversal(listTasks, universalId);
@@ -245,7 +271,7 @@ async function resolveUniversalLocation(universalId) {
   return null;
 }
 
-function scrollAndHighlightTask(displayId, highlight = true) {
+export function scrollAndHighlightTask(displayId, highlight = true) {
   requestAnimationFrame(() => {
     const row = [...taskList.querySelectorAll('tr[data-display-id]')]
       .find(candidate => candidate.dataset.displayId === displayId);
@@ -270,7 +296,7 @@ function scrollAndHighlightTask(displayId, highlight = true) {
   });
 }
 
-function formatDate(value) {
+export function formatDate(value) {
   if (!value) return '—';
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split('-').map(Number);
@@ -290,7 +316,7 @@ function finishConfirmAction(result) {
   resolve?.(result);
 }
 
-function confirmAction({
+export function confirmAction({
   title = 'Confirm',
   message = '',
   detail = '',
@@ -321,7 +347,7 @@ confirmDialog.addEventListener('close', () => {
   if (confirmActionResolve) finishConfirmAction(false);
 });
 
-function actionButton(label, handler, disabled = false) {
+export function actionButton(label, handler, disabled = false) {
   const button = el('button');
   button.textContent = label;
   button.disabled = disabled;
@@ -329,7 +355,7 @@ function actionButton(label, handler, disabled = false) {
   return button;
 }
 
-function appendActions(container, actions) {
+export function appendActions(container, actions) {
   container.append(...actions.map(([label, handler, disabled]) => actionButton(label, handler, disabled)));
 }
 

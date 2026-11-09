@@ -70,7 +70,8 @@ function fixture(files = ['milestones.js']) {
   context.window = context;
   const run = source => vm.runInContext(source, context);
   for (const file of files)
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'wwwroot', file), 'utf8'), context, { filename: file });
+    // Modules share one context here, as classic scripts did.
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'wwwroot', file), 'utf8').replace(/^export /gm, '').replace(/^import [^\n]*\n/gm, ''), context, { filename: file });
   const activate = () => { context.focused = true; document.visibilityState = 'visible'; };
   const trigger = name => { for (const callback of listeners[name] ?? []) callback({}); };
   const json = source => JSON.parse(run('JSON.stringify(' + source + ')'));

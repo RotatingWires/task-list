@@ -1,6 +1,10 @@
-'use strict';
-
 /* File > Fresh Start...: the stored-data summary, choices, confirmation, and refresh. */
+import { $, api, appWindow, clearDeepLink, jsonApi, setStatus, setTasks, tasks } from './app.js';
+import { closeTaskActionMenus, renderTasks } from './tasks.js';
+import { clearTaskSelection } from './bulk.js';
+import { refreshTransferData } from './transfer.js';
+import { closeFileMenu, closeViewMenu } from './ui.js';
+
 const freshStartDialog = $('#freshStartDialog');
 const freshStartOptions = [...freshStartDialog.querySelectorAll('[data-fresh-start]')];
 const freshStartConfirmation = $('#freshStartConfirmation');
@@ -37,7 +41,7 @@ function showFreshStartSummary(summary) {
   freshStartSize.textContent = `Database size: ${formatBytes(summary.databaseBytes)}.`;
 }
 
-async function openFreshStart() {
+export async function openFreshStart() {
   closeFileMenu();
   closeViewMenu();
   closeTaskActionMenus();
@@ -85,7 +89,7 @@ freshStartSubmit.form.addEventListener('submit', async event => {
     freshStartDialog.close();
     clearDeepLink();
     clearTaskSelection();
-    tasks = [];
+    setTasks([]);
     renderTasks();
     await refreshTransferData();
     const removed = [

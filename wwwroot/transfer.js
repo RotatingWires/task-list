@@ -1,6 +1,10 @@
-'use strict';
-
 /* File > Import/Export...: downloads, ZIP restore, and Markdown upload. */
+import { $, api, apiResponse, appWindow, archivedLists, clearDeepLink, confirmAction, currentListId, currentView, el, lists, setArchivedLists, setCurrentListId, setCurrentView, setLists, setStatus, setTasks, tasks } from './app.js';
+import { closeTaskActionMenus, renderTasks, updateViewMenu } from './tasks.js';
+import { clearTaskSelection } from './bulk.js';
+import { currentList, loadLists, loadStats, renderFileMenu, updateListTitle } from './lists.js';
+import { closeFileMenu, closeViewMenu } from './ui.js';
+
 const transferDialog = $('#transferDialog');
 const transferFile = $('#transferFile');
 const exportData = $('#exportData');
@@ -10,7 +14,7 @@ const closeTransfer = $('#closeTransfer');
 const transferListName = $('#transferListName');
 let transferBusy = false;
 
-function openTransfer() {
+export function openTransfer() {
   closeFileMenu();
   closeViewMenu();
   closeTaskActionMenus();
@@ -28,9 +32,9 @@ function setTransferBusy(busy) {
   appWindow.inert = busy;
 }
 
-async function refreshTransferData() {
+export async function refreshTransferData() {
   await loadLists();
-  tasks = await api(`/api/lists/${currentListId}/tasks`);
+  setTasks(await api(`/api/lists/${currentListId}/tasks`));
   renderTasks();
   await loadStats().catch(() => {});
 }
@@ -105,7 +109,7 @@ transferFile.addEventListener('change', async () => {
     if (backup) {
       restoreAttempted = true;
       clearTaskSelection();
-      tasks = [];
+      setTasks([]);
       renderTasks();
     }
     setStatus(backup ? 'Restoring backup...' : `Importing into ${listName}...`);
@@ -117,11 +121,11 @@ transferFile.addEventListener('change', async () => {
     imported = true;
     if (backup) {
       clearDeepLink();
-      currentView = 'open';
+      setCurrentView('open');
       updateViewMenu();
     } else {
       clearTaskSelection();
-      tasks = [];
+      setTasks([]);
       renderTasks();
     }
     await refreshTransferData();
@@ -133,10 +137,10 @@ transferFile.addEventListener('change', async () => {
     if (restoreAttempted) {
       try { await refreshTransferData(); }
       catch {
-        tasks = [];
-        lists = [];
-        archivedLists = [];
-        currentListId = null;
+        setTasks([]);
+        setLists([]);
+        setArchivedLists([]);
+        setCurrentListId(null);
         clearTaskSelection();
         renderTasks();
         renderFileMenu();
