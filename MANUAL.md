@@ -1,11 +1,38 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.39
+# TaskList v1.7.40
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
 It runs as an ASP.NET Core server with a plain HTML/CSS/JavaScript frontend. There is no Node.js build step or frontend framework.
+
+- [Technology stack](#technology-stack)
+- [Project layout](#project-layout)
+- [Version handling](#version-handling)
+- [Configuration and running](#configuration-and-running)
+- [Runtime logging](#runtime-logging)
+- [Authentication](#authentication)
+- [First-run backup reminder](#first-run-backup-reminder)
+- [Themes](#themes)
+- [Data model](#data-model)
+- [Milestone celebrations](#milestone-celebrations)
+- [Nested subtasks](#nested-subtasks)
+- [Lists and archives](#lists-and-archives)
+- [Task status and actions](#task-status-and-actions)
+- [Bulk actions](#bulk-actions)
+- [Task Information](#task-information)
+- [Search](#search)
+- [Deep links](#deep-links)
+- [Keyboard behavior](#keyboard-behavior)
+- [Import and export](#import-and-export)
+- [Fresh Start](#fresh-start)
+- [HTTP API](#http-api)
+- [Home screen and PWA](#home-screen-and-pwa)
+- [Security and privacy](#security-and-privacy)
+- [Troubleshooting](#troubleshooting)
+- [Development checks](#development-checks)
+- [Release notes](#release-notes)
 
 ## Technology stack
 
@@ -90,7 +117,7 @@ The project is framework-dependent and not tied to one operating system: `dotnet
 
 Frontend asset URLs carry no release-number query strings. The server marks pages and scripts `Cache-Control: no-cache`, so the browser checks each with the server on every load and always runs the current release.
 
-## Run
+## Configuration and running
 
 ```powershell
 dotnet restore
@@ -156,7 +183,7 @@ Sensitive first-run authentication material is intentionally excluded from file 
 
 Task Scheduler can therefore launch `TaskList.exe` directly rather than using `cmd.exe` only for output redirection.
 
-## Login and API authentication
+## Authentication
 
 On first launch, TaskList prints a random setup token in the server console. The setup screen requires that token plus a new password of at least 8 characters and password confirmation.
 
@@ -339,6 +366,13 @@ TaskList resolves the correct list and visible task ID, switches to **All**, scr
 
 The old query-string deep-link format is no longer supported.
 
+## Keyboard behavior
+
+In task, subtask, and list description boxes:
+
+- **Enter** saves
+- **Shift+Enter** inserts a new line
+
 ## Import and export
 
 **File > Import/Export...**, immediately after Search..., opens a dialog with **Download Backup**, **Choose File to Restore...**, and **Import Markdown...**, an explanation above each, like SpendTracker's and NewsReview's Import/Export. Import no longer has a separate menu-bar button. The dialog keeps its title and lower OK button fixed while its content scrolls on smaller screens.
@@ -384,7 +418,7 @@ Source reference: https://community.obsidian.md/plugins/obsidian-tasks-plugin
 
 `➕ YYYY-MM-DD` becomes Created and `✅ YYYY-MM-DD` becomes Completed. Missing source dates are stored as `Unknown` where applicable. Imported items use `Unknown` for Last updated when the source has no update timestamp.
 
-## Fresh start
+## Fresh Start
 
 **File > Fresh Start...**, at the bottom of the File menu below Log Out so it is kept apart from everyday commands, clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start and uses the same dialog size, frame, title bar with a close button, footer, and **Reset Selected Data** button, with Win95 check boxes like SpendTracker's: tick the items to clear, type `RESET SELECTED`, and choose **Reset Selected Data**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
 
@@ -401,7 +435,7 @@ Removed tasks get Deleted events, exactly like a normal delete, unless the same 
 
 The database part runs in one SQLite transaction, so a failure changes nothing. Compaction (SQLite `VACUUM`, then a WAL checkpoint) runs afterwards; if it fails, the data is still cleared and the freed pages are reused for new data. The status bar reports what was removed and how much space was freed. Your password, logs, and browser preferences are kept. Fresh start cannot be undone in TaskList, so download an export first if you might want the data back. It is not a secure disk wipe.
 
-## HTTP endpoints
+## HTTP API
 
 Paths below are relative to the TaskList server URL. JSON uses camelCase property names. Send JSON bodies with `Content-Type: application/json`; Markdown and ZIP imports send raw file bytes/text, not multipart form data. `{id}` and `{listId}` are numeric list IDs from list responses. `{displayId}` is the list-local visible task ID, such as `75` or `75.1.2`, **not** the Universal ID.
 
@@ -479,14 +513,7 @@ Most results are JSON; export is a ZIP and 204 responses have no body. Validatio
 
 The authenticated app-shell fallback can serve HTML for other unmatched non-file GET/HEAD paths. Use only the listed API routes when expecting JSON; frontend asset availability does not mean new server endpoints are installed, so rebuild/restart after backend updates.
 
-## Keyboard behavior
-
-In task, subtask, and list description boxes:
-
-- **Enter** saves
-- **Shift+Enter** inserts a new line
-
-## PWA behavior
+## Home screen and PWA
 
 TaskList keeps no offline copy of its pages, like NewsReview: without a connection the browser shows its own offline page, which makes a connection problem obvious instead of opening a stale app that cannot reach its data. It can still be added to a phone's home screen from the web manifest. `sw.js` only removes the service worker and cache that releases before v1.7.28 installed.
 
@@ -501,6 +528,36 @@ TaskList is a single-user application.
 - Keep `data/`, database copies, and auth files private.
 - The setup/login rate limiter permits 5 attempts per source IP per minute.
 
+## Troubleshooting
+
+### I only see Create Password
+
+That is expected on first run. Look at the TaskList server console for the current setup token; it changes each time TaskList restarts until a password is saved.
+
+### Login says "Too many attempts"
+
+Setup and login allow 5 attempts per source IP per minute. Wait for the minute to pass before trying again.
+
+### I forgot the password
+
+Stop TaskList, delete only `data/auth.json`, and start it again. It prints a new setup token so you can create a password; your lists and tasks are untouched.
+
+### Every browser was signed out after moving TaskList
+
+Sign-in keys live in the Windows profile's key ring, or in `data/keys/` elsewhere (the startup log says which). Copy `data/keys/` along with the rest of `data/`, or sign in again.
+
+### TaskList stops at startup with a message about a newer database
+
+The database was written by a newer TaskList. Update TaskList; it leaves the file untouched until then.
+
+### Other devices can't reach TaskList
+
+It listens on loopback only (`http://127.0.0.1:8711`) unless started with `--urls`, for example `--urls "http://0.0.0.0:8711"`, or `ASPNETCORE_URLS`.
+
+### The database is on a network or pooled drive
+
+TaskList does not turn on WAL for UNC paths or drives Windows reports as Network/Unknown; the startup log names the journal mode it chose. If saves are slow or fail there, try a copy of the data folder on a local disk with `--data-dir`.
+
 ## Development checks
 
 Run `dotnet build` and then `python3 -m unittest discover -s tests -v` for SQL integrity tests and `node tests/frontend.test.cjs` for frontend tests. SQL fixtures execute the schema, triggers, and operation SQL from the C# source against disposable databases. Cases cover moves, renames, status changes, imports, deletion, restore/rollback, IDs, counters, and 1,200 seeded mixed operations. `tests/test_fresh_start.py` starts the built TaskList against a throwaway data folder and checks every Fresh start choice: validation, open trees kept, Deleted events, history clears surviving a restart with unchanged milestone counters, the Stats history revision, recovery-backup removal, compaction, and IDs never being reused; it is skipped until TaskList has been built. JavaScript tests exercise the actual selection/bulk-action and milestone-check code with DOM fixtures. Python and Node are test tools, not TaskList runtime dependencies.
@@ -513,7 +570,14 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.39**.
+Current release: **v1.7.40**.
+
+### v1.7.40
+
+- MANUAL.md uses the same section names and order as the other apps, with a contents list at the top and a **Current release** line under Release notes; no text was removed, only moved or retitled.
+- README.md has a **Sibling apps** section linking all four apps.
+- `.gitignore` has the same rules in every app.
+- New **Troubleshooting** section, like the other apps' manuals. The leftover `siri-api.json` ignore rule is gone.
 
 ### v1.7.39
 

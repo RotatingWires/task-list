@@ -1,22 +1,30 @@
+# The same rules in TaskList, TaskList Stats, NewsReview, and SpendTracker.
+
 # Build output
 bin/
 obj/
 .vs/
+*.user
+*.suo
 __pycache__/
-
-# Runtime/private data
-data/
-*.db
-*.db-shm
-*.db-wal
-auth.json
-siri-api.json
-
-# Runtime logs
-logs/
 
 # Editor/OS noise
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Runtime/private data: the data folder (database, password hash, sign-in keys, recovery backups), logs, and local secrets
+data/
+logs/
+auth.json
+auth.json.tmp
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.env
+
+# Downloaded backups hold all of your data
+*-backup-*.zip

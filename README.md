@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.39
+# TaskList v1.7.40
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -41,7 +41,16 @@ The quickstart uses plain HTTP on loopback. HTTP does not encrypt passwords, ses
 
 Exports and pre-restore recovery ZIPs are unencrypted and contain private task/history data. Store them privately. The first-run setup token is printed only to the interactive console, not the runtime log; passwords are not logged.
 
-See the manual for [authentication](MANUAL.md#login-and-api-authentication), [backup and restore](MANUAL.md#import-and-export), [Fresh start](MANUAL.md#fresh-start), and [all features](MANUAL.md#nested-subtasks).
+See the manual for [authentication](MANUAL.md#authentication), [backup and restore](MANUAL.md#import-and-export), [Fresh start](MANUAL.md#fresh-start), and [all features](MANUAL.md#nested-subtasks).
+
+## Sibling apps
+
+TaskList, TaskList Stats, NewsReview, and SpendTracker are four small self-hosted apps with the same Windows 95 look, sign-in, backups, and keyboard use. Each runs on its own and keeps its own data.
+
+- [TaskList](https://github.com/RotatingWires/task-list): tasks, nested subtasks, and lists.
+- [TaskList Stats](https://github.com/RotatingWires/task-list-stats): statistics and history for TaskList, read without changing it.
+- [NewsReview](https://github.com/RotatingWires/news-review): a personal news reader with AI review of your sources.
+- [SpendTracker](https://github.com/RotatingWires/spend-tracker): purchases, refunds, shared costs, and paybacks.
 
 ## Credits
 
