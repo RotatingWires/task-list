@@ -6,13 +6,13 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 /// <summary>File > Import/Export...: ZIP backups with a checksum manifest, and validated restores that save a recovery copy first.</summary>
-static class DataTransfer
+static class Transfer
 {
     private const long MaxArchiveBytes = 256L * 1024 * 1024;
     private const long MaxDatabaseBytes = 1024L * 1024 * 1024;
     private const int MaxManifestBytes = 16 * 1024;
     private const string Format = "tasklist-backup";
-    private static readonly string AppVersion = typeof(DataTransfer).Assembly.GetName().Version!.ToString(3);
+    private static readonly string AppVersion = typeof(Transfer).Assembly.GetName().Version!.ToString(3);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private static readonly TableSpec[] Tables =
     [

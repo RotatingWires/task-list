@@ -1,4 +1,7 @@
-/// <summary>The first-start "Restore a Backup Before Starting" reminder, kept as a marker file outside the database, like the other apps.</summary>
+/// <summary>
+/// The "Restore a Backup Before Starting" prompt, the same as TaskList's: a brand-new database leaves a marker in the
+/// data folder until the prompt is answered or a backup is restored.
+/// </summary>
 static class Onboarding
 {
     private static string PendingPath(string dataDir) => Path.Combine(dataDir, "import-reminder.pending");
@@ -9,19 +12,7 @@ static class Onboarding
             File.WriteAllText(PendingPath(dataDir), DateTimeOffset.UtcNow.ToString("O"));
     }
 
-    public static void MapEndpoints(RouteGroupBuilder api, string dataDir)
-    {
-        api.MapGet("/onboarding", (HttpContext context) =>
-        {
-            context.Response.Headers.CacheControl = "no-store";
-            return Results.Ok(new { importReminderPending = File.Exists(PendingPath(dataDir)) });
-        });
-        api.MapPost("/onboarding/acknowledge", () =>
-        {
-            Acknowledge(dataDir);
-            return Results.NoContent();
-        });
-    }
+    public static bool Pending(string dataDir) => File.Exists(PendingPath(dataDir));
 
     public static void Acknowledge(string dataDir) => File.Delete(PendingPath(dataDir));
 }

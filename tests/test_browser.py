@@ -53,7 +53,8 @@ class BrowserTests(unittest.TestCase):
     def add_task(self, page, title):
         page.fill("#newTaskTitle", title)
         page.press("#newTaskTitle", "Enter")
-        expect(page.locator("#taskList")).to_contain_text(title)
+        page.wait_for_load_state("networkidle")
+        expect(page.locator("#taskList")).to_contain_text(title, timeout=10000)
         self.close_celebrations(page)
 
     def test_tasks_edit_search_menus_and_theme(self):

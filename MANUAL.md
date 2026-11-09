@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.43
+# TaskList v1.7.44
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -57,8 +57,9 @@ TaskList keeps a small source tree: the C# server code lives in `src/`, and fron
 ```text
 TaskList.csproj        .NET project, dependencies, and authoritative release version
 src/
-  Program.cs           server, authentication, SQLite schema, event-log triggers, and API
-  DataTransfer.cs      authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
+  Program.cs           startup, middleware, sign-in endpoints, and API routes
+  Store.cs             SQLite schema, migrations, event-log triggers, connections, and list/task queries (like SpendTracker's and NewsReview's)
+  Transfer.cs          authenticated ZIP exports/restores, validation, recovery snapshots and ID preservation
   Onboarding.cs        first-run backup reminder state and authenticated acknowledgement
   MilestoneNotifications.cs
                        pending milestone queue, counter triggers, schema migration, and consume API
@@ -570,7 +571,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.43**.
+Current release: **v1.7.44**.
+
+### v1.7.44
+
+- Code: the same kind of server code sits in the same file as in the other apps. Database schema and queries moved from `Program.cs` into `Store.cs` (like SpendTracker's and NewsReview's), `DataTransfer.cs` is now `Transfer.cs`, and `Onboarding.cs` is the same file as SpendTracker's and NewsReview's.
 
 ### v1.7.43
 

@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTIFICATIONS = (ROOT / "src" / "MilestoneNotifications.cs").read_text()
-PROGRAM = (ROOT / "src" / "Program.cs").read_text()
+PROGRAM = (ROOT / "src" / "Program.cs").read_text() + (ROOT / "src" / "Store.cs").read_text()
 
 
 def notification_sql(method):

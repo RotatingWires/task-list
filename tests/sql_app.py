@@ -6,9 +6,10 @@ import re
 import sqlite3
 
 ROOT = Path(__file__).resolve().parents[1]
-PROGRAM = (ROOT / "src" / "Program.cs").read_text()
+# The SQL lives in Program.cs (endpoints) and Store.cs (schema and queries).
+PROGRAM = (ROOT / "src" / "Program.cs").read_text() + (ROOT / "src" / "Store.cs").read_text()
 NOTIFICATIONS = (ROOT / "src" / "MilestoneNotifications.cs").read_text()
-TRANSFER = (ROOT / "src" / "DataTransfer.cs").read_text()
+TRANSFER = (ROOT / "src" / "Transfer.cs").read_text()
 BACKFILL = (ROOT / "src" / "TaskEventBackfill.cs").read_text()
 
 
