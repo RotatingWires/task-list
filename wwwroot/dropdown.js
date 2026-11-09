@@ -52,8 +52,11 @@
     menu.style.left = `${Math.max(4, Math.min(rect.left, window.innerWidth - Math.max(rect.width, 165) - 4))}px`;
     menu.style.minWidth = `${rect.width}px`;
     menu.style.maxHeight = `${Math.max(120, Math.min(480, upward ? above : below))}px`;
-    if (upward) menu.style.bottom = `${window.innerHeight - rect.top + 1}px`;
-    else menu.style.top = `${rect.bottom + 1}px`;
+    // Opening upward, the stylesheet's own top (just below the button) must not apply too, or the menu collapses.
+    if (upward) {
+      menu.style.top = 'auto';
+      menu.style.bottom = `${window.innerHeight - rect.top + 1}px`;
+    } else menu.style.top = `${rect.bottom + 1}px`;
   }
   window.placeMenu = placeMenu;
 

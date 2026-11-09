@@ -5,7 +5,7 @@
     <RootNamespace>TaskList</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.7.45</Version>
+    <Version>1.7.46</Version>
     <Product>TaskList</Product>
   </PropertyGroup>
   <ItemGroup>
