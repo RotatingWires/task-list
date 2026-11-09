@@ -617,12 +617,12 @@ input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
-        var(--subtask-divider) var(--row-indent) 100%
+        var(--divider-subtle) var(--row-indent) 100%
       ) top left / 100% 1px no-repeat,
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
-        var(--subtask-divider) var(--row-indent) 100%
+        var(--divider-subtle) var(--row-indent) 100%
       ) bottom left / 100% 1px no-repeat,
       linear-gradient(
         to right,
@@ -634,11 +634,11 @@ input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset
   /* At the edge of a root-task group, use a full-width divider. */
   .task-table tr:not(.subtask-row) + tr.subtask-row {
     background:
-      linear-gradient(var(--subtask-divider), var(--subtask-divider)) top left / 100% 1px no-repeat,
+      linear-gradient(var(--divider-subtle), var(--divider-subtle)) top left / 100% 1px no-repeat,
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
-        var(--subtask-divider) var(--row-indent) 100%
+        var(--divider-subtle) var(--row-indent) 100%
       ) bottom left / 100% 1px no-repeat,
       linear-gradient(
         to right,
@@ -652,9 +652,9 @@ input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
-        var(--subtask-divider) var(--row-indent) 100%
+        var(--divider-subtle) var(--row-indent) 100%
       ) top left / 100% 1px no-repeat,
-      linear-gradient(var(--subtask-divider), var(--subtask-divider)) bottom left / 100% 1px no-repeat,
+      linear-gradient(var(--divider-subtle), var(--divider-subtle)) bottom left / 100% 1px no-repeat,
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
@@ -664,8 +664,8 @@ input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset
 
   .task-table tr:not(.subtask-row) + tr.subtask-row:has(+ tr:not(.subtask-row)) {
     background:
-      linear-gradient(var(--subtask-divider), var(--subtask-divider)) top left / 100% 1px no-repeat,
-      linear-gradient(var(--subtask-divider), var(--subtask-divider)) bottom left / 100% 1px no-repeat,
+      linear-gradient(var(--divider-subtle), var(--divider-subtle)) top left / 100% 1px no-repeat,
+      linear-gradient(var(--divider-subtle), var(--divider-subtle)) bottom left / 100% 1px no-repeat,
       linear-gradient(
         to right,
         transparent 0 var(--row-indent),
@@ -1056,8 +1056,8 @@ button:disabled {
     margin-left: var(--row-indent);
     width: calc(100% - var(--row-indent));
     padding: 6px 8px;
-    border-top: 1px solid var(--subtask-divider);
-    border-bottom: 1px solid var(--subtask-divider);
+    border-top: 1px solid var(--divider-subtle);
+    border-bottom: 1px solid var(--divider-subtle);
     background: var(--surface-alt);
   }
   .task-table tr.subtask-row > td {

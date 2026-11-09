@@ -5,12 +5,13 @@
 
 /* Light/Dark Windows 95 theme tokens for TaskList. Every color in the other stylesheets comes from here. */
 :root {
+  color-scheme: light;
+  /* The shared palette: the same names and values in TaskList, TaskList Stats, NewsReview, and SpendTracker. */
   --ink: #000;
   --desktop: #008080;
   --face: #c0c0c0;
   --surface: #fff;
   --surface-alt: #f4f4f4;
-  --label-surface: #d4d0c8;
   --light-edge: #fff;
   --mid-edge: #dfdfdf;
   --shadow: #808080;
@@ -19,21 +20,23 @@
   --title: #000080;
   --title-text: #fff;
   --divider: #c8c8c8;
-  --subtask-divider: #d0d0d0;
-  --info-divider: #808080;
+  --divider-subtle: #d0d0d0;
   --muted: #555;
-  --muted-strong: #444;
-  --placeholder: #777;
   --link: #000080;
   --link-hover: #0000d0;
   --note: #ffffe1;
-  --highlight: #fff4a8;
+  --highlight: #fff4a8; /* An item just jumped to, like a TaskList deep link. */
   --row-hover: #e5ecf8;
   --error: #800000;
+  --backdrop: #0007;
+  /* Colors only TaskList uses. */
+  --label-surface: #d4d0c8;
+  --info-divider: #808080;
+  --muted-strong: #444;
+  --placeholder: #777;
   --status-open: #e02d04;
   --status-closed: #02bd34;
-  --backdrop: #0007;
-
+  /* TaskList colors that stay the same in both themes. */
   --milestone-backdrop: rgba(0, 0, 0, .32);
   --milestone-shadow: rgba(0, 0, 0, .38);
   --milestone-star: #e2ab00;
@@ -44,8 +47,6 @@
   --confetti-4: #0a84ff;
   --confetti-5: #bf5af2;
   --confetti-6: #ff9f0a;
-
-  /* Same in both themes: the dark theme has never had its own value for these. */
   --classic-face: #c0c0c0;
   --classic-light: #fff;
   --classic-mid-edge: #dfdfdf;
@@ -54,30 +55,34 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
+  /* The shared palette. */
   --ink: #f1f1f1;
   --desktop: #002f2f;
   --face: #303030;
   --surface: #191919;
   --surface-alt: #242424;
-  --label-surface: #393939;
   --light-edge: #666;
   --mid-edge: #494949;
   --shadow: #181818;
   --dark-edge: #0e0e0e;
+  --black: #000;
   --title: #111858;
   --title-text: #fff;
   --divider: #3d3d3d;
-  --subtask-divider: #414141;
-  --info-divider: #666;
+  --divider-subtle: #414141;
   --muted: #b8b8b8;
-  --muted-strong: #d0d0d0;
-  --placeholder: #a8a8a8;
   --link: #91adff;
   --link-hover: #c0ceff;
   --note: #3b3825;
   --highlight: #5c4c00;
   --row-hover: #2d3850;
   --error: #ff9c9c;
+  /* Colors only TaskList uses. */
+  --label-surface: #393939;
+  --info-divider: #666;
+  --muted-strong: #d0d0d0;
+  --placeholder: #a8a8a8;
   --status-open: #ff6b4a;
   --status-closed: #56dc78;
 }
