@@ -121,7 +121,6 @@ document.addEventListener('keydown', event => {
 });
 
 aboutMenu.addEventListener('click', () => aboutDialog.showModal());
-closeAbout.addEventListener('click', () => aboutDialog.close());
 
 // No offline copy, like NewsReview: remove the service worker and cache that earlier releases installed.
 navigator.serviceWorker?.getRegistrations().then(registrations => registrations.forEach(registration => registration.unregister())).catch(() => {});

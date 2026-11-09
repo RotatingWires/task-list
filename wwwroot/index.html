@@ -19,7 +19,9 @@
   <link rel="stylesheet" href="/task-controls.css">
 </head>
 <body>
+  <a class="skip" href="#content">Skip to content</a>
   <main class="window" inert>
+    <h1 class="sr-only">TaskList</h1>
     <header class="titlebar">
       <span class="title-app-name">TaskList</span>
       <span id="titleListName" class="title-list-name"></span>
@@ -65,7 +67,7 @@
       </form>
     </section>
 
-    <section class="panel task-panel" aria-label="Tasks">
+    <section class="panel task-panel skip-target" id="content" tabindex="-1" aria-label="Tasks">
       <table class="task-table">
         <thead>
           <tr>
@@ -87,34 +89,38 @@
   </main>
 
   <dialog id="firstRunDialog" class="retro-dialog scroll-dialog first-run-dialog" aria-labelledby="firstRunTitle" aria-describedby="firstRunMessage">
-    <div id="firstRunTitle" class="dialog-title">Restore a Backup Before Starting</div>
-    <div class="dialog-body first-run-body">
-      <p id="firstRunMessage">If you have a TaskList ZIP backup, import it before creating tasks. Use File &gt; Import/Export... to restore it. Restoring a ZIP replaces all current lists, tasks/subtasks, and recorded history, so anything you create first would be replaced by a later restore. If you don't have a backup, choose Start Fresh.</p>
-      <div id="firstRunError" class="login-error" role="alert"></div>
-    </div>
-    <div class="dialog-buttons">
-      <button type="button" id="firstRunContinue">Start Fresh</button>
-      <button type="button" id="firstRunImport">Import/Export...</button>
-    </div>
+    <form method="dialog" class="dialog-form">
+      <div id="firstRunTitle" class="dialog-title">Restore a Backup Before Starting</div>
+      <div class="dialog-body first-run-body">
+        <p id="firstRunMessage">If you have a TaskList ZIP backup, import it before creating tasks. Use File &gt; Import/Export... to restore it. Restoring a ZIP replaces all current lists, tasks/subtasks, and recorded history, so anything you create first would be replaced by a later restore. If you don't have a backup, choose Start Fresh.</p>
+        <div id="firstRunError" class="login-error" role="alert"></div>
+      </div>
+      <div class="dialog-buttons">
+        <button type="button" id="firstRunContinue">Start Fresh</button>
+        <button type="button" id="firstRunImport">Import/Export...</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="transferDialog" class="retro-dialog scroll-dialog">
-    <div class="dialog-title">Import/Export</div>
-    <div class="dialog-body transfer-body">
-      <p>Download Backup saves a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and a backup manifest.</p>
-      <button type="button" id="exportData">Download Backup</button>
-      <p>Restore a TaskList backup ZIP to replace all current lists and history after confirmation. It does not merge.</p>
-      <button type="button" id="importData">Choose File to Restore...</button>
-      <p>Import Markdown adds a Markdown checklist's tasks to <strong id="transferListName"></strong>.</p>
-      <button type="button" id="importMarkdown">Import Markdown...</button>
-      <p>The login password and browser preferences are separate and are kept when restoring. ID counters keep their highest values to prevent reuse. A recovery backup of current data is saved on the server before a ZIP restore.</p>
-      <input type="file" id="transferFile" accept=".zip,.md,.markdown,.txt,text/markdown,text/plain,application/zip" hidden>
-    </div>
-    <div class="dialog-buttons"><button type="button" id="closeTransfer">OK</button></div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title">Import/Export</div>
+      <div class="dialog-body transfer-body">
+        <p>Download Backup saves a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and a backup manifest.</p>
+        <button type="button" id="exportData">Download Backup</button>
+        <p>Restore a TaskList backup ZIP to replace all current lists and history after confirmation. It does not merge.</p>
+        <button type="button" id="importData">Choose File to Restore...</button>
+        <p>Import Markdown adds a Markdown checklist's tasks to <strong id="transferListName"></strong>.</p>
+        <button type="button" id="importMarkdown">Import Markdown...</button>
+        <p>The login password and browser preferences are separate and are kept when restoring. ID counters keep their highest values to prevent reuse. A recovery backup of current data is saved on the server before a ZIP restore.</p>
+        <input type="file" id="transferFile" accept=".zip,.md,.markdown,.txt,text/markdown,text/plain,application/zip" hidden>
+      </div>
+      <div class="dialog-buttons"><button type="button" id="closeTransfer" data-close="transferDialog">OK</button></div>
+    </form>
   </dialog>
 
   <dialog id="freshStartDialog" class="fresh-start-dialog" aria-labelledby="freshStartTitle">
-    <div class="fresh-start-layout">
+    <form method="dialog" class="fresh-start-layout">
       <div class="fresh-start-heading"><h2 id="freshStartTitle">Fresh Start</h2></div>
       <div class="fresh-start-body">
         <p>Only the selected items will be cleared, then the database is compacted to free disk space. This cannot be undone in TaskList. Use File &gt; Import/Export... to download an export first if you might want to restore them.</p>
@@ -130,8 +136,8 @@
         <label class="fresh-start-confirm">Type RESET SELECTED to confirm<input id="freshStartConfirmation" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40"></label>
         <p id="freshStartError" class="fresh-start-error" role="alert"></p>
       </div>
-      <div class="fresh-start-actions"><button type="button" id="freshStartCancel">Cancel</button><button type="button" id="freshStartSubmit" class="danger">Reset Selected Data</button></div>
-    </div>
+      <div class="fresh-start-actions"><button type="button" id="freshStartCancel" data-close="freshStartDialog">Cancel</button><button type="submit" id="freshStartSubmit" class="danger">Reset Selected Data</button></div>
+    </form>
   </dialog>
 
   <dialog id="editDialog" class="retro-dialog">
@@ -145,7 +151,7 @@
         <textarea id="editDescription" maxlength="4000" rows="7" placeholder="Optional"></textarea>
       </div>
       <div class="dialog-buttons">
-        <button value="cancel" type="button" id="cancelEdit">Cancel</button>
+        <button value="cancel" type="button" id="cancelEdit" data-close="editDialog">Cancel</button>
         <button value="default" type="submit">Save</button>
       </div>
     </form>
@@ -162,7 +168,7 @@
         <textarea id="subtaskDescription" maxlength="4000" rows="7" placeholder="Optional"></textarea>
       </div>
       <div class="dialog-buttons">
-        <button value="cancel" type="button" id="cancelSubtask">Cancel</button>
+        <button value="cancel" type="button" id="cancelSubtask" data-close="subtaskDialog">Cancel</button>
         <button value="default" type="submit">Add</button>
       </div>
     </form>
@@ -184,38 +190,40 @@
         <div id="moveNote" class="move-note"></div>
       </div>
       <div class="dialog-buttons">
-        <button value="cancel" type="button" id="cancelMove">Cancel</button>
+        <button value="cancel" type="button" id="cancelMove" data-close="moveDialog">Cancel</button>
         <button value="default" type="submit">Move</button>
       </div>
     </form>
   </dialog>
 
   <dialog id="infoDialog" class="retro-dialog scroll-dialog info-dialog">
-    <div class="dialog-title">Task Information</div>
-    <div class="dialog-body info-body">
-      <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>
-      <div id="infoParentTaskRow" class="dialog-id" hidden>Parent Task <strong id="infoParentTask"></strong></div>
-      <dl class="info-grid">
-        <dt class="has-tooltip" tabindex="0" title="The permanent global ID assigned across every TaskList list. Universal IDs are never reused, even after deletion.">Universal ID</dt><dd id="infoUniversalId"></dd>
-        <dt>Title</dt><dd id="infoTitle"></dd>
-        <dt>Description</dt><dd id="infoDescription" class="description-value"></dd>
-        <dt>Status</dt><dd id="infoStatus"></dd>
-        <dt class="has-tooltip" tabindex="0" title="Whether this item is a top-level root task or a subtask nested under another item.">Type</dt><dd id="infoType"></dd>
-        <dt class="has-tooltip" tabindex="0" title="How many levels below a root task this item sits. Root tasks are depth 0, their direct subtasks are depth 1, and so on.">Nesting depth</dt><dd id="infoNestingDepth"></dd>
-        <dt class="has-tooltip" tabindex="0" title="The number of immediate subtasks directly under this item. Deeper nested subtasks are not included.">Direct children</dt><dd id="infoDirectChildren"></dd>
-        <dt class="has-tooltip" tabindex="0" title="The total number of subtasks nested anywhere below this item, across every deeper level.">Descendants</dt><dd id="infoDescendants"></dd>
-        <dt class="has-tooltip" tabindex="0" title="Other items with the same immediate parent. For a root task, this means the other root tasks in the same list.">Siblings</dt><dd id="infoSiblings"></dd>
-        <dt class="has-tooltip" tabindex="0" title="The total size of this item's top-level task tree: the root task plus every descendant beneath that root.">Root tree size</dt><dd id="infoRootTreeSize"></dd>
-        <dt>Created</dt><dd id="infoCreated"></dd>
-        <dt class="has-tooltip" tabindex="0" title="For an Open item, the elapsed time since it was created. Closed items show a dash.">Current age</dt><dd id="infoCurrentAge"></dd>
-        <dt class="has-tooltip" tabindex="0" title="For a currently Done or Cancelled item, the elapsed time from creation to its current terminal event. This requires confirmed clock times; date-only imports show a dash.">Terminal time</dt><dd id="infoTerminalTime"></dd>
-        <dt>Last updated</dt><dd id="infoUpdated"></dd>
-        <dt>Completed</dt><dd id="infoCompleted"></dd>
-        <dt>Cancelled</dt><dd id="infoCancelled"></dd>
-        <dt>Reopened</dt><dd id="infoReopened"></dd>
-      </dl>
-    </div>
-    <div class="dialog-buttons"><button type="button" id="closeInfo">OK</button></div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title">Task Information</div>
+      <div class="dialog-body info-body">
+        <div class="dialog-id">Task <strong id="infoTaskId"></strong></div>
+        <div id="infoParentTaskRow" class="dialog-id" hidden>Parent Task <strong id="infoParentTask"></strong></div>
+        <dl class="info-grid">
+          <dt class="has-tooltip" tabindex="0" title="The permanent global ID assigned across every TaskList list. Universal IDs are never reused, even after deletion.">Universal ID</dt><dd id="infoUniversalId"></dd>
+          <dt>Title</dt><dd id="infoTitle"></dd>
+          <dt>Description</dt><dd id="infoDescription" class="description-value"></dd>
+          <dt>Status</dt><dd id="infoStatus"></dd>
+          <dt class="has-tooltip" tabindex="0" title="Whether this item is a top-level root task or a subtask nested under another item.">Type</dt><dd id="infoType"></dd>
+          <dt class="has-tooltip" tabindex="0" title="How many levels below a root task this item sits. Root tasks are depth 0, their direct subtasks are depth 1, and so on.">Nesting depth</dt><dd id="infoNestingDepth"></dd>
+          <dt class="has-tooltip" tabindex="0" title="The number of immediate subtasks directly under this item. Deeper nested subtasks are not included.">Direct children</dt><dd id="infoDirectChildren"></dd>
+          <dt class="has-tooltip" tabindex="0" title="The total number of subtasks nested anywhere below this item, across every deeper level.">Descendants</dt><dd id="infoDescendants"></dd>
+          <dt class="has-tooltip" tabindex="0" title="Other items with the same immediate parent. For a root task, this means the other root tasks in the same list.">Siblings</dt><dd id="infoSiblings"></dd>
+          <dt class="has-tooltip" tabindex="0" title="The total size of this item's top-level task tree: the root task plus every descendant beneath that root.">Root tree size</dt><dd id="infoRootTreeSize"></dd>
+          <dt>Created</dt><dd id="infoCreated"></dd>
+          <dt class="has-tooltip" tabindex="0" title="For an Open item, the elapsed time since it was created. Closed items show a dash.">Current age</dt><dd id="infoCurrentAge"></dd>
+          <dt class="has-tooltip" tabindex="0" title="For a currently Done or Cancelled item, the elapsed time from creation to its current terminal event. This requires confirmed clock times; date-only imports show a dash.">Terminal time</dt><dd id="infoTerminalTime"></dd>
+          <dt>Last updated</dt><dd id="infoUpdated"></dd>
+          <dt>Completed</dt><dd id="infoCompleted"></dd>
+          <dt>Cancelled</dt><dd id="infoCancelled"></dd>
+          <dt>Reopened</dt><dd id="infoReopened"></dd>
+        </dl>
+      </div>
+      <div class="dialog-buttons"><button type="button" id="closeInfo" data-close="infoDialog">OK</button></div>
+    </form>
   </dialog>
 
   <dialog id="listDialog" class="retro-dialog">
@@ -227,20 +235,24 @@
         <label for="listDescription">Description</label>
         <textarea id="listDescription" maxlength="1000" rows="5" placeholder="Optional"></textarea>
       </div>
-      <div class="dialog-buttons"><button value="cancel" type="button" id="cancelListEdit">Cancel</button><button value="default" type="submit">Save</button></div>
+      <div class="dialog-buttons"><button value="cancel" type="button" id="cancelListEdit" data-close="listDialog">Cancel</button><button value="default" type="submit">Save</button></div>
     </form>
   </dialog>
 
   <dialog id="manageListsDialog" class="retro-dialog manage-lists-dialog">
-    <div class="dialog-title manage-lists-title"><span id="manageListsTitleText">Manage Lists</span><span id="manageListsUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
-    <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
-    <div class="dialog-buttons manage-lists-footer"><span class="manage-lists-actions"><button type="button" id="openArchives">Archives...</button><button type="button" id="createListButton">Create a List...</button></span><button type="button" id="closeManageLists">Close</button></div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title manage-lists-title"><span id="manageListsTitleText">Manage Lists</span><span id="manageListsUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
+      <div class="dialog-body manage-lists-body" id="manageListsBody"></div>
+      <div class="dialog-buttons manage-lists-footer"><span class="manage-lists-actions"><button type="button" id="openArchives">Archives...</button><button type="button" id="createListButton">Create a List...</button></span><button type="button" id="closeManageLists" data-close="manageListsDialog">Close</button></div>
+    </form>
   </dialog>
 
   <dialog id="archivesDialog" class="retro-dialog manage-lists-dialog">
-    <div class="dialog-title manage-lists-title"><span id="archivesTitleText">Archives</span><span id="archivesUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
-    <div class="dialog-body manage-lists-body" id="archivesBody"></div>
-    <div class="dialog-buttons"><button type="button" id="closeArchives">Close</button></div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title manage-lists-title"><span id="archivesTitleText">Archives</span><span id="archivesUidTotal" class="manage-lists-uid-total">0 total entries</span></div>
+      <div class="dialog-body manage-lists-body" id="archivesBody"></div>
+      <div class="dialog-buttons"><button type="button" id="closeArchives" data-close="archivesDialog">Close</button></div>
+    </form>
   </dialog>
 
   <dialog id="searchDialog" class="retro-dialog search-dialog">
@@ -265,29 +277,33 @@
       <div class="search-list-filter"><span class="search-list-filter-label">List:</span><div class="menu-wrap search-list-menu"><button type="button" id="searchListFilterButton" class="search-list-filter-button" aria-haspopup="menu" aria-expanded="false" disabled><span id="searchListFilterLabel">All lists</span><span class="search-list-filter-arrow" aria-hidden="true">▼</span></button><div id="searchListFilterDropdown" class="menu-dropdown search-list-filter-dropdown" role="menu" hidden></div></div></div>
       <div id="searchResults" class="search-results" aria-live="polite"><div class="search-placeholder">Enter a keyword or date/time range to search.</div></div>
     </div>
-    <div class="dialog-buttons"><button type="button" id="closeSearch">Close</button></div>
+    <div class="dialog-buttons"><button type="button" id="closeSearch" data-close="searchDialog">Close</button></div>
   </dialog>
 
   <dialog id="aboutDialog" class="retro-dialog about-dialog">
-    <div class="dialog-title">About TaskList</div>
-    <div class="dialog-body">
-        <p>A self-hosted task list. Keep tasks and nested subtasks in separate lists, archive lists you are done with, and search everything you have recorded. TaskList records every task change, which TaskList Stats turns into statistics.</p>
-        <p><strong>Tips:</strong> use File &gt; Select... to change several tasks at once, and File &gt; Import/Export... to back up everything but your password. Tasks with dates of "Unknown" were imported from another application and have no date information. MANUAL.md has the full guide.</p>
-        <div>about.lehighradio.com<br><span id="aboutVersion">TaskList</span></div>
-    </div>
-    <div class="dialog-buttons"><button type="button" id="closeAbout">OK</button></div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title">About TaskList</div>
+      <div class="dialog-body">
+          <p>A self-hosted task list. Keep tasks and nested subtasks in separate lists, archive lists you are done with, and search everything you have recorded. TaskList records every task change, which TaskList Stats turns into statistics.</p>
+          <p><strong>Tips:</strong> use File &gt; Select... to change several tasks at once, and File &gt; Import/Export... to back up everything but your password. Tasks with dates of "Unknown" were imported from another application and have no date information. MANUAL.md has the full guide.</p>
+          <div>about.lehighradio.com<br><span id="aboutVersion">TaskList</span></div>
+      </div>
+      <div class="dialog-buttons"><button type="button" id="closeAbout" data-close="aboutDialog">OK</button></div>
+    </form>
   </dialog>
 
   <dialog id="confirmDialog" class="retro-dialog confirm-dialog">
-    <div class="dialog-title" id="confirmDialogTitle">Confirm</div>
-    <div class="dialog-body">
-      <div id="confirmDialogMessage" class="confirm-message"></div>
-      <div id="confirmDialogDetail" class="confirm-detail" hidden></div>
-    </div>
-    <div class="dialog-buttons">
-      <button type="button" id="confirmDialogCancel">Cancel</button>
-      <button type="button" id="confirmDialogAccept">OK</button>
-    </div>
+    <form method="dialog" class="dialog-form">
+      <div class="dialog-title" id="confirmDialogTitle">Confirm</div>
+      <div class="dialog-body">
+        <div id="confirmDialogMessage" class="confirm-message"></div>
+        <div id="confirmDialogDetail" class="confirm-detail" hidden></div>
+      </div>
+      <div class="dialog-buttons">
+        <button type="button" id="confirmDialogCancel" data-close="confirmDialog">Cancel</button>
+        <button type="button" id="confirmDialogAccept">OK</button>
+      </div>
+    </form>
   </dialog>
 
   <script src="/app.js" defer></script>

@@ -56,7 +56,6 @@ function setSearchTab(tab) {
 
 keywordSearchTab.addEventListener('click', () => setSearchTab('keyword'));
 dateSearchTab.addEventListener('click', () => setSearchTab('date'));
-closeSearch.addEventListener('click', () => searchDialog.close());
 searchDialog.addEventListener('close', closeSearchListFilterMenu);
 
 function flattenSearchItems(items, list, depth = 0, output = [], sourceItems = items) {

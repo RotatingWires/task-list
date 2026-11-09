@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.34
+# TaskList v1.7.35
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -511,7 +511,14 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.34**.
+Current release: **v1.7.35**.
+
+### v1.7.35
+
+- Every dialog is a `<form method="dialog">`, and its Cancel/Close/OK button is marked `data-close="dialogId"`; one shared handler closes it, the same code in every app.
+- Keyboard focus draws the same dotted Windows 95 focus rectangle in every app; mouse clicks draw none.
+- Screen readers get the same structure in every app: a hidden page heading with the app name and a **Skip to content** link that appears when you press Tab.
+- In Fresh Start, Enter in the confirmation box does what Reset Selected Data does (it no longer does nothing).
 
 ### v1.7.34
 

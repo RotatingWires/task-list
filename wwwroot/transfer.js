@@ -34,7 +34,6 @@ async function refreshTransferData() {
   await loadStats().catch(() => {});
 }
 
-closeTransfer.addEventListener('click', () => transferDialog.close());
 transferDialog.addEventListener('cancel', event => {
   if (transferBusy) event.preventDefault();
 });

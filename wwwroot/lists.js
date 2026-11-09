@@ -186,7 +186,6 @@ listForm.addEventListener('submit', async event => {
 });
 
 cancelListEdit.addEventListener('click', () => {
-  listDialog.close();
   editingList = null;
 });
 
@@ -368,8 +367,6 @@ async function deleteList(list) {
 openArchivesButton.addEventListener('click', openArchives);
 // Lists are created from Manage Lists, next to Archives, so the File menu keeps only everyday commands.
 document.querySelector('#createListButton').addEventListener('click', openCreateList);
-closeManageLists.addEventListener('click', () => manageListsDialog.close());
-closeArchives.addEventListener('click', () => archivesDialog.close());
 
 /** File > Highlight rows on hover, like SpendTracker and TaskList Stats; saved in this browser. */
 const ROW_HOVER_KEY = 'task-list-highlight-rows';

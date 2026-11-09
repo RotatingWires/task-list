@@ -58,12 +58,13 @@ function setFreshStartBusy(busy) {
   appWindow.inert = busy;
 }
 
-freshStartCancel.addEventListener('click', () => freshStartDialog.close());
 freshStartDialog.addEventListener('cancel', event => {
   if (freshStartBusy) event.preventDefault();
 });
 
-freshStartSubmit.addEventListener('click', async () => {
+// Reset Selected Data is the form's submit button, so Enter in the confirmation box does the same.
+freshStartSubmit.form.addEventListener('submit', async event => {
+  event.preventDefault();
   if (freshStartBusy) return;
   const selections = Object.fromEntries(freshStartOptions.map(option => [option.dataset.freshStart, option.checked]));
   if (!Object.values(selections).some(Boolean)) {

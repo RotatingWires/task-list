@@ -520,7 +520,6 @@ editForm.addEventListener('submit', async event => {
 });
 
 cancelEdit.addEventListener('click', () => {
-  editDialog.close();
   editingItem = null;
 });
 
@@ -562,7 +561,6 @@ subtaskForm.addEventListener('submit', async event => {
 });
 
 cancelSubtask.addEventListener('click', () => {
-  subtaskDialog.close();
   subtaskParent = null;
 });
 
@@ -683,7 +681,6 @@ moveForm.addEventListener('submit', async event => {
 
 cancelMove.addEventListener('click', () => {
   closeMoveListMenu();
-  moveDialog.close();
   movingItem = null;
   bulkMoveItems = null;
   moveTargetListId = null;
@@ -823,7 +820,6 @@ function openInfo(item, sourceItems = tasks, highlightDescription = false) {
   setInfoDescriptionHighlight(highlightDescription);
 }
 
-closeInfo.addEventListener('click', () => infoDialog.close());
 infoDialog.addEventListener('close', () => setInfoDescriptionHighlight(false));
 
 async function deleteItem(item) {

@@ -15,7 +15,6 @@ const viewDropdown = document.querySelector('#viewDropdown');
 const viewChoices = [...viewDropdown.querySelectorAll('[data-view]')];
 const aboutMenu = document.querySelector('#aboutMenu');
 const aboutDialog = document.querySelector('#aboutDialog');
-const closeAbout = document.querySelector('#closeAbout');
 const titleAppName = document.querySelector('.title-app-name');
 const titleListName = document.querySelector('#titleListName');
 const aboutVersion = document.querySelector('#aboutVersion');
@@ -52,7 +51,6 @@ const moveNote = document.querySelector('#moveNote');
 const cancelMove = document.querySelector('#cancelMove');
 
 const infoDialog = document.querySelector('#infoDialog');
-const closeInfo = document.querySelector('#closeInfo');
 const infoTaskId = document.querySelector('#infoTaskId');
 const infoParentTaskRow = document.querySelector('#infoParentTaskRow');
 const infoParentTask = document.querySelector('#infoParentTask');
@@ -76,13 +74,11 @@ const manageListsDialog = document.querySelector('#manageListsDialog');
 const manageListsBody = document.querySelector('#manageListsBody');
 const manageListsTitleText = document.querySelector('#manageListsTitleText');
 const manageListsUidTotal = document.querySelector('#manageListsUidTotal');
-const closeManageLists = document.querySelector('#closeManageLists');
 const openArchivesButton = document.querySelector('#openArchives');
 const archivesDialog = document.querySelector('#archivesDialog');
 const archivesBody = document.querySelector('#archivesBody');
 const archivesTitleText = document.querySelector('#archivesTitleText');
 const archivesUidTotal = document.querySelector('#archivesUidTotal');
-const closeArchives = document.querySelector('#closeArchives');
 
 const searchDialog = document.querySelector('#searchDialog');
 const keywordSearchTab = document.querySelector('#keywordSearchTab');
@@ -98,7 +94,6 @@ const searchListFilterButton = document.querySelector('#searchListFilterButton')
 const searchListFilterLabel = document.querySelector('#searchListFilterLabel');
 const searchListFilterDropdown = document.querySelector('#searchListFilterDropdown');
 const searchResults = document.querySelector('#searchResults');
-const closeSearch = document.querySelector('#closeSearch');
 
 let lists = [];
 let archivedLists = [];
@@ -124,6 +119,12 @@ const PRIMARY_STATUS_ACTION = {
   Done: ['Reopen', 'Open'],
   Cancelled: ['Reopen', 'Open']
 };
+
+// Buttons marked data-close="dialogId" close that dialog; the same code in every app.
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-close]');
+  if (button && !button.disabled) document.getElementById(button.dataset.close)?.close(button.value || 'cancel');
+});
 
 function setStatus(message) {
   statusText.textContent = message;
