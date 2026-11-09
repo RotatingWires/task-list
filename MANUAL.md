@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.28
+# TaskList v1.7.29
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -330,11 +330,11 @@ The old query-string deep-link format is no longer supported.
 
 ## Import and export
 
-**File > Import/Export...**, immediately after Search..., opens a dialog with **Download Export** and **Choose File to Import...**. Import no longer has a separate menu-bar button. The dialog keeps its title and lower OK button fixed while its content scrolls on smaller screens.
+**File > Import/Export...**, immediately after Search..., opens a dialog with **Download Backup**, **Choose File to Restore...**, and **Import Markdown...**, an explanation above each, like SpendTracker's and NewsReview's Import/Export. Import no longer has a separate menu-bar button. The dialog keeps its title and lower OK button fixed while its content scrolls on smaller screens.
 
 Rebuild and restart TaskList after deploying this update so the new export/restore server endpoints are available.
 
-Download Export creates one `task-list-YYYYMMDD-HHMMSS.zip` containing:
+Download Backup creates one `tasklist-backup-YYYYMMDD-HHMMSS.zip` (local time, like the other apps' downloads) containing:
 
 | File | Contents |
 | --- | --- |
@@ -349,7 +349,7 @@ The ZIP excludes `auth.json`, the login password, authentication cookies/keys, l
 
 ### Restore a TaskList ZIP
 
-Choose a TaskList export ZIP in the file picker, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, schema version, checksum (exports from v1.7.23 on; older exports have none and still restore), database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
+Choose a TaskList backup ZIP with **Choose File to Restore...**, then confirm **Restore**. This replaces all current active/archived lists, tasks/subtasks and recorded history with the backup; it does not merge lists. The server validates the archive, format/application version, schema version, checksum (exports from v1.7.23 on; older exports have none and still restore), database integrity, table structure, nesting, relationships and counters before changing live records. Backups from a newer TaskList version require updating TaskList first. Import accepts up to **256 MiB compressed ZIP** and **1 GiB database**, with a bounded manifest; an upstream proxy may impose a smaller upload limit.
 
 Before replacing data, the server creates `data/backups/before-restore-<UTC timestamp>-<unique ID>.zip` containing the previous database. These private recovery files remain until you delete them manually or with **File > Fresh Start...**. Copy one from the server and use the same Import button to restore it if needed. The server must be able to create that recovery file before restoration proceeds.
 
@@ -500,7 +500,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.28**.
+Current release: **v1.7.29**.
+
+### v1.7.29
+
+- Import/Export has **Download Backup**, **Choose File to Restore...**, and **Import Markdown...**, like the other apps (formerly Download Export and one Choose File to Import... for both kinds of file).
+- Download names follow one pattern in every app, in local time: `tasklist-backup-YYYYMMDD-HHMMSS.zip`.
 
 ### v1.7.28
 

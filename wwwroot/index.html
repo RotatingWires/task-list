@@ -100,10 +100,12 @@
   <dialog id="transferDialog" class="retro-dialog scroll-dialog">
     <div class="dialog-title">Import/Export</div>
     <div class="dialog-body transfer-body">
-      <p>Export downloads a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and an export manifest.</p>
-      <button type="button" id="exportData">Download Export</button>
-      <p>Import a TaskList ZIP to restore all lists and history, replacing current data after confirmation. Markdown checklists add tasks to <strong id="transferListName"></strong>.</p>
-      <button type="button" id="importData">Choose File to Import...</button>
+      <p>Download Backup saves a ZIP with all lists, tasks/subtasks, recorded history, IDs, and milestone data, including archived and deleted-list history. It contains the SQLite database and a backup manifest.</p>
+      <button type="button" id="exportData">Download Backup</button>
+      <p>Restore a TaskList backup ZIP to replace all current lists and history after confirmation. It does not merge.</p>
+      <button type="button" id="importData">Choose File to Restore...</button>
+      <p>Import Markdown adds a Markdown checklist's tasks to <strong id="transferListName"></strong>.</p>
+      <button type="button" id="importMarkdown">Import Markdown...</button>
       <p>The login password and browser preferences are separate and are kept when restoring. ID counters keep their highest values to prevent reuse. A recovery backup of current data is saved on the server before a ZIP restore.</p>
       <input type="file" id="transferFile" accept=".zip,.md,.markdown,.txt,text/markdown,text/plain,application/zip" hidden>
     </div>

@@ -39,7 +39,7 @@ static class DataTransfer
             var path = Path.Combine(workDir, "export.zip");
             await CreateArchive(connectionString, path, workDir, context.RequestAborted);
             context.Response.Headers.CacheControl = "no-store";
-            await Results.File(path, "application/zip", $"task-list-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.zip")
+            await Results.File(path, "application/zip", $"tasklist-backup-{DateTimeOffset.Now:yyyyMMdd-HHmmss}.zip")
                 .ExecuteAsync(context);
         }
         catch (SqliteException error) when (!context.Response.HasStarted)

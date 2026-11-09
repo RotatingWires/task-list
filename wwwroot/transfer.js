@@ -4,6 +4,7 @@ const transferDialog = document.querySelector('#transferDialog');
 const transferFile = document.querySelector('#transferFile');
 const exportData = document.querySelector('#exportData');
 const importData = document.querySelector('#importData');
+const importMarkdown = document.querySelector('#importMarkdown');
 const closeTransfer = document.querySelector('#closeTransfer');
 const transferListName = document.querySelector('#transferListName');
 let transferBusy = false;
@@ -21,6 +22,7 @@ function setTransferBusy(busy) {
   transferBusy = busy;
   exportData.disabled = busy;
   importData.disabled = busy;
+  importMarkdown.disabled = busy;
   closeTransfer.disabled = busy;
   appWindow.inert = busy;
 }
@@ -40,34 +42,39 @@ transferDialog.addEventListener('cancel', event => {
 exportData.addEventListener('click', async () => {
   if (transferBusy) return;
   setTransferBusy(true);
-  setStatus('Creating export...');
+  setStatus('Creating backup...');
   let downloadUrl = null;
   try {
     const response = await apiResponse('/api/backup', { cache: 'no-store', timeout: 0 });
     if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('application/zip'))
-      throw new Error('The server did not return a ZIP export. Rebuild and restart TaskList if it has just been updated.');
+      throw new Error('The server did not return a ZIP backup. Rebuild and restart TaskList if it has just been updated.');
     downloadUrl = URL.createObjectURL(await response.blob());
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1]
-      ?? 'task-list-export.zip';
+      ?? 'tasklist-backup.zip';
     document.body.append(link);
     link.click();
     link.remove();
-    setStatus('Export download started.');
+    setStatus('Backup download started.');
   } catch (error) {
-    setStatus(`Export error: ${error.message}`);
+    setStatus(`Backup error: ${error.message}`);
   } finally {
     setTransferBusy(false);
     if (downloadUrl) window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
   }
 });
 
-importData.addEventListener('click', () => {
+/** One hidden file box serves both buttons: a backup ZIP to restore, or a Markdown checklist to import. */
+function chooseTransferFile(accept) {
   if (transferBusy) return;
+  transferFile.accept = accept;
   transferFile.value = '';
   transferFile.click();
-});
+}
+
+importData.addEventListener('click', () => chooseTransferFile('.zip,application/zip'));
+importMarkdown.addEventListener('click', () => chooseTransferFile('.md,.markdown,.txt,text/markdown,text/plain'));
 
 transferFile.addEventListener('change', async () => {
   const file = transferFile.files?.[0];
