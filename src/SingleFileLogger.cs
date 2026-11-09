@@ -1,3 +1,5 @@
+// Console logging to logs/console.log, truncated in place at its size cap. The same file in TaskList, TaskList Stats,
+// NewsReview, and SpendTracker.
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Threading.Channels;
@@ -62,7 +64,7 @@ sealed class SingleFileLoggerProvider : ILoggerProvider
         }
         catch
         {
-            // File logging must never take down TaskList. Console logging remains available.
+            // File logging must never take down the app. Console logging remains available.
         }
     }
 

@@ -1,5 +1,6 @@
 'use strict';
 
+/* Task rendering and actions: edit, subtasks, move, and the Task Information metrics. */
 const TASK_ACTION_HOLD_MS = 800;
 
 async function loadTasks() {

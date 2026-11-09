@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.Sqlite;
 
+/// <summary>Milestone celebrations: database triggers queue a notice when a count crosses a threshold, and the page takes them with /api/milestones/consume.</summary>
 static class MilestoneNotifications
 {
     public static void Initialize(string connectionString)

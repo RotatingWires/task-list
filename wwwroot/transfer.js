@@ -1,5 +1,6 @@
 'use strict';
 
+/* File > Import/Export...: downloads, ZIP restore, and Markdown upload. */
 const transferDialog = $('#transferDialog');
 const transferFile = $('#transferFile');
 const exportData = $('#exportData');

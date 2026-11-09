@@ -1,5 +1,6 @@
 'use strict';
 
+/* The login page: sign-in and first-run password setup. */
 const REQUEST_TIMEOUT_MS = 30000;
 
 /** fetch that gives up after 30 seconds, like NewsReview, instead of waiting forever on a stopped server. */

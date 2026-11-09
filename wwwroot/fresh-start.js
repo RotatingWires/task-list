@@ -1,5 +1,6 @@
 'use strict';
 
+/* File > Fresh Start...: the stored-data summary, choices, confirmation, and refresh. */
 const freshStartDialog = $('#freshStartDialog');
 const freshStartOptions = [...freshStartDialog.querySelectorAll('[data-fresh-start]')];
 const freshStartConfirmation = $('#freshStartConfirmation');

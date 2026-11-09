@@ -1,3 +1,4 @@
+/* Milestone celebrations: taking pending notices, the dialog, and the confetti. */
 (() => {
   'use strict';
 

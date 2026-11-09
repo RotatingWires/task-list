@@ -1,5 +1,6 @@
 'use strict';
 
+/* Lists: choosing, creating, managing, and archiving them. */
 async function loadStats() {
   const stats = await api('/api/stats');
   highestUniversalId = Number(stats.highestUniversalId) || 0;

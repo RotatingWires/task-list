@@ -1,5 +1,6 @@
 'use strict';
 
+/* Menus, navigation, startup and the first-run reminder, and deep links. */
 const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
 const retroFontChoice = $('#retroFontChoice');
 const firstRunDialog = $('#firstRunDialog');

@@ -1,5 +1,6 @@
 'use strict';
 
+/* Shared state, DOM references, API calls, and helpers for the other scripts. */
 // $ and $$ take CSS selectors, the same helpers as TaskList Stats, NewsReview, and SpendTracker.
 /** Creates an element with an optional class and text; buttons get type="button". The same helper in every app. */
 function el(tag, className = '', text = '') {

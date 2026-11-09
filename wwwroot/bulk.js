@@ -1,5 +1,6 @@
 'use strict';
 
+/* Selection mode: the bulk toolbar, its confirmations, and running each action. */
 let selectionMode = localStorage.getItem('task-list-selection-mode') === 'true';
 const selectedTaskIds = new Set();
 let selectionAnchorId = null;

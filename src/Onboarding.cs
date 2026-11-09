@@ -1,3 +1,4 @@
+/// <summary>The first-start "Restore a Backup Before Starting" reminder, kept as a marker file outside the database, like the other apps.</summary>
 static class Onboarding
 {
     private static string PendingPath(string dataDir) => Path.Combine(dataDir, "import-reminder.pending");

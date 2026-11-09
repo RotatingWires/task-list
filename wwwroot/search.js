@@ -1,5 +1,6 @@
 'use strict';
 
+/* File > Search...: keyword and date/time search, and its list filter. */
 function closeSearchListFilterMenu() {
   searchListFilterDropdown.hidden = true;
   searchListFilterButton.setAttribute('aria-expanded', 'false');

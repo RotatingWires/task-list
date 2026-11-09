@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
+/// <summary>File > Import/Export...: ZIP backups with a checksum manifest, and validated restores that save a recovery copy first.</summary>
 static class DataTransfer
 {
     private const long MaxArchiveBytes = 256L * 1024 * 1024;
