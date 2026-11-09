@@ -22,9 +22,9 @@ static class MilestoneNotifications
     {
         api.MapPost("/milestones/consume", async () =>
         {
-            await using var connection = new SqliteConnection(connectionString);
-            await connection.OpenAsync();
-            var notices = await ConsumePending(connection);
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+            var notices = ConsumePending(connection);
             return Results.Ok(notices);
         });
     }
@@ -269,16 +269,16 @@ static class MilestoneNotifications
         command.ExecuteNonQuery();
     }
 
-    private static async Task<List<MilestoneNotice>> ConsumePending(SqliteConnection connection)
+    private static List<MilestoneNotice> ConsumePending(SqliteConnection connection)
     {
         var notices = new List<MilestoneNotice>();
-        await using var command = connection.CreateCommand();
+        using var command = connection.CreateCommand();
         command.CommandText = """
             DELETE FROM milestone_notifications
             RETURNING kind, threshold, scope, scope_value, scope_label, reached_at;
             """;
-        await using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
         {
             notices.Add(new MilestoneNotice(
                 reader.GetString(0),

@@ -118,7 +118,7 @@ class SqlApp:
         with self.transaction():
             uid = self.uid()
             number = self.list(list_id)["next_task_number"]
-            body = PROGRAM.split("static async Task InsertImportedItem(", 1)[1]
+            body = PROGRAM.split("static void InsertImportedItem(", 1)[1]
             execute(self.connection, raw_sql(body)[0], dict(
                 uid=uid, listId=list_id, displayId=str(number), parentDisplayId=None, title="imported",
                 status="Done" if done else "Open", createdAt=date, completedAt=date if done else None,
@@ -136,7 +136,7 @@ class SqlApp:
                           cancelledAt=old["cancelled_at"], reopenedAt=old["reopened_at"])
         if status is not None and status != old["status"]:
             parameters[{"Done": "completedAt", "Cancelled": "cancelledAt", "Open": "reopenedAt"}[status]] = date
-        body = PROGRAM.split("static async Task ApplyItemUpdate(", 1)[1]
+        body = PROGRAM.split("static void ApplyItemUpdate(", 1)[1]
         execute(self.connection, raw_sql(body)[0], parameters)
 
     def rename(self, list_id, name):

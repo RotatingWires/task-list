@@ -236,42 +236,42 @@ DataTransfer.MapEndpoints(api, connectionString, dataDir, app.Logger);
 FreshStart.MapEndpoints(api, connectionString, dataDir, app.Logger);
 Onboarding.MapEndpoints(api, dataDir);
 
-api.MapGet("/lists", async () =>
+api.MapGet("/lists", () =>
 {
     var lists = new List<TaskListInfo>();
-    await using var connection = await OpenConnection(connectionString);
+    using var connection = OpenConnection(connectionString);
     using var command = Sql(connection, """
         SELECT l.id, l.name, l.description, l.created_at,
                (SELECT COUNT(*) FROM items i WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
                l.archived
         FROM lists l WHERE l.archived = 0 ORDER BY l.id;
         """);
-    await using var reader = await command.ExecuteReaderAsync();
-    while (await reader.ReadAsync()) lists.Add(ReadList(reader));
+    using var reader = command.ExecuteReader();
+    while (reader.Read()) lists.Add(ReadList(reader));
     return Results.Ok(lists);
 });
-api.MapGet("/lists/archives", async () =>
+api.MapGet("/lists/archives", () =>
 {
     var lists = new List<TaskListInfo>();
-    await using var connection = await OpenConnection(connectionString);
+    using var connection = OpenConnection(connectionString);
     using var command = Sql(connection, """
         SELECT l.id, l.name, l.description, l.created_at,
                (SELECT COUNT(*) FROM items i WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
                l.archived
         FROM lists l WHERE l.archived = 1 ORDER BY l.id;
         """);
-    await using var reader = await command.ExecuteReaderAsync();
-    while (await reader.ReadAsync()) lists.Add(ReadList(reader));
+    using var reader = command.ExecuteReader();
+    while (reader.Read()) lists.Add(ReadList(reader));
     return Results.Ok(lists);
 });
-api.MapGet("/stats", async () =>
+api.MapGet("/stats", () =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    var highestUniversalId = await ScalarLongAsync(connection, "SELECT COALESCE(MAX(id), 0) FROM universal_ids;");
+    using var connection = OpenConnection(connectionString);
+    var highestUniversalId = ScalarLong(connection, "SELECT COALESCE(MAX(id), 0) FROM universal_ids;");
     return Results.Ok(new { highestUniversalId });
 });
 
-api.MapPost("/lists", async (CreateListRequest request) =>
+api.MapPost("/lists", (CreateListRequest request) =>
 {
     var name = request.Name?.Trim();
     if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "List name is required." });
@@ -279,19 +279,19 @@ api.MapPost("/lists", async (CreateListRequest request) =>
     if ((TooLong("List name", name, MaxListNameLength) ?? TooLong("List description", description, MaxListDescriptionLength)) is { } listError)
         return Results.BadRequest(new { error = listError });
     var now = DateTimeOffset.UtcNow.ToString("O");
-    await using var connection = await OpenConnection(connectionString);
-    if (await ListNameExists(connection, name, null)) return Results.BadRequest(new { error = "A list with that name already exists." });
-    var id = await ScalarLongAsync(connection, """
+    using var connection = OpenConnection(connectionString);
+    if (ListNameExists(connection, name, null)) return Results.BadRequest(new { error = "A list with that name already exists." });
+    var id = ScalarLong(connection, """
         INSERT INTO lists (name, description, next_task_number, created_at)
         VALUES ($name, $description, 1, $createdAt);
         SELECT last_insert_rowid();
         """, ("$name", name), ("$description", description), ("$createdAt", now));
     return Results.Created($"/api/lists/{id}", new TaskListInfo(id, name, description, now, 0, false));
 });
-api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
+api.MapPatch("/lists/{id:long}", (long id, UpdateListRequest request) =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetList(connection, id);
+    using var connection = OpenConnection(connectionString);
+    var existing = GetList(connection, id);
     if (existing is null) return Results.NotFound();
     var name = request.Name is null ? existing.Name : request.Name.Trim();
     if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "List name cannot be empty." });
@@ -300,39 +300,39 @@ api.MapPatch("/lists/{id:long}", async (long id, UpdateListRequest request) =>
     if ((TooLong("List name", request.Name is null ? "" : name, MaxListNameLength)
         ?? TooLong("List description", request.Description is null ? "" : description, MaxListDescriptionLength)) is { } listError)
         return Results.BadRequest(new { error = listError });
-    if (await ListNameExists(connection, name, id)) return Results.BadRequest(new { error = "A list with that name already exists." });
-    await ExecuteAsync(connection, "UPDATE lists SET name = $name, description = $description WHERE id = $id;", ("$name", name), ("$description", description), ("$id", id));
+    if (ListNameExists(connection, name, id)) return Results.BadRequest(new { error = "A list with that name already exists." });
+    Execute(connection, "UPDATE lists SET name = $name, description = $description WHERE id = $id;", ("$name", name), ("$description", description), ("$id", id));
     return Results.Ok(existing with { Name = name, Description = description });
 });
-api.MapPost("/lists/{id:long}/archive", async (long id) =>
+api.MapPost("/lists/{id:long}/archive", (long id) =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetList(connection, id);
+    using var connection = OpenConnection(connectionString);
+    var existing = GetList(connection, id);
     if (existing is null) return Results.NotFound();
     if (existing.Archived) return Results.Ok(existing);
-    if (await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1) return Results.BadRequest(new { error = "You cannot archive the only active list." });
-    await ExecuteAsync(connection, "UPDATE lists SET archived = 1 WHERE id = $id;", ("$id", id));
+    if (ScalarLong(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1) return Results.BadRequest(new { error = "You cannot archive the only active list." });
+    Execute(connection, "UPDATE lists SET archived = 1 WHERE id = $id;", ("$id", id));
     return Results.Ok(existing with { Archived = true });
 });
-api.MapPost("/lists/{id:long}/restore", async (long id) =>
+api.MapPost("/lists/{id:long}/restore", (long id) =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetList(connection, id);
+    using var connection = OpenConnection(connectionString);
+    var existing = GetList(connection, id);
     if (existing is null) return Results.NotFound();
     if (!existing.Archived) return Results.Ok(existing);
-    await ExecuteAsync(connection, "UPDATE lists SET archived = 0 WHERE id = $id;", ("$id", id));
+    Execute(connection, "UPDATE lists SET archived = 0 WHERE id = $id;", ("$id", id));
     return Results.Ok(existing with { Archived = false });
 });
-api.MapDelete("/lists/{id:long}", async (long id) =>
+api.MapDelete("/lists/{id:long}", (long id) =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetList(connection, id);
+    using var connection = OpenConnection(connectionString);
+    var existing = GetList(connection, id);
     if (existing is null) return Results.NotFound();
-    if (!existing.Archived && await ScalarLongAsync(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1) return Results.BadRequest(new { error = "You cannot delete the only active list." });
+    if (!existing.Archived && ScalarLong(connection, "SELECT COUNT(*) FROM lists WHERE archived = 0;") <= 1) return Results.BadRequest(new { error = "You cannot delete the only active list." });
 
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+    using var transaction = connection.BeginTransaction();
     var deletedAt = DateTimeOffset.UtcNow.ToString("O");
-    await ExecuteTxAsync(connection, transaction, """
+    ExecuteTx(connection, transaction, """
         INSERT INTO task_events
             (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
         SELECT universal_id, 'Deleted', $deletedAt, status, 'Deleted', list_id, display_id, parent_display_id, title, 'live'
@@ -341,14 +341,14 @@ api.MapDelete("/lists/{id:long}", async (long id) =>
 
         DELETE FROM lists WHERE id = $id;
         """, ("$deletedAt", deletedAt), ("$id", id));
-    await transaction.CommitAsync();
+    transaction.Commit();
     return Results.NoContent();
 });
 
-api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
+api.MapGet("/lists/{listId:long}/tasks", (long listId) =>
 {
-    await using var connection = await OpenConnection(connectionString);
-    if (await GetList(connection, listId) is null) return Results.NotFound(new { error = "List not found." });
+    using var connection = OpenConnection(connectionString);
+    if (GetList(connection, listId) is null) return Results.NotFound(new { error = "List not found." });
     var allItems = new List<TaskItem>();
     var byDisplayId = new Dictionary<string, TaskItem>(StringComparer.Ordinal);
     using (var command = Sql(connection, """
@@ -356,9 +356,9 @@ api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
                created_at, updated_at, completed_at, cancelled_at, reopened_at
         FROM items WHERE list_id = $listId;
         """, ("$listId", listId)))
-    await using (var reader = await command.ExecuteReaderAsync())
+    using (var reader = command.ExecuteReader())
     {
-        while (await reader.ReadAsync())
+        while (reader.Read())
         {
             var item = ReadItem(reader);
             allItems.Add(item);
@@ -376,7 +376,7 @@ api.MapGet("/lists/{listId:long}/tasks", async (long listId) =>
     return Results.Ok(roots);
 });
 
-api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest request) =>
+api.MapPost("/lists/{listId:long}/tasks", (long listId, CreateTaskRequest request) =>
 {
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title)) return Results.BadRequest(new { error = "Task title is required." });
@@ -384,14 +384,14 @@ api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest 
     if ((TooLong("Task title", title, MaxTaskTitleLength) ?? TooLong("Description", description, MaxTaskDescriptionLength)) is { } taskError)
         return Results.BadRequest(new { error = taskError });
     var now = DateTimeOffset.UtcNow.ToString("O");
-    await using var connection = await OpenConnection(connectionString);
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var taskNumberValue = await ScalarTxAsync(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
+    using var connection = OpenConnection(connectionString);
+    using var transaction = connection.BeginTransaction();
+    var taskNumberValue = ScalarTx(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
     if (taskNumberValue is null) return Results.NotFound(new { error = "List not found." });
     var taskNumber = Convert.ToInt64(taskNumberValue);
     var displayId = taskNumber.ToString(CultureInfo.InvariantCulture);
-    var universalId = await AllocateUniversalId(connection, transaction);
-    await ExecuteTxAsync(connection, transaction, """
+    var universalId = AllocateUniversalId(connection, transaction);
+    ExecuteTx(connection, transaction, """
         INSERT INTO items
             (universal_id, list_id, display_id, parent_display_id, title, description, status,
              created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
@@ -401,11 +401,11 @@ api.MapPost("/lists/{listId:long}/tasks", async (long listId, CreateTaskRequest 
         UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;
         """,
         ("$uid", universalId), ("$listId", listId), ("$displayId", displayId), ("$title", title), ("$description", description), ("$createdAt", now), ("$nextNumber", taskNumber + 1));
-    await transaction.CommitAsync();
+    transaction.Commit();
     return Results.Created($"/api/lists/{listId}/items/{displayId}", new TaskItem(universalId, listId, displayId, null, false, title, description, "Open", now, null, null, null, null, []));
 });
 
-api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", async (long listId, string displayId, CreateTaskRequest request) =>
+api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", (long listId, string displayId, CreateTaskRequest request) =>
 {
     var title = request.Title?.Trim();
     if (string.IsNullOrWhiteSpace(title)) return Results.BadRequest(new { error = "Subtask title is required." });
@@ -414,16 +414,16 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", async (long listI
     if ((TooLong("Subtask title", title, MaxTaskTitleLength) ?? TooLong("Description", description, MaxTaskDescriptionLength)) is { } subtaskError)
         return Results.BadRequest(new { error = subtaskError });
     var now = DateTimeOffset.UtcNow.ToString("O");
-    await using var connection = await OpenConnection(connectionString);
-    var parent = await GetItem(connection, listId, displayId);
+    using var connection = OpenConnection(connectionString);
+    var parent = GetItem(connection, listId, displayId);
     if (parent is null) return Results.NotFound(new { error = "Parent task was not found." });
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var childNumberValue = await ScalarTxAsync(connection, transaction, "SELECT next_child_number FROM items WHERE list_id = $listId AND display_id = $displayId;", ("$listId", listId), ("$displayId", displayId));
+    using var transaction = connection.BeginTransaction();
+    var childNumberValue = ScalarTx(connection, transaction, "SELECT next_child_number FROM items WHERE list_id = $listId AND display_id = $displayId;", ("$listId", listId), ("$displayId", displayId));
     if (childNumberValue is null) return Results.NotFound(new { error = "Parent task was not found." });
     var childNumber = Convert.ToInt64(childNumberValue);
     var childDisplayId = $"{displayId}.{childNumber.ToString(CultureInfo.InvariantCulture)}";
-    var universalId = await AllocateUniversalId(connection, transaction);
-    await ExecuteTxAsync(connection, transaction, """
+    var universalId = AllocateUniversalId(connection, transaction);
+    ExecuteTx(connection, transaction, """
         INSERT INTO items
             (universal_id, list_id, display_id, parent_display_id, title, description, status,
              created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
@@ -433,19 +433,19 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/subtasks", async (long listI
         UPDATE items SET next_child_number = $nextNumber WHERE list_id = $listId AND display_id = $parentDisplayId;
         """,
         ("$uid", universalId), ("$listId", listId), ("$childDisplayId", childDisplayId), ("$parentDisplayId", displayId), ("$title", title), ("$description", description), ("$createdAt", now), ("$nextNumber", childNumber + 1));
-    await transaction.CommitAsync();
+    transaction.Commit();
     return Results.Created($"/api/lists/{listId}/items/{childDisplayId}", new TaskItem(universalId, listId, childDisplayId, displayId, true, title, description, "Open", now, null, null, null, null, []));
 });
 
-api.MapPatch("/lists/{listId:long}/items/{displayId}", async (long listId, string displayId, UpdateTaskRequest request) =>
+api.MapPatch("/lists/{listId:long}/items/{displayId}", (long listId, string displayId, UpdateTaskRequest request) =>
 {
     if (!IsValidDisplayId(displayId)) return Results.BadRequest(new { error = "Invalid task ID." });
-    await using var connection = await OpenConnection(connectionString);
-    var existing = await GetItem(connection, listId, displayId);
+    using var connection = OpenConnection(connectionString);
+    var existing = GetItem(connection, listId, displayId);
     if (existing is null) return Results.NotFound();
     var values = BuildUpdatedValues(existing.Title, existing.Description, existing.Status, existing.UpdatedAt, existing.CompletedAt, existing.CancelledAt, existing.ReopenedAt, request);
     if (values.Error is not null) return Results.BadRequest(new { error = values.Error });
-    await ApplyItemUpdate(connection, listId, displayId, values);
+    ApplyItemUpdate(connection, listId, displayId, values);
     return Results.Ok(existing with
     {
         Title = values.Title!, Description = values.Description!, Status = values.Status!,
@@ -453,12 +453,12 @@ api.MapPatch("/lists/{listId:long}/items/{displayId}", async (long listId, strin
     });
 });
 
-api.MapPost("/lists/{listId:long}/items/{displayId}/move", async (long listId, string displayId, MoveTaskRequest request) =>
+api.MapPost("/lists/{listId:long}/items/{displayId}/move", (long listId, string displayId, MoveTaskRequest request) =>
 {
     if (!IsValidDisplayId(displayId)) return Results.BadRequest(new { error = "Invalid task ID." });
     if (request.TargetListId == listId) return Results.BadRequest(new { error = "Choose a different destination list." });
-    await using var connection = await OpenConnection(connectionString);
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+    using var connection = OpenConnection(connectionString);
+    using var transaction = connection.BeginTransaction();
     var movingRows = new List<MoveItemRow>();
     using (var command = SqlTx(connection, transaction, """
         SELECT universal_id, display_id, parent_display_id, title, description, status,
@@ -467,22 +467,22 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/move", async (long listId, s
         WHERE list_id = $listId AND (display_id = $displayId OR display_id LIKE $descendantPattern)
         ORDER BY LENGTH(display_id), display_id;
         """, ("$listId", listId), ("$displayId", displayId), ("$descendantPattern", $"{displayId}.%")))
-    await using (var reader = await command.ExecuteReaderAsync())
+    using (var reader = command.ExecuteReader())
     {
-        while (await reader.ReadAsync()) movingRows.Add(new MoveItemRow(
+        while (reader.Read()) movingRows.Add(new MoveItemRow(
             reader.GetInt64(0), reader.GetString(1), NullableString(reader, 2), reader.GetString(3), reader.IsDBNull(4) ? string.Empty : reader.GetString(4), reader.GetString(5), reader.GetString(6), NullableString(reader, 7), NullableString(reader, 8), NullableString(reader, 9), NullableString(reader, 10), reader.GetInt64(11)));
     }
     if (movingRows.Count == 0) return Results.NotFound(new { error = "Task was not found." });
-    var targetNextValue = await ScalarTxAsync(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $targetListId AND archived = 0;", ("$targetListId", request.TargetListId));
+    var targetNextValue = ScalarTx(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $targetListId AND archived = 0;", ("$targetListId", request.TargetListId));
     if (targetNextValue is null) return Results.NotFound(new { error = "Destination list was not found." });
     var targetTaskNumber = Convert.ToInt64(targetNextValue);
     var targetRootDisplayId = targetTaskNumber.ToString(CultureInfo.InvariantCulture);
-    await ExecuteTxAsync(connection, transaction, "DELETE FROM items WHERE list_id = $listId AND display_id = $displayId;", ("$listId", listId), ("$displayId", displayId));
+    ExecuteTx(connection, transaction, "DELETE FROM items WHERE list_id = $listId AND display_id = $displayId;", ("$listId", listId), ("$displayId", displayId));
     foreach (var row in movingRows)
     {
         var newDisplayId = RemapMovedDisplayId(displayId, targetRootDisplayId, row.DisplayId);
         var newParentDisplayId = row.DisplayId == displayId ? null : RemapMovedDisplayId(displayId, targetRootDisplayId, row.ParentDisplayId!);
-        await ExecuteTxAsync(connection, transaction, """
+        ExecuteTx(connection, transaction, """
             INSERT INTO items
                 (universal_id, list_id, display_id, parent_display_id, title, description, status,
                  created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
@@ -493,24 +493,24 @@ api.MapPost("/lists/{listId:long}/items/{displayId}/move", async (long listId, s
             ("$uid", row.UniversalId), ("$targetListId", request.TargetListId), ("$displayId", newDisplayId), ("$parentDisplayId", newParentDisplayId),
             ("$title", row.Title), ("$description", row.Description), ("$status", row.Status), ("$createdAt", row.CreatedAt), ("$updatedAt", row.UpdatedAt), ("$completedAt", row.CompletedAt), ("$cancelledAt", row.CancelledAt), ("$reopenedAt", row.ReopenedAt), ("$nextChildNumber", row.NextChildNumber));
     }
-    await ExecuteTxAsync(connection, transaction, "UPDATE lists SET next_task_number = $nextNumber WHERE id = $targetListId;", ("$nextNumber", targetTaskNumber + 1), ("$targetListId", request.TargetListId));
-    await transaction.CommitAsync();
+    ExecuteTx(connection, transaction, "UPDATE lists SET next_task_number = $nextNumber WHERE id = $targetListId;", ("$nextNumber", targetTaskNumber + 1), ("$targetListId", request.TargetListId));
+    transaction.Commit();
     return Results.Ok(new { targetListId = request.TargetListId, displayId = targetRootDisplayId, universalId = movingRows[0].UniversalId, movedCount = movingRows.Count });
 });
 
-api.MapDelete("/lists/{listId:long}/items/{displayId}", async (long listId, string displayId) =>
+api.MapDelete("/lists/{listId:long}/items/{displayId}", (long listId, string displayId) =>
 {
     if (!IsValidDisplayId(displayId)) return Results.BadRequest(new { error = "Invalid task ID." });
-    await using var connection = await OpenConnection(connectionString);
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
+    using var connection = OpenConnection(connectionString);
+    using var transaction = connection.BeginTransaction();
 
-    var exists = await ScalarTxAsync(connection, transaction,
+    var exists = ScalarTx(connection, transaction,
         "SELECT EXISTS(SELECT 1 FROM items WHERE list_id = $listId AND display_id = $displayId);",
         ("$listId", listId), ("$displayId", displayId));
     if (Convert.ToInt64(exists) == 0) return Results.NotFound();
 
     var deletedAt = DateTimeOffset.UtcNow.ToString("O");
-    await ExecuteTxAsync(connection, transaction, """
+    ExecuteTx(connection, transaction, """
         INSERT INTO task_events
             (universal_id, event_type, event_at, from_status, to_status, list_id, display_id, parent_display_id, title, source)
         SELECT universal_id, 'Deleted', $deletedAt, status, 'Deleted', list_id, display_id, parent_display_id, title, 'live'
@@ -525,7 +525,7 @@ api.MapDelete("/lists/{listId:long}/items/{displayId}", async (long listId, stri
         ("$listId", listId),
         ("$displayId", displayId),
         ("$descendantPattern", $"{displayId}.%"));
-    await transaction.CommitAsync();
+    transaction.Commit();
     return Results.NoContent();
 });
 
@@ -556,9 +556,9 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
         if (stack.Count == 0) roots.Add(node); else stack.Peek().Children.Add(node);
         stack.Push(node);
     }
-    await using var connection = await OpenConnection(connectionString);
-    await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
-    var nextTaskValue = await ScalarTxAsync(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
+    using var connection = OpenConnection(connectionString);
+    using var transaction = connection.BeginTransaction();
+    var nextTaskValue = ScalarTx(connection, transaction, "SELECT next_task_number FROM lists WHERE id = $listId;", ("$listId", listId));
     if (nextTaskValue is null) return Results.NotFound(new { error = "List not found." });
     var nextTaskNumber = Convert.ToInt64(nextTaskValue);
     var tasksImported = 0;
@@ -567,14 +567,14 @@ api.MapPost("/lists/{listId:long}/import/markdown", async (long listId, HttpRequ
     {
         var root = roots[rootIndex];
         var displayId = nextTaskNumber.ToString(CultureInfo.InvariantCulture);
-        var rootUid = await AllocateUniversalId(connection, transaction);
-        await InsertImportedItem(connection, transaction, listId, displayId, null, rootUid, root);
+        var rootUid = AllocateUniversalId(connection, transaction);
+        InsertImportedItem(connection, transaction, listId, displayId, null, rootUid, root);
         tasksImported++;
-        subtasksImported += await InsertImportedChildren(connection, transaction, listId, displayId, root.Children);
+        subtasksImported += InsertImportedChildren(connection, transaction, listId, displayId, root.Children);
         nextTaskNumber++;
     }
-    await ExecuteTxAsync(connection, transaction, "UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;", ("$listId", listId), ("$nextNumber", nextTaskNumber));
-    await transaction.CommitAsync();
+    ExecuteTx(connection, transaction, "UPDATE lists SET next_task_number = $nextNumber WHERE id = $listId;", ("$listId", listId), ("$nextNumber", nextTaskNumber));
+    transaction.Commit();
     return Results.Ok(new { imported = tasksImported + subtasksImported, tasksImported, subtasksImported });
 });
 
@@ -786,11 +786,11 @@ static void EnsureTaskEventSchema(SqliteConnection connection)
     triggers.ExecuteNonQuery();
 }
 
-static async Task<SqliteConnection> OpenConnection(string connectionString)
+static SqliteConnection OpenConnection(string connectionString)
 {
     var connection = new SqliteConnection(connectionString);
-    await connection.OpenAsync();
-    await ApplyConnectionPragmasAsync(connection);
+    connection.Open();
+    ApplyConnectionPragmas(connection);
     return connection;
 }
 
@@ -840,42 +840,37 @@ static void ApplyConnectionPragmas(SqliteConnection connection)
     command.ExecuteNonQuery();
 }
 
-static async Task ApplyConnectionPragmasAsync(SqliteConnection connection)
-{
-    using var command = ConnectionPragmaCommand(connection);
-    await command.ExecuteNonQueryAsync();
-}
 static SqliteCommand Sql(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { var command = connection.CreateCommand(); command.CommandText = text; AddParameters(command, parameters); return command; }
 static SqliteCommand SqlTx(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { var command = connection.CreateCommand(); command.Transaction = transaction; command.CommandText = text; AddParameters(command, parameters); return command; }
 static void AddParameters(SqliteCommand command, params (string Name, object? Value)[] parameters) { foreach (var (name, value) in parameters) command.Parameters.AddWithValue(name, value ?? DBNull.Value); }
-static async Task<object?> ScalarAsync(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { using var command = Sql(connection, text, parameters); return await command.ExecuteScalarAsync(); }
-static async Task<object?> ScalarTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { using var command = SqlTx(connection, transaction, text, parameters); return await command.ExecuteScalarAsync(); }
-static async Task<long> ScalarLongAsync(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) => Convert.ToInt64(await ScalarAsync(connection, text, parameters));
-static async Task<int> ExecuteAsync(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { using var command = Sql(connection, text, parameters); return await command.ExecuteNonQueryAsync(); }
-static async Task<int> ExecuteTxAsync(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { using var command = SqlTx(connection, transaction, text, parameters); return await command.ExecuteNonQueryAsync(); }
-static async Task<long> AllocateUniversalId(SqliteConnection connection, SqliteTransaction transaction) => Convert.ToInt64(await ScalarTxAsync(connection, transaction, "INSERT INTO universal_ids DEFAULT VALUES; SELECT last_insert_rowid();"));
+static object? Scalar(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { using var command = Sql(connection, text, parameters); return command.ExecuteScalar(); }
+static object? ScalarTx(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { using var command = SqlTx(connection, transaction, text, parameters); return command.ExecuteScalar(); }
+static long ScalarLong(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) => Convert.ToInt64(Scalar(connection, text, parameters));
+static int Execute(SqliteConnection connection, string text, params (string Name, object? Value)[] parameters) { using var command = Sql(connection, text, parameters); return command.ExecuteNonQuery(); }
+static int ExecuteTx(SqliteConnection connection, SqliteTransaction transaction, string text, params (string Name, object? Value)[] parameters) { using var command = SqlTx(connection, transaction, text, parameters); return command.ExecuteNonQuery(); }
+static long AllocateUniversalId(SqliteConnection connection, SqliteTransaction transaction) => Convert.ToInt64(ScalarTx(connection, transaction, "INSERT INTO universal_ids DEFAULT VALUES; SELECT last_insert_rowid();"));
 
-static async Task<TaskListInfo?> GetList(SqliteConnection connection, long id)
+static TaskListInfo? GetList(SqliteConnection connection, long id)
 {
     using var command = Sql(connection, """
         SELECT l.id, l.name, l.description, l.created_at,
                (SELECT COUNT(*) FROM items i WHERE i.list_id = l.id AND i.parent_display_id IS NULL) AS task_count,
                l.archived FROM lists l WHERE l.id = $id;
         """, ("$id", id));
-    await using var reader = await command.ExecuteReaderAsync();
-    return await reader.ReadAsync() ? ReadList(reader) : null;
+    using var reader = command.ExecuteReader();
+    return reader.Read() ? ReadList(reader) : null;
 }
 static TaskListInfo ReadList(SqliteDataReader reader) => new(reader.GetInt64(0), reader.GetString(1), reader.IsDBNull(2) ? string.Empty : reader.GetString(2), reader.GetString(3), reader.GetInt64(4), reader.GetInt64(5) != 0);
-static async Task<bool> ListNameExists(SqliteConnection connection, string name, long? excludingId)
+static bool ListNameExists(SqliteConnection connection, string name, long? excludingId)
 {
     var sql = excludingId is null ? "SELECT EXISTS(SELECT 1 FROM lists WHERE name = $name COLLATE NOCASE);" : "SELECT EXISTS(SELECT 1 FROM lists WHERE name = $name COLLATE NOCASE AND id <> $id);";
-    var result = excludingId is null ? await ScalarLongAsync(connection, sql, ("$name", name)) : await ScalarLongAsync(connection, sql, ("$name", name), ("$id", excludingId.Value));
+    var result = excludingId is null ? ScalarLong(connection, sql, ("$name", name)) : ScalarLong(connection, sql, ("$name", name), ("$id", excludingId.Value));
     return result != 0;
 }
 
-static async Task ApplyItemUpdate(SqliteConnection connection, long listId, string displayId, UpdateValues values)
+static void ApplyItemUpdate(SqliteConnection connection, long listId, string displayId, UpdateValues values)
 {
-    await ExecuteAsync(connection, """
+    Execute(connection, """
         UPDATE items SET title = $title, description = $description, status = $status,
             updated_at = $updatedAt, completed_at = $completedAt,
             cancelled_at = $cancelledAt, reopened_at = $reopenedAt
@@ -913,24 +908,24 @@ static TaskItem ReadItem(SqliteDataReader reader)
     return new TaskItem(reader.GetInt64(0), reader.GetInt64(1), reader.GetString(2), parentDisplayId, parentDisplayId is not null, reader.GetString(4), reader.IsDBNull(5) ? string.Empty : reader.GetString(5), reader.GetString(6), reader.GetString(7), NullableString(reader, 8), NullableString(reader, 9), NullableString(reader, 10), NullableString(reader, 11), []);
 }
 static string? NullableString(SqliteDataReader reader, int index) => reader.IsDBNull(index) ? null : reader.GetString(index);
-static async Task<TaskItem?> GetItem(SqliteConnection connection, long listId, string displayId)
+static TaskItem? GetItem(SqliteConnection connection, long listId, string displayId)
 {
     using var command = Sql(connection, """
         SELECT universal_id, list_id, display_id, parent_display_id, title, description, status,
                created_at, updated_at, completed_at, cancelled_at, reopened_at
         FROM items WHERE list_id = $listId AND display_id = $displayId;
         """, ("$listId", listId), ("$displayId", displayId));
-    await using var reader = await command.ExecuteReaderAsync();
-    return await reader.ReadAsync() ? ReadItem(reader) : null;
+    using var reader = command.ExecuteReader();
+    return reader.Read() ? ReadItem(reader) : null;
 }
 static string RemapMovedDisplayId(string oldRootDisplayId, string newRootDisplayId, string oldDisplayId) => oldDisplayId == oldRootDisplayId ? newRootDisplayId : $"{newRootDisplayId}.{oldDisplayId[(oldRootDisplayId.Length + 1)..]}";
 static long DisplaySegmentNumber(string displayId) { var separator = displayId.LastIndexOf('.'); var segment = separator < 0 ? displayId : displayId[(separator + 1)..]; return long.TryParse(segment, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : 0; }
 static bool IsValidDisplayId(string displayId) => Regex.IsMatch(displayId, @"^\d+(?:\.\d+)*$", RegexOptions.CultureInvariant);
 static void SortChildren(TaskItem item) { item.Subtasks.Sort((a, b) => DisplaySegmentNumber(a.DisplayId).CompareTo(DisplaySegmentNumber(b.DisplayId))); foreach (var child in item.Subtasks) SortChildren(child); }
 
-static async Task InsertImportedItem(SqliteConnection connection, SqliteTransaction transaction, long listId, string displayId, string? parentDisplayId, long universalId, ImportNode node)
+static void InsertImportedItem(SqliteConnection connection, SqliteTransaction transaction, long listId, string displayId, string? parentDisplayId, long universalId, ImportNode node)
 {
-    await ExecuteTxAsync(connection, transaction, """
+    ExecuteTx(connection, transaction, """
         INSERT INTO items
             (universal_id, list_id, display_id, parent_display_id, title, description, status,
              created_at, updated_at, completed_at, cancelled_at, reopened_at, next_child_number)
@@ -940,7 +935,7 @@ static async Task InsertImportedItem(SqliteConnection connection, SqliteTransact
         """,
         ("$uid", universalId), ("$listId", listId), ("$displayId", displayId), ("$parentDisplayId", parentDisplayId), ("$title", node.Item.Title), ("$status", node.Item.Status), ("$createdAt", node.Item.CreatedAt), ("$completedAt", node.Item.CompletedAt), ("$nextChildNumber", node.Children.Count + 1));
 }
-static async Task<int> InsertImportedChildren(SqliteConnection connection, SqliteTransaction transaction, long listId, string parentDisplayId, List<ImportNode> children)
+static int InsertImportedChildren(SqliteConnection connection, SqliteTransaction transaction, long listId, string parentDisplayId, List<ImportNode> children)
 {
     var inserted = 0;
     for (var index = 0; index < children.Count; index++)
@@ -948,10 +943,10 @@ static async Task<int> InsertImportedChildren(SqliteConnection connection, Sqlit
         var child = children[index];
         var childNumber = index + 1;
         var displayId = $"{parentDisplayId}.{childNumber.ToString(CultureInfo.InvariantCulture)}";
-        var universalId = await AllocateUniversalId(connection, transaction);
-        await InsertImportedItem(connection, transaction, listId, displayId, parentDisplayId, universalId, child);
+        var universalId = AllocateUniversalId(connection, transaction);
+        InsertImportedItem(connection, transaction, listId, displayId, parentDisplayId, universalId, child);
         inserted++;
-        inserted += await InsertImportedChildren(connection, transaction, listId, displayId, child.Children);
+        inserted += InsertImportedChildren(connection, transaction, listId, displayId, child.Children);
     }
     return inserted;
 }
