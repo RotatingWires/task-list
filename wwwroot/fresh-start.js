@@ -1,12 +1,12 @@
 'use strict';
 
-const freshStartDialog = document.querySelector('#freshStartDialog');
+const freshStartDialog = $('#freshStartDialog');
 const freshStartOptions = [...freshStartDialog.querySelectorAll('[data-fresh-start]')];
-const freshStartConfirmation = document.querySelector('#freshStartConfirmation');
-const freshStartError = document.querySelector('#freshStartError');
-const freshStartSize = document.querySelector('#freshStartSize');
-const freshStartSubmit = document.querySelector('#freshStartSubmit');
-const freshStartCancel = document.querySelector('#freshStartCancel');
+const freshStartConfirmation = $('#freshStartConfirmation');
+const freshStartError = $('#freshStartError');
+const freshStartSize = $('#freshStartSize');
+const freshStartSubmit = $('#freshStartSubmit');
+const freshStartCancel = $('#freshStartCancel');
 let freshStartBusy = false;
 
 function formatBytes(bytes) {

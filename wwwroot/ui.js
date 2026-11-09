@@ -1,11 +1,11 @@
 'use strict';
 
 const themeChoices = [...viewDropdown.querySelectorAll('[data-theme-choice]')];
-const retroFontChoice = document.querySelector('#retroFontChoice');
-const firstRunDialog = document.querySelector('#firstRunDialog');
-const firstRunImport = document.querySelector('#firstRunImport');
-const firstRunContinue = document.querySelector('#firstRunContinue');
-const firstRunError = document.querySelector('#firstRunError');
+const retroFontChoice = $('#retroFontChoice');
+const firstRunDialog = $('#firstRunDialog');
+const firstRunImport = $('#firstRunImport');
+const firstRunContinue = $('#firstRunContinue');
+const firstRunError = $('#firstRunError');
 let importReminderResolve = null;
 let importReminderBusy = false;
 

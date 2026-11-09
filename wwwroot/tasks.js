@@ -156,7 +156,7 @@ function createTaskRow(item, depth) {
 }
 
 function closeTaskActionMenus(except = null) {
-  for (const menu of document.querySelectorAll('.task-action-dropdown:not([hidden])')) {
+  for (const menu of $$('.task-action-dropdown:not([hidden])')) {
     if (menu === except) continue;
     menu.hidden = true;
     menu.closest('.task-split-group')?.querySelector('.task-action-arrow')
@@ -806,17 +806,17 @@ function openInfo(item, sourceItems = tasks, highlightDescription = false) {
   infoTitle.textContent = item.title;
   infoDescription.textContent = item.description || '—';
   infoStatus.textContent = item.status;
-  document.querySelector('#infoType').textContent = item.parentDisplayId ? 'Subtask' : 'Root task';
-  document.querySelector('#infoNestingDepth').textContent = String(Math.max(0, String(item.displayId).split('.').length - 1));
-  document.querySelector('#infoDirectChildren').textContent = hierarchy.directChildren.toLocaleString();
-  document.querySelector('#infoDescendants').textContent = hierarchy.descendants.toLocaleString();
-  document.querySelector('#infoSiblings').textContent = hierarchy.siblings.toLocaleString();
-  document.querySelector('#infoRootTreeSize').textContent = hierarchy.rootTreeSize.toLocaleString();
+  $('#infoType').textContent = item.parentDisplayId ? 'Subtask' : 'Root task';
+  $('#infoNestingDepth').textContent = String(Math.max(0, String(item.displayId).split('.').length - 1));
+  $('#infoDirectChildren').textContent = hierarchy.directChildren.toLocaleString();
+  $('#infoDescendants').textContent = hierarchy.descendants.toLocaleString();
+  $('#infoSiblings').textContent = hierarchy.siblings.toLocaleString();
+  $('#infoRootTreeSize').textContent = hierarchy.rootTreeSize.toLocaleString();
   infoCreated.textContent = formatDate(item.createdAt);
-  document.querySelector('#infoCurrentAge').textContent = item.status === 'Open' && createdDate
+  $('#infoCurrentAge').textContent = item.status === 'Open' && createdDate
     ? formatInfoDuration(Date.now() - createdDate.getTime())
     : '—';
-  document.querySelector('#infoTerminalTime').textContent = formatInfoDuration(taskInfoTerminalDuration(item));
+  $('#infoTerminalTime').textContent = formatInfoDuration(taskInfoTerminalDuration(item));
   infoUpdated.textContent = formatDate(item.updatedAt);
   infoCompleted.textContent = formatDate(item.completedAt);
   infoCancelled.textContent = formatDate(item.cancelledAt);

@@ -1,12 +1,12 @@
 'use strict';
 
-const transferDialog = document.querySelector('#transferDialog');
-const transferFile = document.querySelector('#transferFile');
-const exportData = document.querySelector('#exportData');
-const importData = document.querySelector('#importData');
-const importMarkdown = document.querySelector('#importMarkdown');
-const closeTransfer = document.querySelector('#closeTransfer');
-const transferListName = document.querySelector('#transferListName');
+const transferDialog = $('#transferDialog');
+const transferFile = $('#transferFile');
+const exportData = $('#exportData');
+const importData = $('#importData');
+const importMarkdown = $('#importMarkdown');
+const closeTransfer = $('#closeTransfer');
+const transferListName = $('#transferListName');
 let transferBusy = false;
 
 function openTransfer() {

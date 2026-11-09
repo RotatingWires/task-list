@@ -5,9 +5,9 @@ const selectedTaskIds = new Set();
 let selectionAnchorId = null;
 let bulkBusy = false;
 let bulkMoveItems = null;
-const bulkControls = document.querySelector('#bulkControls');
-const selectedTaskCount = document.querySelector('#selectedTaskCount');
-const bulkActions = document.querySelector('#bulkActions');
+const bulkControls = $('#bulkControls');
+const selectedTaskCount = $('#selectedTaskCount');
+const bulkActions = $('#bulkActions');
 
 function visibleTaskItems() {
   return flattenTaskItems(tasksForCurrentView()).filter(item => item.listId === currentListId);
@@ -41,7 +41,7 @@ function setSelectionMode(enabled) {
 
 document.addEventListener('keydown', event => {
   if (event.key !== 'Escape' || event.defaultPrevented || !selectionMode || bulkBusy ||
-      document.querySelector('dialog[open]') || appWindow.inert) return;
+      $('dialog[open]') || appWindow.inert) return;
   event.preventDefault();
   setSelectionMode(false);
 });

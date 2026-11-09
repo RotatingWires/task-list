@@ -366,7 +366,7 @@ async function deleteList(list) {
 
 openArchivesButton.addEventListener('click', openArchives);
 // Lists are created from Manage Lists, next to Archives, so the File menu keeps only everyday commands.
-document.querySelector('#createListButton').addEventListener('click', openCreateList);
+$('#createListButton').addEventListener('click', openCreateList);
 
 /** File > Highlight rows on hover, like SpendTracker and TaskList Stats; saved in this browser. */
 const ROW_HOVER_KEY = 'task-list-highlight-rows';
