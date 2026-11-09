@@ -1228,15 +1228,15 @@ button:disabled {
 .task-table tr.subtask-row.task-visit-highlight > td {
   background: var(--highlight) !important;
 }
-html.mouse-hover-capable .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
-html.mouse-hover-capable .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
+html.mouse-hover-capable:not(.row-hover-off) .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight),
+html.mouse-hover-capable:not(.row-hover-off) .task-table tbody tr:not(.subtask-row):hover:not(.task-visit-highlight) > td {
   background: var(--row-hover);
 }
 @media (min-width: 651px) {
-  html.mouse-hover-capable .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
+  html.mouse-hover-capable:not(.row-hover-off) .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td {
     background: var(--row-hover);
   }
-  html.mouse-hover-capable .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td:first-child {
+  html.mouse-hover-capable:not(.row-hover-off) .task-table tr.subtask-row:hover:not(.task-visit-highlight) > td:first-child {
     background: linear-gradient(
       to right,
       transparent 0 calc(var(--row-indent) + 3px),

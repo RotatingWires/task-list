@@ -65,22 +65,28 @@ function renderFileMenu() {
   separator.setAttribute('role', 'separator');
   fileDropdown.append(separator);
 
+  // The same groups and order as the other apps' File menus: everyday commands, Import/Export..., display options,
+  // Log Out, then Fresh Start... apart from everything else because it permanently clears data.
+  const separator2 = () => {
+    const line = document.createElement('div');
+    line.className = 'menu-separator';
+    line.setAttribute('role', 'separator');
+    return line;
+  };
   fileDropdown.append(
     menuCommand('Refresh', refreshApp),
     menuCommand('Manage Lists...', openManageLists),
     menuCommand('Search...', openSearch),
+    selectionMenuCommand(),
+    separator2(),
     menuCommand('Import/Export...', openTransfer),
-    selectionMenuCommand()
+    separator2(),
+    rowHoverMenuCommand(),
+    separator2(),
+    menuCommand('Log Out', logOut),
+    separator2(),
+    menuCommand('Fresh Start...', openFreshStart)
   );
-
-  const accountSeparator = document.createElement('div');
-  accountSeparator.className = 'menu-separator';
-  accountSeparator.setAttribute('role', 'separator');
-  // Fresh Start sits below Log Out, apart from everyday commands, because it permanently clears data.
-  const freshStartSeparator = document.createElement('div');
-  freshStartSeparator.className = 'menu-separator';
-  freshStartSeparator.setAttribute('role', 'separator');
-  fileDropdown.append(accountSeparator, menuCommand('Log Out', logOut), freshStartSeparator, menuCommand('Fresh Start...', openFreshStart));
 }
 
 function refreshApp() {
@@ -364,3 +370,32 @@ openArchivesButton.addEventListener('click', openArchives);
 document.querySelector('#createListButton').addEventListener('click', openCreateList);
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 closeArchives.addEventListener('click', () => archivesDialog.close());
+
+/** File → Highlight rows on hover, like SpendTracker and TaskList Stats; saved in this browser. */
+const ROW_HOVER_KEY = 'task-list-highlight-rows';
+
+function rowHoverEnabled() {
+  try {
+    return localStorage.getItem(ROW_HOVER_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+function applyRowHover() {
+  document.documentElement.classList.toggle('row-hover-off', !rowHoverEnabled());
+}
+
+function rowHoverMenuCommand() {
+  const button = menuCommand('Highlight rows on hover', () => {
+    try { localStorage.setItem(ROW_HOVER_KEY, String(!rowHoverEnabled())); } catch {}
+    applyRowHover();
+    closeFileMenu();
+  });
+  button.setAttribute('role', 'menuitemcheckbox');
+  button.setAttribute('aria-checked', String(rowHoverEnabled()));
+  button.firstElementChild.className = 'menu-check';
+  return button;
+}
+
+applyRowHover();
