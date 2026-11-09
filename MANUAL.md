@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.33
+# TaskList v1.7.34
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -69,12 +69,13 @@ wwwroot/
   milestones.css       responsive Light/Dark milestone celebration styling
   theme.js             persistent Light/Dark theme selection and startup theme application
   login.js             login/setup behavior
+  auth.css             login/setup styling, its own small stylesheet like the other apps
   style.css            general Win95-style application/login/search layout
   theme.css            Light/Dark color tokens; the only stylesheet with color values
   task-controls.css    task-specific Move/action control styling
   sw.js                removes the offline cache earlier releases installed
   manifest.webmanifest PWA metadata
-  icons/               PWA/favicon assets
+  icons/               favicon.svg, favicon.ico, and touch-180/192/512.png, the same names in every app
 ```
 
 There are no release-specific JavaScript override files. New behavior belongs in the normal module or stylesheet that owns it rather than in runtime wrappers, monkey patches, or release-specific shim files.
@@ -474,7 +475,7 @@ Most results are JSON; export is a ZIP and 204 responses have no body. Validatio
 | GET/HEAD | `/`, `/index.html` | Main TaskList application. Unauthenticated requests redirect to login. |
 | GET/HEAD | `/login.html` | Login/initial password setup. Already authenticated requests redirect to the main app. |
 | GET/HEAD | `/task/{universalId}` | Authenticated Universal-ID deep link. Serves the app shell; the browser locates the matching item across active/archived lists. |
-| GET/HEAD | Other frontend/PWA files in `wwwroot`, including CSS, JavaScript, `/sw.js`, `/manifest.webmanifest`, `/favicon.ico`, and `/icons/*` | Static application assets. Database, auth, logs and recovery files outside `wwwroot` are not static downloads. |
+| GET/HEAD | Other frontend/PWA files in `wwwroot`, including CSS, JavaScript, `/sw.js`, `/manifest.webmanifest`, and `/icons/*` | Static application assets. Database, auth, logs and recovery files outside `wwwroot` are not static downloads. |
 
 The authenticated app-shell fallback can serve HTML for other unmatched non-file GET/HEAD paths. Use only the listed API routes when expecting JSON; frontend asset availability does not mean new server endpoints are installed, so rebuild/restart after backend updates.
 
@@ -510,7 +511,13 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.33**.
+Current release: **v1.7.34**.
+
+### v1.7.34
+
+- The login and main pages share one set of page tags, the same in every app: a description, the iPhone home-screen and status-bar settings, the manifest, and icons.
+- Icons live in `/icons/` with the same names in every app: `favicon.svg`, `favicon.ico`, and `touch-180/192/512.png`. The manifest has an app ID, scope, and description.
+- The login page has its own small stylesheet (`auth.css`) like the other apps, and shows the server's version if `version.json` can't be read.
 
 ### v1.7.33
 

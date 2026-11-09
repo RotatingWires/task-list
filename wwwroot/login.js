@@ -54,23 +54,26 @@ async function request(url, options = {}) {
   throw new Error(message);
 }
 
-async function frontendReleaseVersion() {
+function applyReleaseLabel(version) {
+  if (version) titleAppName.replaceChildren('TaskList', Object.assign(document.createElement('span'), { className: 'title-version', textContent: ` v${version}` }));
+}
+
+/** The release from /version.json, like the other apps; the server's version if that file can't be read. */
+async function frontendReleaseVersion(fallback = '') {
   try {
     const response = await timedFetch('/version.json', { cache: 'no-store', credentials: 'same-origin' });
-    if (!response.ok) return '';
+    if (!response.ok) return fallback;
     const body = await response.json();
-    return body.version || '';
+    return body.version || fallback;
   } catch {
-    return '';
+    return fallback;
   }
 }
 
 async function initialize() {
-  const version = await frontendReleaseVersion();
-  if (version) titleAppName.replaceChildren('TaskList', Object.assign(document.createElement('span'), { className: 'title-version', textContent: ` v${version}` }));
-
   try {
     const status = await request('/api/auth/status');
+    applyReleaseLabel(await frontendReleaseVersion(status.version));
     if (status.authenticated) {
       window.location.replace(loginReturnUrl());
       return;

@@ -1,0 +1,88 @@
+/* Login and first-run setup screen, in its own stylesheet like the other apps' auth.css. Colors come from theme.css. */
+body.login-page { background: var(--desktop); }
+
+.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+.login-window {
+  width: min(470px, 100%);
+  height: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 20px);
+  overflow: auto;
+}
+.login-form {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+.login-intro {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.login-confirm {
+  display: grid;
+  gap: 8px;
+}
+.login-confirm[hidden] {
+  display: none;
+}
+.login-error {
+  min-height: 18px;
+  color: var(--error);
+  font-weight: 700;
+}
+.login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+.login-actions button {
+  min-width: 110px;
+}
+
+/* Keep a username field in the login form for iOS/password-manager heuristics
+   without adding a visible username step to this single-user app. */
+.password-autofill-username {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 650px) {
+  body.login-page {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    background: var(--desktop);
+  }
+
+  /* Login/setup is a compact dialog-like window, not the full-height app shell. */
+  .login-page .login-window {
+    display: block;
+    flex: none;
+    align-self: center;
+    width: min(470px, calc(100vw - 32px));
+    height: fit-content !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - max(32px, env(safe-area-inset-top)) - max(32px, env(safe-area-inset-bottom)));
+    overflow: auto;
+    border-top: 2px solid var(--classic-light);
+    border-left: 2px solid var(--classic-light);
+    border-right: 2px solid var(--black);
+    border-bottom: 2px solid var(--black);
+    box-shadow: 1px 1px 0 var(--classic-shadow);
+  }
+
+  .login-page .login-form {
+    height: auto;
+    min-height: 0;
+  }
+}
