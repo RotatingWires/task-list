@@ -1,0 +1,25 @@
+[Unit]
+Description=TaskList
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# Replace these paths and account before installation. Build first with:
+#   dotnet publish -c Release -o /opt/tasklist
+User=tasklist
+WorkingDirectory=/opt/tasklist
+EnvironmentFile=-/etc/tasklist.env
+ExecStart=/usr/bin/dotnet /opt/tasklist/TaskList.dll --urls http://127.0.0.1:8711 --data-dir /var/lib/tasklist
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Create /opt/tasklist/logs and make it writable by the service account.
+ReadWritePaths=/var/lib/tasklist /opt/tasklist/logs
+
+[Install]
+WantedBy=multi-user.target

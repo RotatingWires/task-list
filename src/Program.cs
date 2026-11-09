@@ -111,7 +111,6 @@ app.UseResponseCompression();
 var databasePath = DatabaseFiles.Locate(dataDir, "tasklist.db", "task-list.db", app.Logger);
 var connectionString = $"Data Source={databasePath};Foreign Keys=True";
 var authPath = Path.Combine(dataDir, "auth.json");
-const int PasswordIterations = 600_000;
 // Enforced here as well as by the page's maxlength, like SpendTracker.
 const int MaxListNameLength = 100, MaxListDescriptionLength = 1000, MaxTaskTitleLength = 500, MaxTaskDescriptionLength = 4000;
 var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
@@ -133,7 +132,7 @@ app.Logger.LogInformation("TaskList v{Version}, data folder {DataDirectory}.", a
 app.Logger.LogInformation("Database ready: journal_mode={JournalMode}, synchronous=NORMAL, busy_timeout=5000 ms.", journalMode);
 app.Logger.LogInformation("Sign-in keys: {Location}.", keyLocation);
 
-string? setupToken = PasswordConfigured(authPath) ? null : GenerateSetupToken();
+string? setupToken = PasswordAuth.IsConfigured(authPath) ? null : PasswordAuth.GenerateSetupToken();
 if (setupToken is not null)
 {
     Console.WriteLine();
@@ -198,31 +197,31 @@ app.UseStaticFiles();
 app.MapGet("/api/auth/status", (HttpContext context) => Results.Ok(new
 {
     version = appVersion,
-    configured = PasswordConfigured(authPath),
+    configured = PasswordAuth.IsConfigured(authPath),
     authenticated = context.User.Identity?.IsAuthenticated == true
 }));
 app.MapPost("/api/auth/setup", async (SetupRequest request, HttpContext context) =>
 {
-    if (PasswordConfigured(authPath)) return Results.Conflict(new { error = "A password is already configured." });
+    if (PasswordAuth.IsConfigured(authPath)) return Results.Conflict(new { error = "A password is already configured." });
     if (setupToken is null) return Results.Conflict(new { error = "No setup token is active. Restart TaskList to generate a new one." });
-    if (!SetupTokenMatches(setupToken, request.SetupToken)) return Results.Json(new { error = "Invalid setup token." }, statusCode: StatusCodes.Status401Unauthorized);
-    var passwordError = ValidateNewPassword(request.Password, request.ConfirmPassword);
+    if (!PasswordAuth.SetupTokenMatches(setupToken, request.SetupToken)) return Results.Json(new { error = "Invalid setup token." }, statusCode: StatusCodes.Status401Unauthorized);
+    var passwordError = PasswordAuth.ValidateNewPassword(request.Password, request.ConfirmPassword);
     if (passwordError is not null) return Results.BadRequest(new { error = passwordError });
-    SavePassword(authPath, request.Password!);
+    PasswordAuth.Save(authPath, request.Password!);
     setupToken = null;
-    await SignInOwner(context);
+    await PasswordAuth.SignInOwner(context);
     return Results.Ok(new { authenticated = true });
 }).RequireRateLimiting("auth");
 app.MapPost("/api/auth/login", async (LoginRequest request, HttpContext context) =>
 {
-    if (!PasswordConfigured(authPath)) return Results.Conflict(new { error = "No password has been configured yet." });
-    if (string.IsNullOrEmpty(request.Password) || !VerifyPassword(authPath, request.Password, out var needsRehash)) return Results.Unauthorized();
+    if (!PasswordAuth.IsConfigured(authPath)) return Results.Conflict(new { error = "No password has been configured yet." });
+    if (string.IsNullOrEmpty(request.Password) || !PasswordAuth.Verify(authPath, request.Password, out var needsRehash)) return Results.Unauthorized();
     if (needsRehash)
     {
-        SavePassword(authPath, request.Password);
-        app.Logger.LogInformation("Upgraded the saved password hash to {Iterations} PBKDF2 iterations.", PasswordIterations);
+        PasswordAuth.Save(authPath, request.Password);
+        app.Logger.LogInformation("Upgraded the saved password hash to {Iterations} PBKDF2 iterations.", PasswordAuth.Iterations);
     }
-    await SignInOwner(context);
+    await PasswordAuth.SignInOwner(context);
     return Results.Ok(new { authenticated = true });
 }).RequireRateLimiting("auth");
 app.MapPost("/api/auth/logout", async (HttpContext context) =>
@@ -957,40 +956,6 @@ static async Task<int> InsertImportedChildren(SqliteConnection connection, Sqlit
     return inserted;
 }
 
-static string GenerateSetupToken() { var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(8)); return $"{raw[..4]}-{raw[4..8]}-{raw[8..12]}-{raw[12..16]}"; }
-static bool SetupTokenMatches(string expected, string? supplied) { if (string.IsNullOrWhiteSpace(supplied)) return false; var expectedValue = expected.Replace("-", string.Empty, StringComparison.Ordinal); var suppliedValue = Regex.Replace(supplied, @"[\s-]", string.Empty); return string.Equals(expectedValue, suppliedValue, StringComparison.OrdinalIgnoreCase); }
-static bool PasswordConfigured(string authPath) => File.Exists(authPath);
-static string? ValidateNewPassword(string? password, string? confirmation) { if (string.IsNullOrEmpty(password) || password.Length < 8) return "Password must be at least 8 characters long."; if (password != confirmation) return "Passwords do not match."; return null; }
-static void SavePassword(string authPath, string password)
-{
-    var salt = RandomNumberGenerator.GetBytes(16);
-    var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, PasswordIterations, HashAlgorithmName.SHA256, 32);
-    // Write beside the target and rename, so an interrupted rehash cannot leave a truncated auth.json.
-    var temporaryPath = authPath + ".tmp";
-    File.WriteAllText(temporaryPath, JsonSerializer.Serialize(new PasswordFile(1, PasswordIterations, Convert.ToBase64String(salt), Convert.ToBase64String(hash))));
-    File.Move(temporaryPath, authPath, overwrite: true);
-}
-static bool VerifyPassword(string authPath, string password, out bool needsRehash)
-{
-    needsRehash = false;
-    try
-    {
-        var auth = JsonSerializer.Deserialize<PasswordFile>(File.ReadAllText(authPath));
-        if (auth is null || auth.Version != 1 || auth.Iterations < 1) return false;
-        var salt = Convert.FromBase64String(auth.Salt); var expected = Convert.FromBase64String(auth.Hash);
-        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, auth.Iterations, HashAlgorithmName.SHA256, expected.Length);
-        if (!CryptographicOperations.FixedTimeEquals(actual, expected)) return false;
-        needsRehash = auth.Iterations < PasswordIterations;
-        return true;
-    }
-    catch { return false; }
-}
-static async Task SignInOwner(HttpContext context)
-{
-    var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "owner"), new Claim(ClaimTypes.Name, "Owner")], CookieAuthenticationDefaults.AuthenticationScheme);
-    await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), new AuthenticationProperties { IsPersistent = true, AllowRefresh = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30) });
-}
-
 // Signing in from the home page goes to plain /login.html, like NewsReview; only a deep link keeps a ReturnUrl.
 static string LoginRedirect(RedirectContext<CookieAuthenticationOptions> context) =>
     (context.Request.Path.Value is null or "/" or "/index.html") && !context.Request.QueryString.HasValue ? "/login.html" : context.RedirectUri;
@@ -1003,7 +968,6 @@ record UpdateListRequest(string? Name, string? Description);
 record FreshStartRequest(string? Confirmation, Dictionary<string, bool>? Selections);
 record LoginRequest(string? Password);
 record SetupRequest(string? SetupToken, string? Password, string? ConfirmPassword);
-record PasswordFile(int Version, int Iterations, string Salt, string Hash);
 record CreateTaskRequest(string? Title, string? Description);
 record UpdateTaskRequest(string? Title, string? Description, string? Status);
 record MoveTaskRequest(long TargetListId);

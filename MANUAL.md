@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.31
+# TaskList v1.7.32
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -38,6 +38,10 @@ src/
   FreshStart.cs        selective Fresh start: summary, clearing chosen data, recovery-backup removal, compaction
   TaskEventBackfill.cs legacy history events for current tasks, shared by startup and Fresh start
   SingleFileLogger.cs  console/file logging with in-place 10 MiB truncation
+  PasswordAuth.cs      setup token, password file, and sign-in cookie (the same file in all four apps)
+appsettings.json       listen address and log level
+deploy/tasklist.service
+                       example systemd unit
 README.md              setup, architecture, behavior, security, and release notes
 
 data/                  runtime/private data
@@ -102,7 +106,7 @@ When Task Scheduler launches `TaskList.exe` directly, add the same `--urls "http
 
 The database is stored at `data\tasklist.db` and authentication settings are stored at `data\auth.json`. Releases before v1.7.22 named the database `task-list.db`; TaskList renames it on its first start (if another program, such as a running TaskList Stats on Windows, has it open, TaskList keeps the old name for that run and logs a warning). Exports made before v1.7.22 still restore.
 
-To keep the data somewhere else, pass `--data-dir`, set `TaskList:DataDirectory` in an `appsettings.json`, or set `TASKLIST_DATA_DIR`.
+To keep the data somewhere else, pass `--data-dir`, set `TaskList:DataDirectory` in `appsettings.json`, or set `TASKLIST_DATA_DIR`.
 
 | Environment variable | Purpose |
 | --- | --- |
@@ -115,6 +119,12 @@ To keep the data somewhere else, pass `--data-dir`, set `TaskList:DataDirectory`
 | `--data-dir PATH` | Data folder (database, password, sign-in keys, recovery backups) |
 | `--version` | Print the version and exit |
 | `backup --output FILE [--database FILE]` | Consistent SQLite copy of `data/tasklist.db` (or `--database`), checked with `PRAGMA integrity_check`; refuses to overwrite an existing file |
+
+### Run as a Linux service
+
+`deploy/tasklist.service` is a systemd template, not an installer, like NewsReview's: build with `dotnet publish -c Release -o /opt/tasklist`, create the service account, `/var/lib/tasklist` (the data folder) and `/opt/tasklist/logs`, adjust `User`, `WorkingDirectory`, `ExecStart`, and `ReadWritePaths` to match, then install and enable it. It listens on loopback at port 8711; change its `--urls` for LAN access, and find the first-run setup token in the journal.
+
+`appsettings.json` holds the default listen address (`Urls`) and log level, the same keys in every app. `--urls` and `ASPNETCORE_URLS` override it.
 
 ### SQLite performance settings
 
@@ -500,7 +510,13 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.31**.
+Current release: **v1.7.32**.
+
+### v1.7.32
+
+- Sign-in code lives in `src/PasswordAuth.cs`, the same file in all four apps. Passwords are capped at 1024 characters and `auth.json` is saved readable only by its owner on Linux and macOS.
+- New `appsettings.json` with the listen address and log level, the same keys in every app.
+- New `deploy/tasklist.service` systemd template, like NewsReview's.
 
 ### v1.7.31
 
