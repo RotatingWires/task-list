@@ -48,7 +48,7 @@ exportData.addEventListener('click', async () => {
     if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('application/zip'))
       throw new Error('The server did not return a ZIP backup. Rebuild and restart TaskList if it has just been updated.');
     downloadUrl = URL.createObjectURL(await response.blob());
-    const link = document.createElement('a');
+    const link = el('a');
     link.href = downloadUrl;
     link.download = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1]
       ?? 'tasklist-backup.zip';

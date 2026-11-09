@@ -142,8 +142,7 @@ function initializeMouseHoverDetection() {
 }
 
 function initializeTaskInfoTouchHelp() {
-  const popup = document.createElement('div');
-  popup.className = 'tap-help-tooltip';
+  const popup = el('div', 'tap-help-tooltip');
   popup.hidden = true;
   infoDialog.append(popup);
 

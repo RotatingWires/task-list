@@ -1,6 +1,15 @@
 'use strict';
 
 // $ and $$ take CSS selectors, the same helpers as TaskList Stats, NewsReview, and SpendTracker.
+/** Creates an element with an optional class and text; buttons get type="button". The same helper in every app. */
+function el(tag, className = '', text = '') {
+  const node = document.createElement(tag);
+  if (tag === 'button') node.type = 'button';
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+}
+
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -312,8 +321,7 @@ confirmDialog.addEventListener('close', () => {
 });
 
 function actionButton(label, handler, disabled = false) {
-  const button = document.createElement('button');
-  button.type = 'button';
+  const button = el('button');
   button.textContent = label;
   button.disabled = disabled;
   button.addEventListener('click', handler);

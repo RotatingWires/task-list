@@ -58,9 +58,7 @@ function countDescendants(item) {
 function createDescriptionIndicator(item, sourceItems = tasks) {
   if (typeof item.description !== 'string' || !item.description.trim()) return null;
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'task-description-indicator';
+  const button = el('button', 'task-description-indicator');
   button.title = 'Has description — open Task Information';
   button.setAttribute('aria-label', `Open description for task #${item.displayId}`);
 
@@ -84,7 +82,7 @@ function createDescriptionIndicator(item, sourceItems = tasks) {
 
 function createTaskRow(item, depth) {
   const isSubtask = depth > 0;
-  const row = document.createElement('tr');
+  const row = el('tr');
   row.classList.add(`status-${item.status.toLowerCase()}`);
   if (isSubtask) row.classList.add('subtask-row');
   row.dataset.depth = String(depth);
@@ -92,26 +90,21 @@ function createTaskRow(item, depth) {
   row.style.setProperty('--tree-indent', `${depth * 18}px`);
   row.style.setProperty('--row-indent', `${depth * 12}px`);
 
-  const idCell = document.createElement('td');
+  const idCell = el('td');
   idCell.dataset.label = 'ID';
 
-  const idButton = document.createElement('button');
-  idButton.type = 'button';
-  idButton.className = 'task-id-link';
-  idButton.textContent = `#${item.displayId}`;
+  const idButton = el('button', 'task-id-link', `#${item.displayId}`);
   idButton.title = `View information for ${isSubtask ? 'subtask' : 'task'} #${item.displayId}`;
   idButton.addEventListener('click', () => openInfo(item));
   idCell.append(idButton);
 
-  const titleCell = document.createElement('td');
+  const titleCell = el('td');
   titleCell.dataset.label = 'Task';
   titleCell.className = 'task-title';
 
-  const titleContent = document.createElement('span');
-  titleContent.className = 'task-title-content';
+  const titleContent = el('span', 'task-title-content');
 
-  const titleText = document.createElement('span');
-  titleText.className = 'task-title-text';
+  const titleText = el('span', 'task-title-text');
   titleText.textContent = item.title;
   titleContent.append(titleText);
 
@@ -119,12 +112,9 @@ function createTaskRow(item, depth) {
   if (descriptionIndicator) titleContent.append(descriptionIndicator);
 
   if (isSubtask) {
-    const tree = document.createElement('span');
-    tree.className = 'task-title-tree';
+    const tree = el('span', 'task-title-tree');
 
-    const marker = document.createElement('span');
-    marker.className = 'task-tree-marker';
-    marker.textContent = '└─';
+    const marker = el('span', 'task-tree-marker', '└─');
 
     tree.append(marker, titleContent);
     titleCell.append(tree);
@@ -132,11 +122,11 @@ function createTaskRow(item, depth) {
     titleCell.append(titleContent);
   }
 
-  const statusCell = document.createElement('td');
+  const statusCell = el('td');
   statusCell.dataset.label = 'Status';
   statusCell.textContent = item.status;
 
-  const actionsCell = document.createElement('td');
+  const actionsCell = el('td');
   actionsCell.dataset.label = 'Actions';
   actionsCell.className = 'task-actions';
   actionsCell.append(
@@ -165,15 +155,12 @@ function closeTaskActionMenus(except = null) {
 }
 
 function taskActionMenuButton(label, handler, disabled = false) {
-  const button = document.createElement('button');
-  button.type = 'button';
+  const button = el('button');
   button.disabled = disabled;
   button.setAttribute('role', 'menuitem');
 
-  const spacer = document.createElement('span');
-  spacer.className = 'menu-check';
-  const text = document.createElement('span');
-  text.className = 'menu-label';
+  const spacer = el('span', 'menu-check');
+  const text = el('span', 'menu-label');
   text.textContent = label;
   button.append(spacer, text);
 
@@ -192,12 +179,10 @@ function configureHoldAction(button, actionLabel, onActivate) {
   button.title = `Hold for ${TASK_ACTION_HOLD_MS} ms to ${actionLabel.toLowerCase()}`;
   button.setAttribute('aria-label', `Hold ${actionLabel} for ${TASK_ACTION_HOLD_MS} milliseconds`);
 
-  const progress = document.createElement('span');
-  progress.className = 'task-hold-progress';
+  const progress = el('span', 'task-hold-progress');
   progress.setAttribute('aria-hidden', 'true');
 
-  const label = document.createElement('span');
-  label.className = 'task-hold-label';
+  const label = el('span', 'task-hold-label');
   label.textContent = actionLabel;
   button.replaceChildren(progress, label);
 
@@ -378,11 +363,9 @@ function createTaskSplitAction(item) {
 }
 
 function createSplitAction(primaryLabel, activatePrimary, actions, menuLabel, hold = true, disabled = false) {
-  const group = document.createElement('div');
-  group.className = 'task-split-group';
+  const group = el('div', 'task-split-group');
 
-  const primary = document.createElement('button');
-  primary.type = 'button';
+  const primary = el('button');
   primary.textContent = primaryLabel;
   primary.classList.add('task-primary-action');
   primary.disabled = disabled;
@@ -390,18 +373,14 @@ function createSplitAction(primaryLabel, activatePrimary, actions, menuLabel, ho
   if (hold) configureHoldAction(primary, primaryLabel, activatePrimary);
   else primary.addEventListener('click', activatePrimary);
 
-  const arrow = document.createElement('button');
-  arrow.type = 'button';
-  arrow.className = 'task-action-arrow';
-  arrow.textContent = '▼';
+  const arrow = el('button', 'task-action-arrow', '▼');
   arrow.title = 'More actions';
   arrow.setAttribute('aria-label', menuLabel);
   arrow.disabled = disabled;
   arrow.setAttribute('aria-haspopup', 'menu');
   arrow.setAttribute('aria-expanded', 'false');
 
-  const menu = document.createElement('div');
-  menu.className = 'menu-dropdown task-action-dropdown';
+  const menu = el('div', 'menu-dropdown task-action-dropdown');
   menu.setAttribute('role', 'menu');
   menu.hidden = true;
 
@@ -589,15 +568,12 @@ function setMoveTargetList(listId) {
 function renderMoveListChoices(destinations) {
   moveListDropdown.replaceChildren();
   for (const list of destinations) {
-    const option = document.createElement('button');
-    option.type = 'button';
+    const option = el('button');
     option.setAttribute('role', 'menuitemradio');
     option.dataset.listId = String(list.id);
 
-    const check = document.createElement('span');
-    check.className = 'menu-check';
-    const label = document.createElement('span');
-    label.className = 'menu-label';
+    const check = el('span', 'menu-check');
+    const label = el('span', 'menu-label');
     label.textContent = list.name;
     label.title = list.description || list.name;
     option.append(check, label);

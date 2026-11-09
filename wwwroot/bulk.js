@@ -63,7 +63,7 @@ function configureTaskSelection(row, item) {
   row.classList.toggle('task-selected', selectedTaskIds.has(item.universalId));
   row.setAttribute('aria-selected', String(selectedTaskIds.has(item.universalId)));
   row.tabIndex = 0;
-  const checkbox = document.createElement('input');
+  const checkbox = el('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'task-selection-check retro-check';
   checkbox.checked = selectedTaskIds.has(item.universalId);

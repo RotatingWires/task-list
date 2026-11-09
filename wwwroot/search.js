@@ -317,18 +317,15 @@ function compareSearchCreatedNewest(a, b) {
 }
 
 function addSearchListFilterChoice(value, label) {
-  const button = document.createElement('button');
-  button.type = 'button';
+  const button = el('button');
   button.setAttribute('role', 'menuitemradio');
   button.setAttribute('aria-checked', value === searchListFilterValue ? 'true' : 'false');
   button.dataset.value = value;
 
-  const check = document.createElement('span');
-  check.className = 'menu-check';
+  const check = el('span', 'menu-check');
   check.textContent = value === searchListFilterValue ? '•' : '';
 
-  const text = document.createElement('span');
-  text.className = 'menu-label';
+  const text = el('span', 'menu-label');
   text.textContent = label;
 
   button.append(check, text);
@@ -394,53 +391,39 @@ function renderFilteredSearchResults() {
   searchResults.replaceChildren();
 
   if (!visibleResults.length) {
-    const empty = document.createElement('div');
-    empty.className = 'search-placeholder';
-    empty.textContent = 'No matching tasks or subtasks.';
+    const empty = el('div', 'search-placeholder', 'No matching tasks or subtasks.');
     searchResults.append(empty);
     return;
   }
 
   for (const result of visibleResults) {
     const { item, list, depth } = result;
-    const row = document.createElement('div');
-    row.className = 'search-result-row';
+    const row = el('div', 'search-result-row');
 
-    const details = document.createElement('div');
-    details.className = 'search-result-details';
+    const details = el('div', 'search-result-details');
 
-    const heading = document.createElement('div');
-    heading.className = 'search-result-heading';
+    const heading = el('div', 'search-result-heading');
 
-    const location = document.createElement('button');
-    location.type = 'button';
-    location.className = 'task-id-link search-result-location';
-    location.textContent = `${list.name} — #${item.displayId}`;
+    const location = el('button', 'task-id-link search-result-location', `${list.name} — #${item.displayId}`);
     location.title = `View information for ${depth > 0 ? 'subtask' : 'task'} #${item.displayId}`;
     location.addEventListener('click', () => openInfo(item, result.sourceItems));
 
-    const kind = document.createElement('span');
-    kind.className = 'search-result-kind';
+    const kind = el('span', 'search-result-kind');
     kind.textContent = depth > 0 ? 'Subtask' : 'Task';
 
     heading.append(location, kind);
 
-    const title = document.createElement('div');
-    title.className = 'search-result-title-text';
+    const title = el('div', 'search-result-title-text');
     title.textContent = item.title;
 
-    const description = document.createElement('div');
-    description.className = 'search-result-description';
+    const description = el('div', 'search-result-description');
     description.textContent = item.description || 'No description';
 
-    const meta = document.createElement('div');
-    meta.className = 'search-result-meta';
-    meta.textContent = `${item.status} • Created ${formatDate(item.createdAt)}`;
+    const meta = el('div', 'search-result-meta', `${item.status} • Created ${formatDate(item.createdAt)}`);
 
     details.append(heading, title, description, meta);
 
-    const actions = document.createElement('div');
-    actions.className = 'search-result-actions';
+    const actions = el('div', 'search-result-actions');
     actions.append(actionButton('View', () => viewSearchResult(result)));
 
     row.append(details, actions);

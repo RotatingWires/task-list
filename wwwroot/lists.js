@@ -40,18 +40,15 @@ function renderFileMenu() {
   fileDropdown.replaceChildren();
 
   for (const list of lists) {
-    const button = document.createElement('button');
-    button.type = 'button';
+    const button = el('button');
     button.setAttribute('role', 'menuitemradio');
     button.setAttribute('aria-checked', list.id === currentListId ? 'true' : 'false');
     button.className = 'list-choice';
 
-    const check = document.createElement('span');
-    check.className = 'menu-check';
+    const check = el('span', 'menu-check');
     check.textContent = list.id === currentListId ? '•' : '';
 
-    const label = document.createElement('span');
-    label.className = 'menu-label';
+    const label = el('span', 'menu-label');
     label.textContent = list.name;
     label.title = list.description || list.name;
 
@@ -60,16 +57,14 @@ function renderFileMenu() {
     fileDropdown.append(button);
   }
 
-  const separator = document.createElement('div');
-  separator.className = 'menu-separator';
+  const separator = el('div', 'menu-separator');
   separator.setAttribute('role', 'separator');
   fileDropdown.append(separator);
 
   // The same groups and order as the other apps' File menus: everyday commands, Import/Export..., display options,
   // Log Out, then Fresh Start... apart from everything else because it permanently clears data.
   const separator2 = () => {
-    const line = document.createElement('div');
-    line.className = 'menu-separator';
+    const line = el('div', 'menu-separator');
     line.setAttribute('role', 'separator');
     return line;
   };
@@ -104,8 +99,7 @@ async function logOut() {
 }
 
 function menuCommand(label, handler) {
-  const button = document.createElement('button');
-  button.type = 'button';
+  const button = el('button');
   button.setAttribute('role', 'menuitem');
   button.append(
     document.createElement('span'),
@@ -205,28 +199,22 @@ function renderManageLists() {
   manageListsBody.replaceChildren();
 
   for (const list of lists) {
-    const row = document.createElement('div');
-    row.className = 'manage-list-row';
+    const row = el('div', 'manage-list-row');
 
-    const details = document.createElement('div');
-    details.className = 'manage-list-details';
+    const details = el('div', 'manage-list-details');
 
-    const heading = document.createElement('strong');
+    const heading = el('strong');
     heading.textContent = list.name;
     if (list.id === currentListId) heading.append(' (current)');
 
-    const description = document.createElement('div');
-    description.className = 'manage-list-description';
+    const description = el('div', 'manage-list-description');
     description.textContent = list.description || 'No description';
 
-    const count = document.createElement('div');
-    count.className = 'manage-list-count';
-    count.textContent = `${list.taskCount} task${list.taskCount === 1 ? '' : 's'}`;
+    const count = el('div', 'manage-list-count', `${list.taskCount} task${list.taskCount === 1 ? '' : 's'}`);
 
     details.append(heading, description, count);
 
-    const actions = document.createElement('div');
-    actions.className = 'manage-list-actions';
+    const actions = el('div', 'manage-list-actions');
     appendActions(actions, [
       ['Edit', () => openEditList(list)],
       ['Archive', () => archiveList(list), lists.length === 1],
@@ -266,32 +254,24 @@ function renderArchives() {
   archivesBody.replaceChildren();
 
   if (!archivedLists.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    empty.textContent = 'No archived lists.';
+    const empty = el('div', 'empty-state', 'No archived lists.');
     archivesBody.append(empty);
     return;
   }
 
   for (const list of archivedLists) {
-    const row = document.createElement('div');
-    row.className = 'manage-list-row';
+    const row = el('div', 'manage-list-row');
 
-    const details = document.createElement('div');
-    details.className = 'manage-list-details';
-    const heading = document.createElement('strong');
+    const details = el('div', 'manage-list-details');
+    const heading = el('strong');
     heading.textContent = list.name;
     if (list.id === currentListId) heading.append(' (current)');
-    const description = document.createElement('div');
-    description.className = 'manage-list-description';
+    const description = el('div', 'manage-list-description');
     description.textContent = list.description || 'No description';
-    const count = document.createElement('div');
-    count.className = 'manage-list-count';
-    count.textContent = `${list.taskCount} task${list.taskCount === 1 ? '' : 's'}`;
+    const count = el('div', 'manage-list-count', `${list.taskCount} task${list.taskCount === 1 ? '' : 's'}`);
     details.append(heading, description, count);
 
-    const actions = document.createElement('div');
-    actions.className = 'manage-list-actions';
+    const actions = el('div', 'manage-list-actions');
     appendActions(actions, [
       ['View', () => viewArchivedList(list)],
       ['Restore', () => restoreList(list)]
