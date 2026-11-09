@@ -364,7 +364,7 @@ function configureSearchListFilter(results, desiredValue = 'all') {
   for (const list of lists) {
     const count = counts.get(list.id);
     if (!count) continue;
-    addSearchListFilterChoice(String(list.id), `${list.name} (${count.toLocaleString('en-US')})`);
+    addSearchListFilterChoice(String(list.id), `${list.name} (${count.toLocaleString()})`);
   }
 
   if (desiredValue !== 'all') {
@@ -503,7 +503,7 @@ keywordSearchForm.addEventListener('submit', async event => {
     const listCount = new Set(matches.map(result => result.list.id)).size;
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} match${matches.length === 1 ? '' : 'es'} across ${listCount.toLocaleString('en-US')} list${listCount === 1 ? '' : 's'}.`,
+      `${matches.length.toLocaleString()} match${matches.length === 1 ? '' : 'es'} across ${listCount.toLocaleString()} list${listCount === 1 ? '' : 's'}.`,
       desiredFilter
     );
   } catch (error) {
@@ -539,7 +539,7 @@ dateSearchForm.addEventListener('submit', async event => {
 
     renderSearchResults(
       matches,
-      `${matches.length.toLocaleString('en-US')} item${matches.length === 1 ? '' : 's'} created in ${rangeDescription} across ${listCount.toLocaleString('en-US')} list${listCount === 1 ? '' : 's'}.`,
+      `${matches.length.toLocaleString()} item${matches.length === 1 ? '' : 's'} created in ${rangeDescription} across ${listCount.toLocaleString()} list${listCount === 1 ? '' : 's'}.`,
       desiredFilter
     );
   } catch (error) {

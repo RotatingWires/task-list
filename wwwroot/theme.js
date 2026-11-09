@@ -1,5 +1,5 @@
 /*
- * Light/dark theme and View → Use Retro Font. The same file in TaskList, TaskList Stats, NewsReview, and SpendTracker,
+ * Light/dark theme and View > Use Retro Font. The same file in TaskList, TaskList Stats, NewsReview, and SpendTracker,
  * loaded at the top of every page (login included) so the page never flashes the wrong theme or font.
  */
 (() => {

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.30
+# TaskList v1.7.31
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -163,13 +163,13 @@ When TaskList creates a fresh database, it records a pending reminder outside SQ
 
 ## Themes
 
-Use **View → Theme** to choose either **Light** or **Dark**. The choice is stored in `localStorage` and applies to both the main TaskList UI and the login/setup screen.
+Use **View > Theme** to choose either **Light** or **Dark**. The choice is stored in `localStorage` and applies to both the main TaskList UI and the login/setup screen.
 
 The dark theme keeps the same Windows 95 raised/recessed visual language rather than replacing it with a modern flat theme. Every color is a token in `wwwroot/theme.css`, defined once for Light and once for Dark with the token names TaskList Stats, NewsReview, and SpendTracker also use; `style.css`, `task-controls.css`, `milestones.css`, and the scripts contain no color values except the two browser `theme-color` values `theme.js` writes to the page metadata. `wwwroot/theme.js` applies the saved choice before the UI fully renders so the page does not briefly flash the wrong theme.
 
 There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
 
-**View → Use Retro Font** switches the whole app, including the login page and chart labels, to W95FA, an open-source recreation of the Windows 95 MS Sans Serif font bundled in `wwwroot/fonts`, so the interface looks the same on Windows, Linux, macOS, Android, and iOS without installing fonts. It is off by default and saved per browser, separately for each app.
+**View > Use Retro Font** switches the whole app, including the login page and chart labels, to W95FA, an open-source recreation of the Windows 95 MS Sans Serif font bundled in `wwwroot/fonts`, so the interface looks the same on Windows, Linux, macOS, Android, and iOS without installing fonts. It is off by default and saved per browser, separately for each app.
 
 Help opens About directly. Its 16px text and 1.5 line spacing match TaskList Stats Help, with about.lehighradio.com and the application version at the bottom.
 
@@ -214,7 +214,7 @@ Continuing milestones start at 10,500 for global events, recorded events, and Un
 
 TaskList maintains lightweight milestone counters with SQLite triggers as events are recorded. Reaching a qualifying threshold creates one pending notification row rather than rescanning all history after every action. Counter state is rebuilt from the event log at startup, before the triggers are installed, so existing history is the baseline and only future inserts can create new notifications. Counter rebuilding preserves progress across restarts.
 
-Global and per-list event milestones count every recorded event, including events whose date is “Unknown” or invalid. Milestones advance in event-record order, matching Stats, so importing an older date does not reorder the counters. Missing dates display as unknown rather than becoming a made-up timestamp. Yearly milestones need a valid date and use UTC years for timestamps; date-only imports use their written calendar year. Universal-ID milestones track every allocated ID. Moving a task does not move its original creation event to another list, and renaming a list preserves its ID and milestone progress. Startup rebuilds counters without replaying past milestones; already pending notices remain queued.
+Global and per-list event milestones count every recorded event, including events whose date is "Unknown" or invalid. Milestones advance in event-record order, matching Stats, so importing an older date does not reorder the counters. Missing dates display as unknown rather than becoming a made-up timestamp. Yearly milestones need a valid date and use UTC years for timestamps; date-only imports use their written calendar year. Universal-ID milestones track every allocated ID. Moving a task does not move its original creation event to another list, and renaming a list preserves its ID and milestone progress. Startup rebuilds counters without replaying past milestones; already pending notices remain queued.
 
 The TaskList frontend calls authenticated `POST /api/milestones/consume` at startup and after successful writes while its page is visible and focused, and checks again when it regains focus. A write during an in-flight check schedules another check. If focus is lost after a response arrives, received notices stay in page memory for display on return. One atomic `DELETE ... RETURNING` removes and returns all pending notices. If several milestones are reached by the same action, they are returned together and shown in one dialog with one confetti animation. Concurrent TaskList tabs cannot consume the same row twice. Pending notices survive browser/server restarts until consumed; consumed notices are not replayed on restart or subsequent task actions. Consumption happens before display, so a lost response or a browser closing at that point can prevent a popup from being seen.
 
@@ -300,7 +300,7 @@ The hierarchy metrics are calculated against the task's actual source list/tree,
 
 ## Search
 
-**File → Search...** supports:
+**File > Search...** supports:
 
 - fuzzy keyword/title/description search across active lists
 - creation-date and time ranges combined in one field, matching NewsReview
@@ -312,7 +312,7 @@ The hierarchy metrics are calculated against the task's actual source list/tree,
 
 The Search list filter is intentionally scoped to one open Search window. It is retained when another search is run while the dialog remains open, but resets to **All lists** after Search is closed and reopened. If the previously selected list has no matches in the next result set, the filter falls back to **All lists**.
 
-Use the single **Date/time range** field under Search → Date/Time: `10/3 - 10/8, 9am - 9pm`. The comma separates the date range from the time range. Either range alone is accepted, such as `10/3 - 10/8` or `9am - 9pm`.
+Use the single **Date/time range** field under Search > Date/Time: `10/3 - 10/8, 9am - 9pm`. The comma separates the date range from the time range. Either range alone is accepted, such as `10/3 - 10/8` or `9am - 9pm`.
 
 Each date accepts `m/d`, `m/d/yy`, or `m/d/yyyy`; dates without a year use the current year. Times keep flexible 12-hour parsing, and times without AM/PM are treated as AM. A normal hyphen, en dash, or em dash can separate range endpoints. An overnight window such as `10pm - 2am` matches late-night and early-morning times on each selected date. Time-only searches cover all dates; time filters exclude tasks with an unknown creation time, including date-only imports. The same single field is used on desktop and mobile.
 
@@ -375,7 +375,7 @@ Source reference: https://community.obsidian.md/plugins/obsidian-tasks-plugin
 
 ## Fresh start
 
-**File > Fresh Start...**, at the bottom of the File menu below Log Out so it is kept apart from everyday commands, clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start and uses the same dialog size, frame, title bar with a close button, footer, and **Reset selected data** button, with Win95 check boxes like SpendTracker's: tick the items to clear, type `RESET SELECTED`, and choose **Reset selected data**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
+**File > Fresh Start...**, at the bottom of the File menu below Log Out so it is kept apart from everyday commands, clears only what you choose and then compacts the database so the space goes back to the disk. It works like NewsReview's Fresh start and uses the same dialog size, frame, title bar with a close button, footer, and **Reset Selected Data** button, with Win95 check boxes like SpendTracker's: tick the items to clear, type `RESET SELECTED`, and choose **Reset Selected Data**. Each choice shows how much it holds (tasks, lists, history events, or backup files and size), and the dialog shows the current database size. History of deleted tasks and pre-restore recovery backups are ticked to start with; nothing that removes a current task is.
 
 | Choice | What is cleared |
 | --- | --- |
@@ -500,7 +500,13 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.30**.
+Current release: **v1.7.31**.
+
+### v1.7.31
+
+- Wording matches the other apps: menu paths are written **File > Import/Export...**, only "..." and straight quotes are used.
+- Counts in Manage Lists, Archives and Search use the browser's number format like the rest of the app.
+- **Reset Selected Data** is in Title Case like the other buttons.
 
 ### v1.7.30
 
@@ -519,7 +525,7 @@ Current release: **v1.7.30**.
 
 ### v1.7.27
 
-- **View → Use Retro Font**: the whole app, login page and chart labels included, can use W95FA, an open-source recreation of the Windows 95 font bundled with the app (SIL Open Font License, `wwwroot/fonts/OFL.txt`), so it looks the same on Windows, Linux, macOS, Android, and iOS. Off by default; saved per browser.
+- **View > Use Retro Font**: the whole app, login page and chart labels included, can use W95FA, an open-source recreation of the Windows 95 font bundled with the app (SIL Open Font License, `wwwroot/fonts/OFL.txt`), so it looks the same on Windows, Linux, macOS, Android, and iOS. Off by default; saved per browser.
 
 ### v1.7.26
 
@@ -582,7 +588,7 @@ Current release: **v1.7.30**.
 
 ### v1.7.13
 
-- The Fresh start dialog puts **Cancel** first and **Reset selected data** on the right, the same order as every other dialog in TaskList, TaskList Stats, NewsReview, and SpendTracker.
+- The Fresh start dialog puts **Cancel** first and **Reset Selected Data** on the right, the same order as every other dialog in TaskList, TaskList Stats, NewsReview, and SpendTracker.
 - On touch screens, text boxes use 16px text so phones do not zoom in when one is focused.
 
 ### v1.7.12
@@ -598,7 +604,7 @@ Current release: **v1.7.30**.
 ### v1.7.10
 
 - **Fresh Start...** moves to the bottom of the File menu, below Log Out.
-- The Fresh Start dialog matches NewsReview's Fresh start dialog (size, frame, title bar with ×, footer, and a **Reset selected data** button) and uses Win95 check boxes like SpendTracker's.
+- The Fresh Start dialog matches NewsReview's Fresh start dialog (size, frame, title bar with ×, footer, and a **Reset Selected Data** button) and uses Win95 check boxes like SpendTracker's.
 
 ### v1.7.9
 
@@ -968,7 +974,7 @@ Current release: **v1.7.30**.
 
 ### v1.3.x highlights
 
-- Add list archives, Move Task, Universal-ID deep links, Search → View highlighting, advanced date/time search, network-first PWA behavior, full-viewport layout, and the current recursive schema.
+- Add list archives, Move Task, Universal-ID deep links, Search > View highlighting, advanced date/time search, network-first PWA behavior, full-viewport layout, and the current recursive schema.
 - Remove legacy query-string deep links, old migration helpers, and release-specific compatibility code.
 
 Older release-by-release details remain available in the Git commit history and version tags.

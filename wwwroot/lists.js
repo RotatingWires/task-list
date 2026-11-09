@@ -3,7 +3,7 @@
 async function loadStats() {
   const stats = await api('/api/stats');
   highestUniversalId = Number(stats.highestUniversalId) || 0;
-  manageListsUidTotal.textContent = `${highestUniversalId.toLocaleString('en-US')} lifetime entries counting deletions`;
+  manageListsUidTotal.textContent = `${highestUniversalId.toLocaleString()} lifetime entries counting deletions`;
 }
 
 function currentList() {
@@ -202,7 +202,7 @@ async function openManageLists() {
 }
 
 function renderManageLists() {
-  manageListsTitleText.textContent = `Manage Lists (${lists.length.toLocaleString('en-US')})`;
+  manageListsTitleText.textContent = `Manage Lists (${lists.length.toLocaleString()})`;
   manageListsBody.replaceChildren();
 
   for (const list of lists) {
@@ -262,7 +262,7 @@ async function archiveList(list) {
 }
 
 function renderArchives() {
-  archivesTitleText.textContent = `Archives (${archivedLists.length.toLocaleString('en-US')})`;
+  archivesTitleText.textContent = `Archives (${archivedLists.length.toLocaleString()})`;
   archivesUidTotal.textContent = manageListsUidTotal.textContent;
   archivesBody.replaceChildren();
 
@@ -371,7 +371,7 @@ document.querySelector('#createListButton').addEventListener('click', openCreate
 closeManageLists.addEventListener('click', () => manageListsDialog.close());
 closeArchives.addEventListener('click', () => archivesDialog.close());
 
-/** File → Highlight rows on hover, like SpendTracker and TaskList Stats; saved in this browser. */
+/** File > Highlight rows on hover, like SpendTracker and TaskList Stats; saved in this browser. */
 const ROW_HOVER_KEY = 'task-list-highlight-rows';
 
 function rowHoverEnabled() {

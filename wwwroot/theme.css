@@ -1,4 +1,4 @@
-/* View → Use Retro Font: W95FA by Alina Sava, bundled under the SIL Open Font License (fonts/OFL.txt). */
+/* View > Use Retro Font: W95FA by Alina Sava, bundled under the SIL Open Font License (fonts/OFL.txt). */
 @font-face { font-family: "W95FA"; src: url("/fonts/w95fa.woff2") format("woff2"); font-display: swap; }
 :root { --ui-font: Tahoma, "MS Sans Serif", Arial, sans-serif; }
 :root[data-retro-font] { --ui-font: "W95FA", Tahoma, "MS Sans Serif", Arial, sans-serif; }
