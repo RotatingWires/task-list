@@ -146,6 +146,12 @@ function createTaskRow(item, depth) {
 
   row.append(idCell, titleCell, statusCell, actionsCell);
   configureTaskSelection(row, item);
+  // Double-clicking a row opens Edit, like SpendTracker's entries; in selection mode a click selects instead.
+  row.addEventListener('dblclick', event => {
+    if (selectionMode || event.target.closest('button, a, input, select, textarea')) return;
+    window.getSelection()?.removeAllRanges(); // a double click selects a word; opening the editor should not
+    openEdit(item);
+  });
   return row;
 }
 
