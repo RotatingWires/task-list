@@ -65,7 +65,7 @@ function configureTaskSelection(row, item) {
   row.tabIndex = 0;
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
-  checkbox.className = 'task-selection-check';
+  checkbox.className = 'task-selection-check retro-check';
   checkbox.checked = selectedTaskIds.has(item.universalId);
   checkbox.setAttribute('aria-label', `Select task #${item.displayId}: ${item.title}`);
   checkbox.addEventListener('click', event => {

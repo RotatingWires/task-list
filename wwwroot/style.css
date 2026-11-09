@@ -142,7 +142,7 @@ button { cursor: pointer; }
 .menubar-menus { display: flex; align-items: center; gap: 1px; }
 .bulk-controls { display: flex; align-items: center; justify-self: center; gap: 10px; white-space: nowrap; }
 .bulk-controls[hidden] { display: none; }
-.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--title); }
+input.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; }
 .task-selectable { cursor: pointer; }
 .task-selectable .task-title { user-select: none; -webkit-user-select: none; }
 
@@ -505,6 +505,9 @@ input.retro-check:focus-visible { outline: 1px dotted var(--ink); outline-offset
   background: var(--highlight);
 }
 .description-value { white-space: pre-wrap; min-height: 42px; }
+
+/* A dropdown that would be cut off inside a dialog floats over the page (dropdown.js); a long one scrolls. */
+.floating-menu { overflow-y: auto; }
 
 /* Screen-reader-only text, and the skip link that appears when tabbed to; the same rules in every app. */
 .sr-only, .skip:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
