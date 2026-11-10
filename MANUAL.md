@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.47
+# TaskList v1.7.48
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -573,7 +573,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.47**.
+Current release: **v1.7.48**.
+
+### v1.7.48
+
+- Shared `dropdown.js` (same in every app): on touch screens a dropdown in a dialog opens in place under its button instead of floating, so a phone's keyboard no longer makes it jump; a dialog opens scrolled to its top.
 
 ### v1.7.47
 
