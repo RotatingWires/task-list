@@ -143,6 +143,8 @@ button { cursor: pointer; }
 .bulk-controls { display: flex; align-items: center; justify-self: center; gap: 10px; white-space: nowrap; }
 .bulk-controls[hidden] { display: none; }
 input.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; }
+/* A click on a task opens Edit (or selects it, in selection mode), so the pointer is a hand, as on SpendTracker's rows. */
+#taskList > tr { cursor: pointer; }
 .task-selectable { cursor: pointer; }
 .task-selectable .task-title { user-select: none; -webkit-user-select: none; }
 
