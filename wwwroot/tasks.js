@@ -1,10 +1,46 @@
-/* Task rendering and actions: edit, subtasks, move, and the Task Information metrics. */
-import { $, $$, PRIMARY_STATUS_ACTION, actionButton, api, cancelEdit, cancelMove, cancelSubtask, clearDeepLink, confirmAction, currentListId, currentView, editDescription, editDialog, editForm, editTaskId, editTitle, editingItem, el, emptyState, findItemByDisplayId, formatDate, infoCancelled, infoCompleted, infoCreated, infoDescription, infoDialog, infoParentTask, infoParentTaskRow, infoReopened, infoStatus, infoTaskId, infoTitle, infoUniversalId, infoUpdated, jsonApi, lists, moveDialog, moveForm, moveListButton, moveListDropdown, moveListLabel, moveNote, moveSelectedTasks, moveTargetListId, moveTaskId, movingItem, newTaskForm, newTaskTitle, pendingDeepLinkDisplayId, scrollAndHighlightTask, setCurrentView, setEditingItem, setMoveTargetListId, setMovingItem, setPendingDeepLinkDisplayId, setStatus, setSubtaskParent, setTasks, subtaskDescription, subtaskDialog, subtaskForm, subtaskParent, subtaskParentId, subtaskTitle, taskCount, taskList, tasks, viewChoices } from './app.js';
+/* Task rendering and actions: edit, subtasks, folding, move, and the Task Information metrics. */
+import { $, $$, PRIMARY_STATUS_ACTION, api, cancelEdit, cancelMove, cancelSubtask, clearDeepLink, confirmAction, currentListId, currentView, editDescription, editDialog, editForm, editTaskId, editTitle, editingItem, el, emptyState, findItemByDisplayId, formatDate, infoCancelled, infoCompleted, infoCreated, infoDescription, infoDialog, infoParentTask, infoParentTaskRow, infoReopened, infoStatus, infoTaskId, infoTitle, infoUniversalId, infoUpdated, jsonApi, lists, moveDialog, moveForm, moveListButton, moveListDropdown, moveListLabel, moveNote, moveSelectedTasks, moveTargetListId, moveTaskId, movingItem, newTaskForm, newTaskTitle, pendingDeepLinkDisplayId, scrollAndHighlightTask, setCurrentView, setEditingItem, setMoveTargetListId, setMovingItem, setPendingDeepLinkDisplayId, setStatus, setSubtaskParent, setTasks, subtaskDescription, subtaskDialog, subtaskForm, subtaskParent, subtaskParentId, subtaskTitle, taskCount, taskList, tasks, viewChoices } from './app.js';
 import { bulkMoveItems, clearTaskSelection, configureTaskSelection, pruneTaskSelection, requestBulkAction, selectedSubtreeRoots, selectedTaskSummary, selectionMode, setBulkMoveItems, updateBulkToolbar } from './bulk.js';
 import { refreshListCounts } from './lists.js';
 import { closeViewMenu } from './ui.js';
 
 const TASK_ACTION_HOLD_MS = 800;
+
+// Tasks whose subtasks are folded away, by Universal ID (kept when a task moves to another list), saved in this browser.
+const FOLDED_KEY = 'task-list-folded';
+const folded = readFolded();
+
+function readFolded() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(FOLDED_KEY) ?? '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function toggleFolded(item) {
+  if (folded.has(item.universalId)) folded.delete(item.universalId);
+  else folded.add(item.universalId);
+  try { localStorage.setItem(FOLDED_KEY, JSON.stringify([...folded])); } catch {}
+  renderTasks();
+}
+
+/** Scrolls to a task (and highlights it), first unfolding every task above it so its row is drawn. */
+export function showTask(displayId, highlight = true) {
+  const path = (function find(items, trail) {
+    for (const item of items) {
+      if (item.displayId === displayId) return trail;
+      const found = find(item.subtasks ?? [], [...trail, item]);
+      if (found) return found;
+    }
+    return null;
+  })(tasks, []);
+  if (path?.some(item => folded.delete(item.universalId))) {
+    try { localStorage.setItem(FOLDED_KEY, JSON.stringify([...folded])); } catch {}
+    renderTasks();
+  }
+  scrollAndHighlightTask(displayId, highlight);
+}
 
 export async function loadTasks() {
   if (!currentListId) return;
@@ -17,7 +53,7 @@ export async function loadTasks() {
     if (pendingDeepLinkDisplayId) {
       const displayId = pendingDeepLinkDisplayId;
       setPendingDeepLinkDisplayId(null);
-      scrollAndHighlightTask(displayId, true);
+      showTask(displayId, true);
     }
   } catch (error) {
     setStatus(`Error: ${error.message}`);
@@ -51,6 +87,7 @@ export function renderTasks() {
 
 function appendTaskTree(item, depth) {
   taskList.append(createTaskRow(item, depth));
+  if (folded.has(item.universalId)) return;
   for (const child of item.subtasks ?? [])
     appendTaskTree(child, depth + 1);
 }
@@ -108,6 +145,23 @@ function createTaskRow(item, depth) {
 
   const titleContent = el('span', 'task-title-content');
 
+  // A task with subtasks has an arrow that folds them away or shows them again.
+  const childCount = countDescendants(item);
+  if (childCount) {
+    const isFolded = folded.has(item.universalId);
+    const fold = el('button', 'task-fold');
+    fold.type = 'button';
+    fold.setAttribute('aria-expanded', String(!isFolded));
+    fold.title = `${isFolded ? 'Show' : 'Hide'} ${childCount} subtask${childCount === 1 ? '' : 's'}`;
+    fold.setAttribute('aria-label', `${fold.title} of task #${item.displayId}`);
+    fold.append(el('span', `task-fold-arrow ${isFolded ? 'folded' : ''}`));
+    fold.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleFolded(item);
+    });
+    titleContent.append(fold);
+  }
+
   const titleText = el('span', 'task-title-text');
   titleText.textContent = item.title;
   titleContent.append(titleText);
@@ -133,10 +187,8 @@ function createTaskRow(item, depth) {
   const actionsCell = el('td');
   actionsCell.dataset.label = 'Actions';
   actionsCell.className = 'task-actions';
-  actionsCell.append(
-    createTaskSplitAction(item),
-    actionButton('Edit', () => openEdit(item))
-  );
+  // No Edit button: double-click the row to edit it.
+  actionsCell.append(createTaskSplitAction(item));
 
   row.append(idCell, titleCell, statusCell, actionsCell);
   configureTaskSelection(row, item);

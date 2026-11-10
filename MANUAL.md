@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.48
+# TaskList v1.7.49
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -288,7 +288,9 @@ TaskList prevents archiving or deleting the only active list.
 
 ## Task status and actions
 
-Open tasks use **Complete** as the primary action; Done and Cancelled tasks use **Reopen**. Both actions must be held for **800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke either action directly. Mouse/pen and keyboard holds use the same duration. While held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. Complete and Reopen share the same handler, progress styling, and `TASK_ACTION_HOLD_MS` constant in `wwwroot/tasks.js`. The button isolates its progress and label layers, so the label scrolls beneath the sticky column headers. **Edit** stays directly accessible.
+Open tasks use **Complete** as the primary action; Done and Cancelled tasks use **Reopen**. Both actions must be held for **800 milliseconds**. Mobile touch release/cancel events are guarded at the document capture phase so a quick tap cancels the hold even if the browser retargets the touch away from the button. A synthesized tap/click can never invoke either action directly. Mouse/pen and keyboard holds use the same duration. While held, the button fills from left to right using the same theme-aware blue used for desktop task-row hover feedback. Releasing, cancelling the touch, or moving away before the hold finishes cancels the action. Complete and Reopen share the same handler, progress styling, and `TASK_ACTION_HOLD_MS` constant in `wwwroot/tasks.js`. The button isolates its progress and label layers, so the label scrolls beneath the sticky column headers. There is no Edit button: double-click (or double-tap) a task row to edit it.
+
+A task with subtasks has a small arrow before its title: select it to fold the subtasks away (the arrow points right) or show them again (it points down). Folds are saved in this browser by the task's Universal ID, so they survive a reload and a move to another list. Opening a folded subtask from search or a link unfolds the tasks above it first.
 
 
 The attached More menu contains actions such as:
@@ -573,7 +575,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.48**.
+Current release: **v1.7.49**.
+
+### v1.7.49
+
+- A task with subtasks has an arrow before its title to fold them away or show them again; folds are saved in this browser.
+- No **Edit** button on task rows: double-click (or double-tap) a row to edit it.
 
 ### v1.7.48
 

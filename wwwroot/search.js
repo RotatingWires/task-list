@@ -1,6 +1,6 @@
 /* File > Search...: keyword and date/time search, and its list filter. */
-import { actionButton, api, clearDeepLink, currentListId, currentView, dateSearchForm, dateSearchPanel, dateSearchTab, el, formatDate, keywordSearchForm, keywordSearchPanel, keywordSearchTab, lists, scrollAndHighlightTask, searchDialog, searchKeyword, searchListFilterButton, searchListFilterDropdown, searchListFilterLabel, searchListFilterValue, searchPeriod, searchResultSet, searchResults, searchSummary, setCurrentListId, setCurrentView, setSearchListFilterValue, setSearchResultSet } from './app.js';
-import { loadTasks, openInfo, updateViewMenu } from './tasks.js';
+import { actionButton, api, clearDeepLink, currentListId, currentView, dateSearchForm, dateSearchPanel, dateSearchTab, el, formatDate, keywordSearchForm, keywordSearchPanel, keywordSearchTab, lists, searchDialog, searchKeyword, searchListFilterButton, searchListFilterDropdown, searchListFilterLabel, searchListFilterValue, searchPeriod, searchResultSet, searchResults, searchSummary, setCurrentListId, setCurrentView, setSearchListFilterValue, setSearchResultSet } from './app.js';
+import { loadTasks, openInfo, showTask, updateViewMenu } from './tasks.js';
 import { renderFileMenu, updateListTitle } from './lists.js';
 import { closeFileMenu } from './ui.js';
 
@@ -469,7 +469,7 @@ async function viewSearchResult(result) {
   updateListTitle();
 
   await loadTasks();
-  scrollAndHighlightTask(result.item.displayId, true);
+  showTask(result.item.displayId, true);
 }
 
 keywordSearchForm.addEventListener('submit', async event => {

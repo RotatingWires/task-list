@@ -1288,3 +1288,34 @@ select:focus-visible,
 @media (max-width: 650px) {
   .title-version { display: none; }
 }
+
+/* The arrow before a task with subtasks folds them away (pointing right) or shows them (pointing down); drawn with
+   borders, since phones would show the arrow characters as emoji. */
+.task-fold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin-right: 4px;
+  padding: 0;
+  vertical-align: middle;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.task-fold-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+}
+.task-fold-arrow.folded {
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid currentColor;
+  border-right: 0;
+}

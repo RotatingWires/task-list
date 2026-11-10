@@ -75,6 +75,19 @@ class BrowserTests(unittest.TestCase):
         page.fill("#subtaskTitle", "Alpha child")
         page.locator("#subtaskForm button[type=submit]").click()
         expect(page.locator("#taskList")).to_contain_text("Alpha child")
+        # Rows have no Edit button; a double-click edits.
+        expect(page.locator("#taskList .task-actions button", has_text="Edit")).to_have_count(0)
+
+        # The arrow before a task with subtasks folds them away, and the fold is remembered in this browser.
+        alpha = page.locator("tr", has_text="Alpha task")
+        alpha.locator(".task-fold").click()
+        expect(page.locator("#taskList")).not_to_contain_text("Alpha child")
+        page.reload()
+        expect(page.locator("#statusText")).to_have_text("Ready")
+        expect(page.locator("#taskList")).to_contain_text("Alpha task")
+        expect(page.locator("#taskList")).not_to_contain_text("Alpha child")
+        page.locator("tr", has_text="Alpha task").locator(".task-fold").click()
+        expect(page.locator("#taskList")).to_contain_text("Alpha child")
 
         # File > Search... finds a task by keyword.
         page.click("#fileMenu")
