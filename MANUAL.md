@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.8.0
+# TaskList v1.8.1
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -330,7 +330,7 @@ Complete affects selected Open items; Reopen and Cancel skip items already in th
 
 Bulk Move preserves the selected tasks' relative visible order in the destination. Dates are not used for ordering: root tasks display by descending task number. Each moved subtree receives the next root number in the destination, so the batch submits moves bottom-to-top to keep the original top-to-bottom order. Selected descendants travel once with their selected ancestor; independent selected subtasks become roots. All task dates and Universal IDs are preserved. Existing destination tasks appear below the moved batch.
 
-Actions run sequentially through the existing authenticated endpoints, each with its existing server behavior and transaction boundaries. A batch is not a single database transaction. Milestone notifications are checked once after the batch finishes. Successful items leave the selection; an error stops the remaining requests and reports how many succeeded. Remaining visible tasks stay selected for review or retry. If a refresh fails after an error or structural action, selection clears and the status asks for a refresh before retrying.
+Actions run sequentially through the existing authenticated endpoints, each with its existing server behavior and transaction boundaries. A batch is not a single database transaction. Milestone notifications are checked once after the batch finishes. Tasks stay selected after an action, so another can follow (deleted or moved tasks leave the list, and the selection); an error stops the remaining requests and reports how many succeeded, and the tasks still here stay selected for review or retry. If a refresh fails after an error or structural action, selection clears and the status asks for a refresh before retrying.
 
 ## Task Information
 
@@ -585,7 +585,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.8.0**.
+Current release: **v1.8.1**.
+
+### v1.8.1
+
+- Tasks stay selected after a bulk action, so another can follow; deleted or moved tasks leave the list and the selection.
 
 ### v1.8.0
 

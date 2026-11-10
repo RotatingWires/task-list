@@ -202,9 +202,12 @@ export async function requestBulkAction(action, targetListId = null, selected = 
         applyUpdatedItem(tasks, updated);
       }
       processed++;
-      for (const selection of selected) {
-        if (selection.universalId === item.universalId || (structural && selection.displayId.startsWith(`${item.displayId}.`)))
-          selectedTaskIds.delete(selection.universalId);
+      // Tasks whose status changed stay selected, so another action can follow; deleted or moved ones are gone.
+      if (structural) {
+        for (const selection of selected) {
+          if (selection.universalId === item.universalId || selection.displayId.startsWith(`${item.displayId}.`))
+            selectedTaskIds.delete(selection.universalId);
+        }
       }
     }
   } catch (error) {
@@ -224,7 +227,7 @@ export async function requestBulkAction(action, targetListId = null, selected = 
     appWindow.inert = false;
     renderTasks();
     if (confirmed) setStatus(failure
-      ? `${processed} of ${items.length} actions confirmed. ${failure} ${selectionLost ? 'Selection cleared; refresh before retrying.' : 'Remaining visible tasks stay selected.'}`
+      ? `${processed} of ${items.length} actions confirmed. ${failure} ${selectionLost ? 'Selection cleared; refresh before retrying.' : 'The selected tasks that are still here stay selected.'}`
       : `${label}: ${processed} task${processed === 1 ? '' : 's'} updated.`);
     if (confirmed) queueMicrotask(() => window.TaskMilestones?.check?.());
   }
