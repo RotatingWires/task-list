@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.8.3
+# TaskList v1.8.4
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -210,7 +210,7 @@ When TaskList creates a fresh database, it records a pending reminder outside SQ
 
 > If you have a TaskList ZIP backup, import it before creating tasks. Use File > Import/Export... to restore it. Restoring a ZIP replaces all current lists, tasks/subtasks, and recorded history, so anything you create first would be replaced by a later restore. If you don't have a backup, choose Start Fresh.
 
-**Import/Export...** acknowledges the reminder and opens the existing import/export dialog. **Start Fresh** acknowledges it and continues; it does not reset or delete data. Escape follows Start Fresh. Acknowledgement is saved for the server, so the reminder stays dismissed across browsers and restarts. Existing installations do not acquire the reminder just by updating. A successful ZIP restore also acknowledges it, including restores made directly through the API. The reminder marker is outside the database and is not part of exported ZIPs.
+**Import/Export...** acknowledges the reminder and opens the existing import/export dialog. **Start Fresh** acknowledges it and continues; it does not reset or delete data. Escape, or a click outside the box, follows Start Fresh. Acknowledgement is saved for the server, so the reminder stays dismissed across browsers and restarts. Existing installations do not acquire the reminder just by updating. A successful ZIP restore also acknowledges it, including restores made directly through the API. The reminder marker is outside the database and is not part of exported ZIPs.
 
 ## Themes
 
@@ -585,7 +585,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.8.3**.
+Current release: **v1.8.4**.
+
+### v1.8.4
+
+- Clicking outside a dialog closes it, as Escape does (shared `dropdown.js`, the same in every app). A dialog that refuses Escape while it is busy stays open, and a drag that starts inside a dialog (selecting text) and ends outside does not close it.
 
 ### v1.8.3
 

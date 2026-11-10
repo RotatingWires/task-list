@@ -9,6 +9,7 @@
  *   under its button instead, pushing the fields below it down: a phone's keyboard scrolls and resizes the dialog
  *   while you type in a list's search box, and a floating menu jumped around chasing its button.
  * - A dialog opens scrolled to its top, not where it was left the last time.
+ * - Clicking outside a dialog closes it, as Escape does: a dialog that refuses Escape (busy, say) stays open.
  * - Arrow Down/Up move through a menu's items (Arrow Down on a closed dropdown opens it), Home and End jump to the
  *   first and last item, and Escape closes the menu and returns to its button without closing the dialog under it.
  */
@@ -102,6 +103,25 @@
     showModal.apply(this, args);
     for (const box of [this, ...this.querySelectorAll('*')]) if (box.scrollTop) box.scrollTop = 0;
   };
+
+  // A press and release both on the backdrop, outside the dialog's box, so a drag that started inside (selecting text)
+  // and ended outside does not count. It cancels as Escape would, letting the dialog refuse.
+  let backdropPress = null;
+  const onBackdrop = event => {
+    const dialog = event.target;
+    if (!(dialog instanceof HTMLDialogElement) || !dialog.open || !dialog.matches(':modal')) return null;
+    const box = dialog.getBoundingClientRect();
+    const outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+    return outside ? dialog : null;
+  };
+  document.addEventListener('pointerdown', event => { backdropPress = onBackdrop(event); }, true);
+  document.addEventListener('click', event => {
+    const dialog = onBackdrop(event);
+    const pressed = backdropPress;
+    backdropPress = null;
+    if (!dialog || dialog !== pressed) return;
+    if (dialog.dispatchEvent(new Event('cancel', { cancelable: true }))) dialog.close('cancel');
+  });
 
   // While typing in a menu (its search box), a phone's keyboard resizes the window and scrolls the dialog to show the
   // box; the menu then moves with its button instead of closing, which would also put the keyboard away.
