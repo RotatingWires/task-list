@@ -250,6 +250,7 @@ input.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; }
   gap: 8px;
   flex-wrap: wrap;
   color: var(--ink);
+  border-top: 1px solid var(--light-edge);
   border-bottom: 2px groove var(--light-edge);
 }
 
