@@ -72,21 +72,35 @@
 
   // Each app opens its menus in its own click handlers, some of which stop the click there; placing the menu once
   // those handlers have run works for all of them.
+  // A menu opens scrolled to its top each time, not where it was left the last time it was open.
   document.addEventListener('click', event => {
     const trigger = event.target.closest?.(TRIGGERS);
     if (!trigger) return;
+    const menu = menuFor(trigger);
+    const wasHidden = menu?.hidden;
     requestAnimationFrame(() => {
-      const menu = menuFor(trigger);
-      if (menu && !menu.hidden) placeMenu(trigger, menu);
+      if (!menu || menu.hidden) return;
+      if (wasHidden) for (const box of [menu, ...menu.querySelectorAll('*')]) if (box.scrollTop) box.scrollTop = 0;
+      placeMenu(trigger, menu);
     });
   }, true);
 
+  // While typing in a menu (its search box), a phone's keyboard resizes the window and scrolls the dialog to show the
+  // box; the menu then moves with its button instead of closing, which would also put the keyboard away.
+  const followOrClose = menu => {
+    const trigger = triggerFor(menu);
+    if (menu.contains(document.activeElement) && trigger) placeMenu(trigger, menu);
+    else closeMenu(menu, trigger, false);
+  };
   document.addEventListener('scroll', event => {
     const floating = [...document.querySelectorAll('.floating-menu')].find(menu => !menu.hidden);
-    if (floating && !floating.contains(event.target)) closeMenu(floating, triggerFor(floating), false);
+    if (floating && !floating.contains(event.target)) followOrClose(floating);
   }, true);
   window.addEventListener('resize', () => {
-    for (const menu of document.querySelectorAll('.floating-menu')) if (!menu.hidden) closeMenu(menu, triggerFor(menu), false);
+    for (const menu of document.querySelectorAll('.floating-menu')) if (!menu.hidden) followOrClose(menu);
+  });
+  window.visualViewport?.addEventListener('resize', () => {
+    for (const menu of document.querySelectorAll('.floating-menu')) if (!menu.hidden) followOrClose(menu);
   });
 
   document.addEventListener('keydown', event => {
