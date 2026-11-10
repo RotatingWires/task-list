@@ -62,8 +62,8 @@ class BrowserTests(unittest.TestCase):
         self.add_task(page, "Alpha task")
         self.add_task(page, "Bravo task")
 
-        # Double-click a row to edit it.
-        page.locator("tr", has_text="Bravo task").locator(".task-title").dblclick()
+        # Click a row to edit it.
+        page.locator("tr", has_text="Bravo task").locator(".task-title").click()
         expect(page.locator("#editDialog")).to_be_visible()
         page.fill("#editTitle", "Bravo edited")
         page.locator("#editForm button[type=submit]").click()
@@ -75,7 +75,7 @@ class BrowserTests(unittest.TestCase):
         page.fill("#subtaskTitle", "Alpha child")
         page.locator("#subtaskForm button[type=submit]").click()
         expect(page.locator("#taskList")).to_contain_text("Alpha child")
-        # Rows have no Edit button; a double-click edits.
+        # Rows have no Edit button; a click edits.
         expect(page.locator("#taskList .task-actions button", has_text="Edit")).to_have_count(0)
 
         # The arrow before a task with subtasks folds them away, and the fold is remembered in this browser.

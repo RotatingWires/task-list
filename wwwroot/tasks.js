@@ -187,15 +187,18 @@ function createTaskRow(item, depth) {
   const actionsCell = el('td');
   actionsCell.dataset.label = 'Actions';
   actionsCell.className = 'task-actions';
-  // No Edit button: double-click the row to edit it.
+  // No Edit button: select the row to edit it.
   actionsCell.append(createTaskSplitAction(item));
 
   row.append(idCell, titleCell, statusCell, actionsCell);
   configureTaskSelection(row, item);
-  // Double-clicking a row opens Edit, like SpendTracker's entries; in selection mode a click selects instead.
-  row.addEventListener('dblclick', event => {
-    if (selectionMode || event.target.closest('button, a, input, select, textarea')) return;
-    window.getSelection()?.removeAllRanges(); // a double click selects a word; opening the editor should not
+  // A click on a row opens Edit, like SpendTracker's entries; in selection mode it selects instead. A drag (to select
+  // text and copy it) is not a click.
+  let pressedAt = null;
+  row.addEventListener('pointerdown', event => { pressedAt = [event.clientX, event.clientY]; });
+  row.addEventListener('click', event => {
+    const dragged = pressedAt && Math.hypot(event.clientX - pressedAt[0], event.clientY - pressedAt[1]) > 5;
+    if (selectionMode || event.target.closest('button, a, input, select, textarea') || dragged) return;
     openEdit(item);
   });
   return row;
