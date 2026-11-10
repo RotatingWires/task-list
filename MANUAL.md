@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.8.4
+# TaskList v1.8.5
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -585,7 +585,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.8.4**.
+Current release: **v1.8.5**.
+
+### v1.8.5
+
+- The line under the menu bar uses the theme's shadow color, like TaskList Stats, SpendTracker, and NewsReview, so in the Dark theme it is dark instead of a light gray line.
 
 ### v1.8.4
 

@@ -132,7 +132,7 @@ button { cursor: pointer; }
 .menubar {
   padding: 2px 4px;
   color: var(--ink);
-  border-bottom: 1px solid var(--classic-shadow);
+  border-bottom: 1px solid var(--shadow);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   gap: 4px;
