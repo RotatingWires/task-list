@@ -43,15 +43,12 @@ Directory.CreateDirectory(dataDir);
 if (string.IsNullOrEmpty(builder.Configuration["urls"])) builder.WebHost.UseUrls("http://127.0.0.1:8711");
 var consoleLogPath = Path.Combine(builder.Environment.ContentRootPath, "logs", "console.log");
 builder.Logging.AddProvider(new SingleFileLoggerProvider(consoleLogPath, 10 * 1024 * 1024));
-// Session-cookie keys must outlive restarts, or every restart signs you out, so they always live in data/keys, the same
-// in every app. A Windows profile's own ASP.NET key ring was used before when the profile looked available, but a
-// service account's profile is not always loaded when the app starts (say, at boot), and then the keys only lived in
-// memory. On Windows they are encrypted with machine-scope DPAPI, which works whether or not a profile is loaded.
+// Session-cookie keys must outlive restarts, or every restart signs you out, so they always live in data/keys,
+// encrypted with machine-scope DPAPI on Windows and with the tasklist-sign-in-keys systemd credential on Linux
+// (src/SignInKeys.cs, the same in every app). The startup log says how.
 var keysDirectory = Path.Combine(dataDir, "keys");
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName("TaskList")
-    .PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
-if (OperatingSystem.IsWindows()) dataProtection.ProtectKeysWithDpapi(protectToLocalMachine: true);
-var keyLocation = keysDirectory;
+SignInKeys.Configure(builder.Services, "TaskList", _ => keysDirectory, "tasklist");
+var keyLocation = SignInKeys.Describe(keysDirectory, "tasklist");
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

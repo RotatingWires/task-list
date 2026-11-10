@@ -14,6 +14,10 @@ ExecStart=/usr/bin/dotnet /opt/tasklist/TaskList.dll --urls http://127.0.0.1:871
 Restart=on-failure
 RestartSec=5
 UMask=0077
+# Encrypts the sign-in keys in data/keys with a secret only this service gets (src/SignInKeys.cs). Create it once:
+#   head -c 32 /dev/urandom | sudo systemd-creds encrypt --name=tasklist-sign-in-keys - /etc/credstore.encrypted/tasklist-sign-in-keys
+# Without it the service still starts; the keys are then owner-only files, unencrypted. Needs systemd 254 or later.
+ImportCredential=tasklist-sign-in-keys
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

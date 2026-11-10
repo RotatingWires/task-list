@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.50
+# TaskList v1.8.0
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -69,6 +69,7 @@ src/
   TaskEventBackfill.cs legacy history events for current tasks, shared by startup and Fresh start
   SingleFileLogger.cs  console/file logging with in-place 10 MiB truncation
   PasswordAuth.cs      setup token, password file, and sign-in cookie (the same file in all four apps)
+  SignInKeys.cs        where the sign-in keys live and how they are encrypted (the same file in all four apps)
 appsettings.json       listen address and log level
 deploy/tasklist.service
                        example systemd unit
@@ -77,7 +78,7 @@ README.md              setup, architecture, behavior, security, and release note
 data/                  runtime/private data
   tasklist.db         SQLite database
   auth.json            salted password hash
-  keys/                sign-in cookie keys (machine-scope DPAPI on Windows)
+  keys/                sign-in cookie keys, encrypted (DPAPI on Windows, a systemd credential on Linux)
   backups/             private recovery ZIPs created before full restores
   import-reminder.pending
                        first-run reminder marker, removed when acknowledged or a ZIP is restored
@@ -154,6 +155,15 @@ To keep the data somewhere else, pass `--data-dir`, set `TaskList:DataDirectory`
 ### Run as a Linux service
 
 `deploy/tasklist.service` is a systemd template, not an installer, like NewsReview's: build with `dotnet publish -c Release -o /opt/tasklist`, create the service account, `/var/lib/tasklist` (the data folder) and `/opt/tasklist/logs`, adjust `User`, `WorkingDirectory`, `ExecStart`, and `ReadWritePaths` to match, then install and enable it. It listens on loopback at port 8711; change its `--urls` for LAN access, and find the first-run setup token in the journal.
+
+**Encrypted sign-in keys on Linux.** On Windows the sign-in keys in `data/keys/` are encrypted with machine-scope DPAPI. On Linux the template's `ImportCredential=tasklist-sign-in-keys` hands TaskList a secret that systemd encrypts with the machine's credential key (or its TPM), and the keys are encrypted with it (AES-256-GCM, `src/SignInKeys.cs`, the same in all four apps), so a copied data folder or backup holds no readable key. Create the secret once (systemd 254 or later), then restart the service:
+
+```sh
+sudo mkdir -p /etc/credstore.encrypted
+head -c 32 /dev/urandom | sudo systemd-creds encrypt --name=tasklist-sign-in-keys - /etc/credstore.encrypted/tasklist-sign-in-keys
+```
+
+Keys already in `data/keys/` are encrypted in place on that start, so nobody is signed out. The startup log says how the keys are kept (`Sign-in keys: ..., encrypted with the tasklist-sign-in-keys systemd credential`). Without the credential (or when started from a terminal) the service still runs and the key files stay unencrypted but readable only by the service account, in an owner-only folder. Once keys are encrypted, starting the app without the credential cannot read them: everyone signs in again, or start it through the service.
 
 `appsettings.json` holds the default listen address (`Urls`) and log level, the same keys in every app. `--urls` and `ASPNETCORE_URLS` override it.
 
@@ -575,7 +585,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.50**.
+Current release: **v1.8.0**.
+
+### v1.8.0
+
+- Sign-in keys are encrypted on Linux too, as on Windows: with the `tasklist-sign-in-keys` systemd credential (AES-256-GCM, shared `src/SignInKeys.cs`), so a copied data folder or backup holds no readable key. The systemd template imports it; create it once with the command in the manual. Existing keys are encrypted in place, so nobody is signed out. Without the credential the keys stay unencrypted, as before, in a folder only the app's account can open.
+- Windows is unchanged: machine-scope DPAPI. The startup log now says how the keys are kept.
 
 ### v1.7.50
 

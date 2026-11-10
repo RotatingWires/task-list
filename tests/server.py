@@ -33,21 +33,26 @@ def build():
 class Server:
     """One running server with its own content root. `client()` returns a logged-out HTTP client."""
 
-    def __init__(self, prepare=None, args=()):
-        """`prepare(data_dir)` can put files in the data folder before the server starts; `args` are extra options."""
+    def __init__(self, prepare=None, args=(), env=None):
+        """`prepare(data_dir)` can put files in the data folder before the server starts; `args` are extra options and
+        `env` extra environment variables."""
         self.data_root = tempfile.TemporaryDirectory(prefix=f"{APP.lower()}-test-")
         if prepare:
             self.data_dir.mkdir(parents=True)
             prepare(self.data_dir)
+        self.args = args
+        self._start(env)
+
+    def _start(self, env):
         self.port = free_port()
         self.url = f"http://127.0.0.1:{self.port}"
         self.output = []
         self.token = None
         dll = ROOT / "bin" / "Debug" / "net10.0" / f"{APP}.dll"
         self.process = subprocess.Popen(
-            ["dotnet", str(dll), "--urls", self.url, "--contentRoot", self.data_root.name, "--webroot", str(ROOT / "wwwroot"), *args],
+            ["dotnet", str(dll), "--urls", self.url, "--contentRoot", self.data_root.name, "--webroot", str(ROOT / "wwwroot"), *self.args],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-            env={**os.environ, "ASPNETCORE_ENVIRONMENT": "Production"})
+            env={**os.environ, "ASPNETCORE_ENVIRONMENT": "Production", **(env or {})})
         threading.Thread(target=self._read_output, daemon=True).start()
         self._wait_until_ready()
 
@@ -66,7 +71,8 @@ class Server:
             try:
                 with urllib.request.urlopen(f"{self.url}/api/auth/status", timeout=1):
                     pass
-                if self.token or "already" in "".join(self.output):
+                # Ready once it answers, with a setup token printed, or with a password already saved (after a restart).
+                if self.token or (self.data_dir / "auth.json").exists():
                     return
             except OSError:
                 pass
@@ -94,7 +100,16 @@ class Server:
             client.post("/api/auth/login", {"password": PASSWORD})
         return client
 
+    def restart(self, env=None):
+        """Stops the server and starts it again on the same data folder (on a new port), with these extra variables."""
+        self._stop_process()
+        self._start(env)
+
     def stop(self):
+        self._stop_process()
+        self.data_root.cleanup()
+
+    def _stop_process(self):
         self.process.terminate()
         try:
             self.process.wait(timeout=10)
@@ -102,7 +117,6 @@ class Server:
             self.process.kill()
             self.process.wait()
         self.process.stdout.close()
-        self.data_root.cleanup()
 
 
 class ApiError(Exception):
