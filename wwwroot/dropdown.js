@@ -5,7 +5,10 @@
  * builds its own buttons and menus; this file gives every one of them the same placement and keyboard use:
  * - A menu that opens inside a dialog floats over the page instead of being cut off by the dialog's scrolling body:
  *   below its button, or above when there is more room there, as tall as the window allows (SpendTracker's overflow).
- *   Scrolling or resizing closes it, so it never drifts away from its button.
+ *   Scrolling or resizing closes it, so it never drifts away from its button. On touch screens it opens in place
+ *   under its button instead, pushing the fields below it down: a phone's keyboard scrolls and resizes the dialog
+ *   while you type in a list's search box, and a floating menu jumped around chasing its button.
+ * - A dialog opens scrolled to its top, not where it was left the last time.
  * - Arrow Down/Up move through a menu's items (Arrow Down on a closed dropdown opens it), Home and End jump to the
  *   first and last item, and Escape closes the menu and returns to its button without closing the dialog under it.
  */
@@ -42,7 +45,15 @@
   function placeMenu(button, menu) {
     menu.classList.remove('floating-menu');
     for (const property of ['position', 'left', 'top', 'bottom', 'minWidth', 'maxHeight']) menu.style[property] = '';
+    menu.classList.remove('in-place-menu');
     if (!button.closest('dialog')) return;
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      menu.classList.add('in-place-menu');
+      menu.style.position = 'static';
+      menu.style.minWidth = `${button.getBoundingClientRect().width}px`;
+      menu.scrollIntoView({ block: 'nearest' });
+      return;
+    }
     const rect = button.getBoundingClientRect();
     const below = window.innerHeight - rect.bottom - 8;
     const above = rect.top - 8;
@@ -84,6 +95,13 @@
       placeMenu(trigger, menu);
     });
   }, true);
+
+  // Right after it opens: a closed dialog has no layout, so it cannot be scrolled back while closed.
+  const showModal = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function (...args) {
+    showModal.apply(this, args);
+    for (const box of [this, ...this.querySelectorAll('*')]) if (box.scrollTop) box.scrollTop = 0;
+  };
 
   // While typing in a menu (its search box), a phone's keyboard resizes the window and scrolls the dialog to show the
   // box; the menu then moves with its button instead of closing, which would also put the keyboard away.
