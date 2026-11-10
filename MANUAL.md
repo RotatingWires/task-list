@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.7.49
+# TaskList v1.7.50
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -77,7 +77,7 @@ README.md              setup, architecture, behavior, security, and release note
 data/                  runtime/private data
   tasklist.db         SQLite database
   auth.json            salted password hash
-  keys/                sign-in cookie keys when there is no Windows profile key ring (Linux, Task Scheduler)
+  keys/                sign-in cookie keys (machine-scope DPAPI on Windows)
   backups/             private recovery ZIPs created before full restores
   import-reminder.pending
                        first-run reminder marker, removed when acknowledged or a ZIP is restored
@@ -549,7 +549,7 @@ Stop TaskList, delete only `data/auth.json`, and start it again. It prints a new
 
 ### Every browser was signed out after moving TaskList
 
-Sign-in keys live in the Windows profile's key ring, or in `data/keys/` elsewhere (the startup log says which). Copy `data/keys/` along with the rest of `data/`, or sign in again.
+Sign-in keys live in `data/keys/` (the startup log names it). Copy `data/keys/` along with the rest of `data/`, or sign in again.
 
 ### TaskList stops at startup with a message about a newer database
 
@@ -575,7 +575,11 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.7.49**.
+Current release: **v1.7.50**.
+
+### v1.7.50
+
+- Restarting the server no longer signs you out on Windows: sign-in keys always live in `data/keys/` (protected with machine-scope DPAPI), not in the Windows profile's key ring, which a service account does not always have loaded when the app starts (then the keys only lived in memory). Everyone signs in once more after updating.
 
 ### v1.7.49
 
