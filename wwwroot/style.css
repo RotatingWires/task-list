@@ -180,6 +180,8 @@ input.task-selection-check { margin: 0 8px 0 0; vertical-align: middle; }
   top: calc(100% + 1px);
   left: 0;
   min-width: 125px;
+  width: max-content;
+  max-width: calc(100vw - 20px);
   padding: 2px;
   color: var(--ink);
   background: var(--face);

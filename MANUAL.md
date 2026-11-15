@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.8.6
+# TaskList v1.8.7
 
 TaskList is a small self-hosted task manager with recursive subtasks, multiple lists, search, ZIP backup/restore, Markdown import, archives, Universal-ID deep links, milestone celebrations, a Windows 95-style interface, persistent Light/Dark themes, authentication, PWA support, and an append-only task-state event log.
 
@@ -220,7 +220,7 @@ The dark theme keeps the same Windows 95 raised/recessed visual language rather 
 
 There is intentionally no automatic **System** theme mode; theme selection is strictly Light or Dark.
 
-**View > Use Retro Font** switches the whole app, including the login page and chart labels, to W95FA, an open-source recreation of the Windows 95 MS Sans Serif font bundled in `wwwroot/fonts`, so the interface looks the same on Windows, Linux, macOS, Android, and iOS without installing fonts. It is off by default and saved per browser, separately for each app.
+**View > Use Retro Font** switches the whole app, including the login page and chart labels, to Good Old DOS, an open-source DOS-style bitmap font bundled in `wwwroot/fonts`, so the interface looks the same on Windows, Linux, macOS, Android, and iOS without installing fonts. It is off by default and saved per browser, separately for each app.
 
 Help opens About directly. Its 16px text and 1.5 line spacing match TaskList Stats Help, with about.lehighradio.com and the application version at the bottom.
 
@@ -585,7 +585,12 @@ GitHub Actions (`.github/workflows/tests.yml`) builds TaskList and runs the Pyth
 
 ## Release notes
 
-Current release: **v1.8.6**.
+Current release: **v1.8.7**.
+
+### v1.8.7
+
+- **View > Use Retro Font** now uses Good Old DOS by Vasily Draigo (SIL Open Font License) instead of W95FA, in all four apps. Its letters are as tall as Tahoma's, so the app no longer looks smaller with it on.
+- The View menu is as wide as its longest item, so **Use Retro Font** is no longer cut off as "Use Retro F...".
 
 ### v1.8.6
 

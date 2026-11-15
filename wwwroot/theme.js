@@ -46,13 +46,13 @@ function readRetroFont() {
   }
 }
 
-/** The bundled W95FA font (fonts/OFL.txt), off until chosen. Canvas charts redraw once it has loaded. */
+/** The bundled Good Old DOS font (fonts/OFL.txt), off until chosen. Canvas charts redraw once it has loaded. */
 function applyRetroFont(on, persist = false) {
   if (persist) {
     try { localStorage.setItem(RETRO_FONT_KEY, on ? 'on' : 'off'); } catch {}
   }
   document.documentElement.toggleAttribute('data-retro-font', on);
-  if (persist) document.fonts.load('13px W95FA').finally(() => window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: getPreference() } })));
+  if (persist) document.fonts.load('13px "Good Old DOS"').finally(() => window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme: getPreference() } })));
   return on;
 }
 

@@ -1,7 +1,7 @@
 > [!WARNING]
 > This project is fully vibecoded, probably inefficient, but it does what I wanted lol
 
-# TaskList v1.8.6
+# TaskList v1.8.7
 
 A small self-hosted task manager with recursive subtasks, multiple lists, search, backup/restore, and a Windows 95-style interface with Light/Dark themes.
 
@@ -54,4 +54,4 @@ TaskList, TaskList Stats, NewsReview, and SpendTracker are four small self-hoste
 
 ## Credits
 
-**View > Use Retro Font** uses [W95FA](https://fontsarena.com/w95fa-by-alina-sava/) by Alina Sava, bundled in `wwwroot/fonts/` under the SIL Open Font License 1.1 (`wwwroot/fonts/OFL.txt`).
+**View > Use Retro Font** uses [Good Old DOS](https://www.dafont.com/good-old-dos.font) by Vasily Draigo, bundled in `wwwroot/fonts/` under the SIL Open Font License 1.1 (`wwwroot/fonts/OFL.txt`).
